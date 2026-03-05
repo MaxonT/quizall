@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription Success - QuizAll</title>
+  <!-- Theme Manager - Must load before CSS -->
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="lib/authGuard.js"></script>
+  <style>
+    .success-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-color);
+    }
+    
+    .success-card {
+      max-width: 480px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 3rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    }
+    
+    .success-icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      animation: bounce 0.6s ease-out;
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-20px); }
+      60% { transform: translateY(-10px); }
+    }
+    
+    .success-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+    }
+    
+    .success-message {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    
+    /* Verification Progress */
+    .verification-status {
+      margin-bottom: 2rem;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    
+    .status-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .status-text {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .status-check {
+      font-size: 1.5rem;
+      color: var(--success, #10b981);
+    }
+    
+    .status-error {
+      font-size: 1.5rem;
+      color: var(--error, #ef4444);
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: var(--bg-secondary);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #06b6d4);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+      animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -100% 0; }
+      100% { background-position: 200% 0; }
+    }
+    
+    .success-details {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      text-align: left;
+    }
+    
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-label {
+      color: var(--text-secondary);
+    }
+    
+    .detail-value {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      padding: 0.875rem 2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    /* Confetti */
+    .confetti {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    
+    .confetti-piece {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      opacity: 0.8;
+      animation: fall 3s linear forwards;
+    }
+    
+    @keyframes fall {
+      0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+    
+    .error-message {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+    
+    .error-content {
+      margin-bottom: 1rem;
+    }
+    
+    .btn-retry {
+      margin-top: 0.75rem;
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 0.625rem 1.5rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .btn-retry:hover {
+      background: #b91c1c;
+    }
+    
+    [data-theme="dark"] .error-message {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+  </style>
+</head>
+<body>
+  <div class="confetti hidden" id="confetti"></div>
+  
+  <div class="success-page">
+    <div class="success-card">
+      <!-- Verification Status -->
+      <div class="verification-status" id="verificationStatus">
+        <div class="status-indicator">
+          <div class="status-spinner" id="spinner"></div>
+          <span class="status-text" id="statusText">Confirming your subscription...</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width: 20%"></div>
+        </div>
+      </div>
+      
+      <!-- Error Message (hidden by default) -->
+      <div class="error-message hidden" id="errorMessage">
+        <div class="error-content"></div>
+        <button class="btn btn-primary btn-retry hidden" id="retryBtn" onclick="retryVerification()">
+          Retry Verification
+        </button>
+      </div>
+      
+      <!-- Success Icon (hidden initially) -->
+      <div class="success-icon hidden" id="successIcon">🎉</div>
+      
+      <h1 class="success-title" id="titleText">Processing Your Subscription</h1>
+      <p class="success-message" id="messageText">
+        Please wait while we confirm your payment and activate your subscription...
+      </p>
+      
+      <!-- Subscription Details (hidden until confirmed) -->
+      <div class="success-details hidden" id="subscriptionDetails">
+        <div class="detail-row">
+          <span class="detail-label">Plan</span>
+          <span class="detail-value" id="planName">Pro</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Daily limits</span>
+          <span class="detail-value" id="dailyLimits">--</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Next Billing</span>
+          <span class="detail-value" id="nextBilling">--</span>
+        </div>
+      </div>
+      
+      <div class="btn-group">
+        <a href="index.html" class="btn btn-primary" id="startBtn" disabled>Start Creating</a>
+        <a href="settings.html#accountPanel" class="btn btn-secondary" id="accountBtn" disabled>View Account</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { track, EVENTS } from './lib/analytics.js';
+    
+    const API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) || 
+      (window.location && window.location.origin && window.location.origin !== "null" 
+        ? window.location.origin 
+        : "http://localhost:8080");
+    
+    const MAX_RETRIES = 30; // 30 * 2s = 60s max wait
+    let retryCount = 0;
+    let sessionId = null;
+    
+    // Get session ID from URL
+    const params = new URLSearchParams(window.location.search);
+    sessionId = params.get('session_id');
+    
+    if (!sessionId) {
+      showError('No session ID provided. Please try subscribing again.');
+      track(EVENTS.CHECKOUT_SUCCESS_ERROR, { error: 'missing_session_id' });
+    } else {
+      track(EVENTS.CHECKOUT_SUCCESS_LOADED, { sessionId });
+      startVerification();
+    }
+    
+    // Verification polling
+    async function startVerification() {
+      const token = window.authGuard?.getToken?.() || localStorage.getItem('quizall.token');
+
+      if (!token) {
+        showError('Please log in first');
+        track(EVENTS.CHECKOUT_SUCCESS_ERROR, { error: 'missing_auth' });
+        return;
+      }
+      
+      try {
+        const response = await window.authGuard.fetchWithAuth(`${API_BASE}/api/billing/verify-session/${sessionId}`, {});
+        const data = await response.json().catch(() => ({}));
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Verification failed');
+        }
+        
+        if (data.status === 'completed') {
+          // Success!
+          updateProgress(100);
+          showSuccess(data);
+          track(EVENTS.CHECKOUT_SUCCESS_VERIFIED, { sessionId });
+          
+          // Clear pending session
+          sessionStorage.removeItem('subscription_pending');
+        } else if (data.status === 'expired') {
+          showError('Checkout session expired. Please try subscribing again.');
+          track(EVENTS.CHECKOUT_SUCCESS_ERROR, { error: 'session_expired' });
+        } else {
+          // Still pending, retry
+          retryCount++;
+          updateProgress(Math.min(20 + (retryCount / MAX_RETRIES) * 70, 90));
+          
+          if (retryCount >= MAX_RETRIES) {
+            showError('Verification timed out. Your payment may still be processing. Please check your account in a few minutes.', true);
+            track(EVENTS.CHECKOUT_SUCCESS_ERROR, { error: 'timeout' });
+          } else {
+            document.getElementById('statusText').textContent = 
+              `Waiting for payment confirmation (${retryCount}/${MAX_RETRIES})...`;
+            
+            setTimeout(startVerification, 2000); // Retry every 2s
+          }
+        }
+      } catch (err) {
+        console.error('Verification error:', err);
+        
+        // Retry on network errors
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          updateProgress(Math.min(20 + (retryCount / MAX_RETRIES) * 70, 90));
+          setTimeout(startVerification, 2000);
+        } else {
+          showError(`Verification failed: ${err.message}`, true);
+          track(EVENTS.CHECKOUT_SUCCESS_ERROR, { error: err.message });
+        }
+      }
+    }
+    
+    function updateProgress(percent) {
+      document.getElementById('progressFill').style.width = `${percent}%`;
+    }
+    
+    function showSuccess(data) {
+      // Hide verification status
+      document.getElementById('verificationStatus').classList.add('hidden');
+      document.getElementById('spinner').classList.add('hidden');
+      
+      // Show success icon
+      document.getElementById('successIcon').classList.remove('hidden');
+      
+      // Update texts
+      document.getElementById('titleText').textContent = 'Welcome to QuizAll Pro!';
+      document.getElementById('messageText').textContent = 
+        'Your subscription has been activated successfully. You now have access to all Pro features.';
+      
+      // Show details
+      const detailsEl = document.getElementById('subscriptionDetails');
+      detailsEl.classList.remove('hidden');
+      
+      // Enable buttons
+      document.getElementById('startBtn').removeAttribute('disabled');
+      document.getElementById('accountBtn').removeAttribute('disabled');
+      
+      // Show confetti
+      createConfetti();
+      
+      // Load actual subscription data
+      loadSubscriptionDetails();
+    }
+    
+    function showError(message, showRetry = false) {
+      document.getElementById('verificationStatus').classList.add('hidden');
+      document.getElementById('spinner').classList.add('hidden');
+      
+      const errorEl = document.getElementById('errorMessage');
+      const errorContent = errorEl.querySelector('.error-content');
+      const retryBtn = document.getElementById('retryBtn');
+      
+      errorContent.textContent = message;
+      errorEl.classList.remove('hidden');
+      
+      if (showRetry) {
+        retryBtn.classList.remove('hidden');
+      } else {
+        retryBtn.classList.add('hidden');
+      }
+      
+      document.getElementById('titleText').textContent = 'Verification Issue';
+      document.getElementById('messageText').textContent = 
+        'There was a problem confirming your subscription.';
+      
+      // Enable account button for checking status
+      document.getElementById('accountBtn').removeAttribute('disabled');
+    }
+    
+    // Retry verification function
+    function retryVerification() {
+      // Hide error message
+      document.getElementById('errorMessage').classList.add('hidden');
+      
+      // Reset state
+      document.getElementById('verificationStatus').classList.remove('hidden');
+      document.getElementById('spinner').classList.remove('hidden');
+      document.getElementById('titleText').textContent = 'Processing Your Subscription';
+      document.getElementById('messageText').textContent = 
+        'Please wait while we confirm your payment and activate your subscription...';
+      
+      // Reset retry count and progress
+      retryCount = 0;
+      updateProgress(20);
+      
+      // Restart verification
+      startVerification();
+    }
+
+    window.retryVerification = retryVerification;
+    
+    async function loadSubscriptionDetails() {
+      const token = window.authGuard?.getToken?.() || localStorage.getItem('quizall.token');
+      if (!token) {
+        showError('Please log in first');
+        return;
+      }
+      
+      try {
+        const response = await window.authGuard.fetchWithAuth(`${API_BASE}/api/billing/status`, {});
+        
+        if (response.ok) {
+          const data = await response.json().catch(() => ({}));
+          
+          document.getElementById('planName').textContent = 
+            data.subscription.plan ? data.subscription.plan.charAt(0).toUpperCase() + data.subscription.plan.slice(1) : 'Pro';
+          
+          const promptDaily = data.limits?.promptOptimization?.daily;
+          const wizardDaily = data.limits?.questionWizard?.daily;
+          if (promptDaily && wizardDaily) {
+            const tz = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+            let resetText = `Resets daily at 00:00 (${tz})`;
+            if (data.nextResetAt) {
+              const dt = new Date(data.nextResetAt);
+              const when = dt.toLocaleString(undefined, {
+                timeZone: tz,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit"
+              });
+              resetText = `Resets at ${when} (${tz})`;
+            }
+            document.getElementById('dailyLimits').textContent =
+              `${promptDaily} prompt optimizations/day · ${wizardDaily} question-wizard sessions/day · ${resetText}`;
+          }
+          
+          if (data.subscription.periodEnd) {
+            const date = new Date(data.subscription.periodEnd);
+            document.getElementById('nextBilling').textContent = date.toLocaleDateString();
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load subscription details:', err);
+      }
+    }
+    
+    function createConfetti() {
+      const confettiContainer = document.getElementById('confetti');
+      confettiContainer.classList.remove('hidden');
+      const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+      
+      for (let i = 0; i < 50; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = `${Math.random() * 100}%`;
+        piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = `${Math.random() * 2}s`;
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        confettiContainer.appendChild(piece);
+      }
+    }
+    
+    // Apply theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "quizall-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QuizAll Frontend — Turn anything into a quiz",
+  "scripts": {
+    "dev": "echo 'Open index.html in your browser for local development'"
+  }
+}
+

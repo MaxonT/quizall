@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Private / authenticated pages
+Disallow: /account.html
+Disallow: /settings.html
+Disallow: /specs.html
+Disallow: /analytics-dashboard.html
+Disallow: /checkout-success.html
+Disallow: /checkout-cancel.html
+Disallow: /test-connection.html
+Disallow: /maintenance.html
+Disallow: /404.html
+
+Sitemap: https://promptly-v0-6-cloudtest-1.onrender.com/sitemap.xml

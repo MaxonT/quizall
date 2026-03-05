@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create Quiz — QuizAll</title>
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <script src="lib/authGuard.js"></script>
+  <script src="lib/i18next.min.js"></script>
+  <script type="module" src="i18n/index.js"></script>
+  <style>
+    .create-header { text-align:center; margin:36px 0 32px; }
+    .create-title {
+      font-size:2.2rem; font-weight:800; letter-spacing:-0.03em; margin:0 0 8px;
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .create-subtitle { color:var(--muted); font-size:1rem; margin:0; line-height:1.5; }
+
+    .create-section-label {
+      font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+      color:var(--muted); margin:0 0 10px;
+    }
+
+    .quiz-dropzone {
+      border:2px dashed var(--border); border-radius:16px; padding:48px 28px;
+      text-align:center; cursor:pointer; transition:all 0.25s ease;
+      background:var(--card);
+    }
+    .quiz-dropzone:hover, .quiz-dropzone.drag-over {
+      border-color:var(--accent); background:rgba(34,211,238,0.06);
+    }
+    .quiz-dropzone.drag-over { border-width:2.5px; }
+    .quiz-dropzone.has-files {
+      padding:26px 24px; border-bottom-left-radius:0; border-bottom-right-radius:0;
+    }
+    .dropzone-icon {
+      color:var(--accent); margin-bottom:10px; display:flex; justify-content:center;
+      transition:transform 0.2s ease;
+    }
+    .quiz-dropzone.drag-over .dropzone-icon { transform:translateY(-4px) scale(1.1); }
+    .dropzone-title { font-size:1rem; font-weight:600; color:var(--text); margin-bottom:4px; }
+    .dropzone-hint { font-size:0.82rem; color:var(--muted); }
+
+    .file-list-area {
+      background:var(--card); border:1px solid var(--border); border-top:none;
+      border-bottom-left-radius:16px; border-bottom-right-radius:16px;
+      padding:14px 18px; margin-bottom:20px;
+    }
+    .file-list-header {
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
+    }
+    .file-count {
+      font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;
+    }
+    .file-clear-btn {
+      background:none; border:none; color:var(--muted); cursor:pointer; font:inherit;
+      font-size:0.75rem; text-decoration:underline; text-underline-offset:3px;
+    }
+    .file-clear-btn:hover { color:var(--text); }
+    .file-chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .file-chip {
+      display:inline-flex; align-items:center; gap:6px;
+      background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2);
+      border-radius:9px; padding:6px 10px 6px 12px; font-size:0.82rem;
+      color:var(--accent); font-weight:500; max-width:260px;
+    }
+    .file-chip-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+    .file-chip-size { font-size:0.7rem; color:var(--muted); flex-shrink:0; }
+    .file-chip-remove {
+      background:none; border:none; color:var(--muted); cursor:pointer; padding:2px;
+      display:flex; border-radius:4px; flex-shrink:0; line-height:1;
+    }
+    .file-chip-remove:hover { color:var(--err); }
+
+    .paste-area {
+      width:100%; min-height:140px; background:var(--card); border:1px solid var(--border);
+      border-radius:12px; padding:16px; color:var(--text); font:inherit; font-size:0.9rem;
+      resize:vertical; box-sizing:border-box; line-height:1.6; transition:border-color 0.2s;
+    }
+    .paste-area:focus { border-color:var(--primary); outline:none; }
+
+    .type-buttons { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
+    .type-btn {
+      display:inline-flex; align-items:center; gap:8px; padding:10px 18px;
+      border-radius:10px; border:1px solid var(--border); background:var(--card);
+      color:var(--muted); font:inherit; font-size:0.88rem; font-weight:500;
+      cursor:pointer; transition:all 0.2s;
+    }
+    .type-btn:hover { border-color:var(--accent); color:var(--text); }
+    .type-btn.active {
+      border-color:var(--accent); background:rgba(34,211,238,0.1); color:var(--accent);
+    }
+    .type-btn .type-icon { font-size:1.05rem; }
+
+    .num-buttons { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
+    .num-btn {
+      min-width:52px; padding:10px 16px; border-radius:10px;
+      border:1px solid var(--border); background:var(--card);
+      color:var(--muted); font:inherit; font-size:0.95rem; font-weight:600;
+      cursor:pointer; transition:all 0.2s; text-align:center;
+    }
+    .num-btn:hover { border-color:var(--accent); color:var(--text); }
+    .num-btn.active {
+      border-color:var(--accent); background:rgba(34,211,238,0.1); color:var(--accent);
+    }
+
+    .generate-btn {
+      width:100%; padding:16px 24px; border-radius:14px; border:none;
+      background:linear-gradient(135deg, var(--primary), var(--accent));
+      color:#fff; font:inherit; font-size:1.05rem; font-weight:700;
+      cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;
+      transition:all 0.3s; box-shadow:0 4px 24px rgba(34,211,238,0.2);
+    }
+    .generate-btn:hover:not(:disabled) {
+      box-shadow:0 6px 32px rgba(34,211,238,0.35); transform:translateY(-1px);
+    }
+    .generate-btn:disabled {
+      opacity:0.5; cursor:not-allowed; box-shadow:none; transform:none;
+    }
+    .generate-btn .spinner {
+      width:18px; height:18px; border:2.5px solid rgba(255,255,255,0.3);
+      border-top-color:#fff; border-radius:50%; display:inline-block;
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .error-card {
+      padding:14px 18px; border-radius:12px; margin-bottom:16px;
+      background:var(--error-bg, rgba(248,113,113,0.12)); border:1px solid rgba(248,113,113,0.3);
+      color:var(--err); font-size:0.9rem; line-height:1.5;
+    }
+
+    .create-form-spacer { margin-bottom:24px; }
+
+    @media (max-width:640px) {
+      .create-title { font-size:1.6rem; }
+      .type-buttons, .num-buttons { gap:8px; }
+      .type-btn { padding:8px 14px; font-size:0.82rem; }
+      .num-btn { padding:8px 12px; min-width:44px; }
+    }
+  </style>
+</head>
+<body class="app-shell">
+  <header class="topbar">
+    <div class="brand brand-logo"><img src="assets/quizall-logo.svg" alt="QuizAll" class="logo-glow"/></div>
+    <nav class="controls">
+      <div class="navlinks">
+        <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="create.html" class="active" data-i18n="nav.create">Create Quiz</a>
+        <a href="history.html" data-i18n="nav.history">History</a>
+        <a href="settings.html" data-i18n="nav.settings">Settings</a>
+        <a href="account.html" data-i18n="nav.account">Account</a>
+      </div>
+      <label class="control"><span data-i18n="appearance.label">Appearance</span>
+        <select id="themeSelect"><option value="auto" data-i18n="appearance.auto">System</option><option value="light" data-i18n="appearance.light">Light</option><option value="dark" data-i18n="appearance.dark">Dark</option></select>
+      </label>
+      <label class="control"><span data-i18n="language.label">Language</span>
+        <select id="langSelect"></select>
+      </label>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="create-header">
+      <h1 class="create-title">Create Quiz</h1>
+      <p class="create-subtitle">Upload study materials or paste text to generate an AI-powered quiz</p>
+    </div>
+
+    <!-- File Upload Zone -->
+    <div class="create-section-label">Upload Content</div>
+    <div id="dropzone" class="quiz-dropzone" role="button" tabindex="0" aria-label="Upload files">
+      <div class="dropzone-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <div class="dropzone-title" id="dropzoneTitle">Drop your study materials here</div>
+      <div class="dropzone-hint">PDF, DOCX, TXT, MD, CSV — up to 10 MB</div>
+      <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt,.md,.csv,.json" hidden />
+    </div>
+    <div id="fileListArea" class="file-list-area" hidden>
+      <div class="file-list-header">
+        <span class="file-count" id="fileCount"></span>
+        <button type="button" class="file-clear-btn" id="clearAllBtn">Clear all</button>
+      </div>
+      <div class="file-chips" id="fileChips"></div>
+    </div>
+
+    <!-- Text Paste -->
+    <div class="create-form-spacer">
+      <div class="create-section-label">Or paste text directly</div>
+      <textarea id="pasteArea" class="paste-area" placeholder="Paste your notes, textbook excerpts, lecture summaries..."></textarea>
+    </div>
+
+    <!-- Question Types -->
+    <div class="create-section-label">Question Types</div>
+    <div class="type-buttons" id="typeButtons">
+      <button type="button" class="type-btn active" data-type="multiple_choice">
+        <span class="type-icon">&#x25C9;</span> Multiple Choice
+      </button>
+      <button type="button" class="type-btn active" data-type="true_false">
+        <span class="type-icon">&#x2696;</span> True / False
+      </button>
+      <button type="button" class="type-btn active" data-type="fill_in_the_blank">
+        <span class="type-icon">&#x270E;</span> Fill in the Blank
+      </button>
+    </div>
+
+    <!-- Number of Questions -->
+    <div class="create-section-label">Number of Questions</div>
+    <div class="num-buttons" id="numButtons">
+      <button type="button" class="num-btn" data-num="5">5</button>
+      <button type="button" class="num-btn" data-num="8">8</button>
+      <button type="button" class="num-btn active" data-num="10">10</button>
+      <button type="button" class="num-btn" data-num="15">15</button>
+    </div>
+
+    <!-- Error Display -->
+    <div id="errorCard" class="error-card" hidden></div>
+
+    <!-- Generate Button -->
+    <button type="button" id="generateBtn" class="generate-btn" disabled>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span id="generateLabel">Generate Quiz</span>
+    </button>
+  </main>
+
+  <script>
+  (function() {
+    if (!window.authGuard || !window.authGuard.getToken()) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    var API_BASE = window.authGuard.API_BASE;
+    var files = [];
+    var selectedTypes = ['multiple_choice', 'true_false', 'fill_in_the_blank'];
+    var numQuestions = 10;
+    var isGenerating = false;
+
+    var dropzone      = document.getElementById('dropzone');
+    var fileInput      = document.getElementById('fileInput');
+    var fileListArea   = document.getElementById('fileListArea');
+    var fileChips      = document.getElementById('fileChips');
+    var fileCount      = document.getElementById('fileCount');
+    var clearAllBtn    = document.getElementById('clearAllBtn');
+    var pasteArea      = document.getElementById('pasteArea');
+    var typeButtons    = document.getElementById('typeButtons');
+    var numButtons     = document.getElementById('numButtons');
+    var generateBtn    = document.getElementById('generateBtn');
+    var generateLabel  = document.getElementById('generateLabel');
+    var errorCard      = document.getElementById('errorCard');
+    var dropzoneTitle  = document.getElementById('dropzoneTitle');
+
+    // ── Helpers ──
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function hasContent() {
+      return files.length > 0 || pasteArea.value.trim().length > 20;
+    }
+
+    function refreshUI() {
+      var has = hasContent();
+      generateBtn.disabled = !has || isGenerating || selectedTypes.length === 0;
+
+      dropzone.classList.toggle('has-files', files.length > 0);
+      dropzoneTitle.textContent = files.length > 0 ? 'Add more files' : 'Drop your study materials here';
+      fileListArea.hidden = files.length === 0;
+      fileCount.textContent = files.length + ' file' + (files.length !== 1 ? 's' : '') + ' ready';
+
+      fileChips.innerHTML = '';
+      files.forEach(function(f, i) {
+        var chip = document.createElement('span');
+        chip.className = 'file-chip';
+        chip.innerHTML =
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+          '<span class="file-chip-name">' + escapeHtml(f.name) + '</span>' +
+          '<span class="file-chip-size">' + formatSize(f.size) + '</span>' +
+          '<button type="button" class="file-chip-remove" data-idx="' + i + '" title="Remove">&times;</button>';
+        fileChips.appendChild(chip);
+      });
+    }
+
+    function escapeHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function showError(msg) {
+      errorCard.textContent = msg;
+      errorCard.hidden = false;
+    }
+
+    function clearError() {
+      errorCard.hidden = true;
+      errorCard.textContent = '';
+    }
+
+    function setLoading(loading, statusText) {
+      isGenerating = loading;
+      refreshUI();
+      if (loading) {
+        generateLabel.textContent = statusText || 'Processing...';
+        var spinner = document.createElement('span');
+        spinner.className = 'spinner';
+        generateBtn.insertBefore(spinner, generateBtn.firstChild);
+        var icon = generateBtn.querySelector('svg');
+        if (icon) icon.style.display = 'none';
+      } else {
+        generateLabel.textContent = 'Generate Quiz';
+        var sp = generateBtn.querySelector('.spinner');
+        if (sp) sp.remove();
+        var icon = generateBtn.querySelector('svg');
+        if (icon) icon.style.display = '';
+      }
+    }
+
+    function updateStatus(text) {
+      generateLabel.textContent = text;
+    }
+
+    function addFiles(newFiles) {
+      var maxSize = 10 * 1024 * 1024;
+      for (var i = 0; i < newFiles.length; i++) {
+        if (newFiles[i].size > maxSize) {
+          showError(newFiles[i].name + ' exceeds the 10 MB limit.');
+          continue;
+        }
+        files.push(newFiles[i]);
+      }
+      refreshUI();
+    }
+
+    // ── Drop zone events ──
+
+    dropzone.addEventListener('click', function() { fileInput.click(); });
+    dropzone.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+    dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
+    dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('drag-over'); });
+    dropzone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) addFiles(Array.from(e.dataTransfer.files));
+    });
+    fileInput.addEventListener('change', function() {
+      if (fileInput.files.length) addFiles(Array.from(fileInput.files));
+      fileInput.value = '';
+    });
+
+    // ── File chip removal ──
+
+    fileChips.addEventListener('click', function(e) {
+      var btn = e.target.closest('.file-chip-remove');
+      if (!btn) return;
+      var idx = parseInt(btn.getAttribute('data-idx'), 10);
+      files.splice(idx, 1);
+      refreshUI();
+    });
+
+    clearAllBtn.addEventListener('click', function() {
+      files = [];
+      refreshUI();
+    });
+
+    // ── Paste area ──
+
+    pasteArea.addEventListener('input', function() { refreshUI(); });
+
+    // ── Question type toggles ──
+
+    typeButtons.addEventListener('click', function(e) {
+      var btn = e.target.closest('.type-btn');
+      if (!btn) return;
+      var type = btn.getAttribute('data-type');
+      var idx = selectedTypes.indexOf(type);
+      if (idx > -1) {
+        if (selectedTypes.length <= 1) return;
+        selectedTypes.splice(idx, 1);
+        btn.classList.remove('active');
+      } else {
+        selectedTypes.push(type);
+        btn.classList.add('active');
+      }
+      refreshUI();
+    });
+
+    // ── Number of questions ──
+
+    numButtons.addEventListener('click', function(e) {
+      var btn = e.target.closest('.num-btn');
+      if (!btn) return;
+      numQuestions = parseInt(btn.getAttribute('data-num'), 10);
+      numButtons.querySelectorAll('.num-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+
+    // ── File text extraction ──
+
+    var pdfjsLoaded = null;
+    function loadPdfJs() {
+      if (pdfjsLoaded) return pdfjsLoaded;
+      pdfjsLoaded = new Promise(function(resolve, reject) {
+        if (window.pdfjsLib) {
+          resolve(window.pdfjsLib);
+          return;
+        }
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload = function() {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          resolve(window.pdfjsLib);
+        };
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      return pdfjsLoaded;
+    }
+
+    var mammothLoaded = null;
+    function loadMammoth() {
+      if (mammothLoaded) return mammothLoaded;
+      mammothLoaded = new Promise(function(resolve, reject) {
+        if (window.mammoth) {
+          resolve(window.mammoth);
+          return;
+        }
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+        s.onload = function() { resolve(window.mammoth); };
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      return mammothLoaded;
+    }
+
+    async function extractText(file) {
+      var ext = file.name.split('.').pop().toLowerCase();
+
+      if (ext === 'txt' || ext === 'md' || ext === 'csv' || ext === 'json') {
+        return await file.text();
+      }
+
+      if (ext === 'docx') {
+        var mam = await loadMammoth();
+        var ab = await file.arrayBuffer();
+        var result = await mam.extractRawText({ arrayBuffer: ab });
+        return result.value;
+      }
+
+      if (ext === 'pdf') {
+        try {
+          var lib = await loadPdfJs();
+          var ab = await file.arrayBuffer();
+          var pdf = await lib.getDocument({ data: ab }).promise;
+          var text = '';
+          for (var i = 1; i <= pdf.numPages; i++) {
+            var page = await pdf.getPage(i);
+            var content = await page.getTextContent();
+            text += content.items.map(function(item) { return item.str; }).join(' ') + '\n';
+          }
+          if (text.trim().length > 30) return text;
+          return '[PDF had no extractable text: ' + file.name + ']';
+        } catch (e) {
+          console.warn('PDF.js extraction failed:', e);
+          var t = await file.text();
+          var cleaned = t.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, '\n');
+          return cleaned.trim().length > 50 ? cleaned : '[Could not extract PDF: ' + file.name + ']';
+        }
+      }
+
+      return await file.text();
+    }
+
+    // ── Generate ──
+
+    generateBtn.addEventListener('click', async function() {
+      if (isGenerating || !hasContent()) return;
+      clearError();
+      setLoading(true, 'Reading files...');
+
+      try {
+        var content = pasteArea.value;
+
+        for (var fi = 0; fi < files.length; fi++) {
+          updateStatus('Extracting text from ' + files[fi].name + ' (' + (fi + 1) + '/' + files.length + ')...');
+          var t = await extractText(files[fi]);
+          content += '\n\n--- From: ' + files[fi].name + ' ---\n' + t;
+        }
+
+        if (content.trim().length < 30) {
+          throw new Error('Not enough content. Please add more text or files.');
+        }
+
+        updateStatus('Analyzing materials...');
+
+        var res = await window.authGuard.fetchWithAuth(API_BASE + '/api/quiz/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: content.trim(),
+            types: selectedTypes,
+            numQuestions: numQuestions
+          })
+        });
+
+        var data = await res.json();
+
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || 'Quiz generation failed. Please try again.');
+        }
+
+        if (!Array.isArray(data.quiz) || data.quiz.length === 0) {
+          throw new Error('No questions were generated. Try adding more content.');
+        }
+
+        updateStatus('Preparing your quiz...');
+
+        sessionStorage.setItem('quizall.currentQuiz', JSON.stringify(data));
+        window.location.href = 'quiz.html';
+
+      } catch (err) {
+        showError(err.message || 'Something went wrong. Please try again.');
+        setLoading(false);
+      }
+    });
+
+    refreshUI();
+  })();
+  </script>
+</body>
+</html>

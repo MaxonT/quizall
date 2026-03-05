@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Page Not Found - QuizAll</title>
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
+  <!-- Theme Manager - Must load before CSS -->
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .not-found-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      text-align: center;
+      padding: 20px;
+    }
+    .not-found-title {
+      font-size: 8rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+      line-height: 1;
+    }
+    .not-found-subtitle {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 1rem 0;
+      color: var(--text);
+    }
+    .not-found-desc {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 500px;
+      margin-bottom: 2rem;
+    }
+    .home-button {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      padding: 12px 32px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .home-button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body class="app-shell">
+  <div class="container not-found-container">
+    <h1 class="not-found-title">404</h1>
+    <h2 class="not-found-subtitle">Page Not Found</h2>
+    <p class="not-found-desc">
+      The prompt you are looking for seems to have drifted into the latent space.
+      Let's get you back to optimizing.
+    </p>
+    <a href="/" class="home-button">Go Back Home</a>
+  </div>
+</body>
+</html>

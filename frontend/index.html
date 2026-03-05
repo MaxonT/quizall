@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>QuizAll — Turn anything into a quiz</title>
+  <meta name="description" content="QuizAll is an AI-powered quiz platform. Turn any study material into interactive quizzes. Upload PDFs, notes, or paste text — get instant quizzes with explanations." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://quizall.app/" />
+  <meta property="og:title" content="QuizAll — Turn anything into a quiz" />
+  <meta property="og:description" content="Upload your study materials, and our AI creates interactive quizzes with explanations." />
+  <meta property="og:image" content="https://quizall.app/assets/quizall-icon.svg" />
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <script src="lib/authGuard.js"></script>
+  <script src="lib/i18next.min.js"></script>
+  <script type="module" src="i18n/index.js"></script>
+  <script type="module" src="lib/authState.js"></script>
+  <script src="lib/oauth.js"></script>
+  <style>
+    /* ============================================
+       Index Page — Landing + Dashboard
+       ============================================ */
+
+    .idx-hidden { display: none !important; }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      text-align: center;
+      padding: 5rem 2rem 3rem;
+      position: relative;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: -40% -10% auto -10%;
+      height: 80%;
+      background: radial-gradient(55% 55% at 50% 40%, rgba(139,92,246,0.22), transparent 65%);
+      filter: blur(40px);
+      pointer-events: none;
+    }
+    .hero-title {
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+      margin: 0 0 1rem;
+      position: relative;
+    }
+    .gradient-animated {
+      background: linear-gradient(270deg, var(--primary), var(--accent), #a78bfa, var(--ok), var(--accent), var(--primary));
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: gradientShift 6s ease infinite;
+    }
+    @keyframes gradientShift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+      position: relative;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+    }
+    .btn-hero:hover { transform: translateY(-2px); }
+    .btn-hero-primary {
+      background: linear-gradient(135deg, var(--primary), rgba(6,182,212,0.9));
+      color: #fff;
+      box-shadow: 0 8px 30px rgba(139,92,246,0.35);
+    }
+    .btn-hero-primary:hover {
+      box-shadow: 0 12px 40px rgba(139,92,246,0.5);
+    }
+    .btn-hero-secondary {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .btn-hero-secondary:hover {
+      border-color: rgba(139,92,246,0.5);
+      box-shadow: 0 8px 24px rgba(139,92,246,0.15);
+    }
+
+    /* ---------- How It Works ---------- */
+    .section { max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem; }
+    .section-title {
+      text-align: center;
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin: 0 0 0.5rem;
+    }
+    .section-sub {
+      text-align: center;
+      color: var(--muted);
+      margin: 0 0 2.5rem;
+      font-size: 1rem;
+    }
+    .step-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .step-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(139,92,246,0.5);
+      box-shadow: 0 16px 40px rgba(139,92,246,0.18);
+    }
+    .step-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(34,211,238,0.12));
+      border: 1px solid rgba(139,92,246,0.2);
+    }
+    .step-num {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      line-height: 28px;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: var(--primary);
+      color: #fff;
+      margin-bottom: 0.75rem;
+    }
+    .step-card h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .step-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    /* ---------- Features ---------- */
+    .feat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 1.75rem;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .feat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.3);
+    }
+    .feat-icon {
+      font-size: 1.6rem;
+      margin-bottom: 0.75rem;
+    }
+    .feat-card h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .feat-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    /* ---------- Auth Section ---------- */
+    .auth-section {
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+    .auth-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 2rem;
+    }
+    .oauth-buttons-idx {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .btn-oauth-idx {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-soft);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+    }
+    .btn-oauth-idx:hover {
+      transform: translateY(-1px);
+      border-color: rgba(139,92,246,0.45);
+      box-shadow: 0 6px 20px rgba(139,92,246,0.15);
+    }
+    .btn-oauth-idx svg { flex-shrink: 0; }
+    .oauth-divider-idx {
+      position: relative;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .oauth-divider-idx::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border) 20%, var(--border) 80%, transparent);
+    }
+    .oauth-divider-idx span {
+      position: relative;
+      display: inline-block;
+      padding: 0 14px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .auth-form { display: flex; flex-direction: column; gap: 14px; }
+    .auth-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .auth-form input {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-soft);
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .auth-form input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.18);
+    }
+    .btn-submit {
+      padding: 13px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--primary), rgba(6,182,212,0.9));
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(139,92,246,0.35);
+    }
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .auth-toggle {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .auth-toggle a {
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .auth-toggle a:hover { text-decoration: underline; }
+    .auth-message {
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .auth-message.error {
+      display: block;
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      color: var(--err);
+    }
+    .auth-message.success {
+      display: block;
+      background: rgba(45,212,191,0.1);
+      border: 1px solid rgba(45,212,191,0.3);
+      color: var(--ok);
+    }
+
+    /* ---------- Dashboard ---------- */
+    .dash { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .welcome-banner {
+      background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(34,211,238,0.1));
+      border: 1px solid rgba(139,92,246,0.25);
+      border-radius: 20px;
+      padding: 2rem 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .welcome-banner::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 50%;
+      height: 150%;
+      background: radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .welcome-name {
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin: 0 0 0.25rem;
+      position: relative;
+    }
+    .welcome-email {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 0;
+      position: relative;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .cta-card {
+      background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(34,211,238,0.08));
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 20px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cta-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(139,92,246,0.2);
+    }
+    .cta-card-icon {
+      font-size: 2rem;
+    }
+    .cta-card-text {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    /* ---------- History Table ---------- */
+    .history-section { margin-top: 2rem; }
+    .history-section h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0 0 1rem;
+    }
+    .history-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .history-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(139,92,246,0.06);
+      border-bottom: 1px solid var(--border);
+    }
+    .history-table td {
+      padding: 14px 16px;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-table tr:last-child td { border-bottom: none; }
+    .history-table tr:hover td {
+      background: rgba(139,92,246,0.04);
+    }
+    .score-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .score-badge.good {
+      background: rgba(45,212,191,0.15);
+      color: var(--ok);
+    }
+    .score-badge.mid {
+      background: rgba(251,191,36,0.15);
+      color: var(--warn);
+    }
+    .score-badge.low {
+      background: rgba(248,113,113,0.15);
+      color: var(--err);
+    }
+
+    /* ---------- Empty State ---------- */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .empty-state p {
+      color: var(--muted);
+      margin: 0 0 1.5rem;
+    }
+
+    /* ---------- Footer ---------- */
+    .idx-footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      margin-top: 4rem;
+    }
+    .idx-footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 1rem;
+    }
+    .idx-footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+    }
+    .idx-footer-links a:hover { color: var(--accent); }
+    .idx-footer-copy {
+      color: var(--muted);
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin: 0;
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 640px) {
+      .hero { padding: 3rem 1rem 2rem; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn-hero { justify-content: center; }
+      .welcome-banner { padding: 1.5rem; }
+      .welcome-name { font-size: 1.35rem; }
+      .auth-section { padding: 0 1rem 3rem; }
+    }
+  </style>
+</head>
+<body class="app-shell">
+  <header class="topbar">
+    <div class="brand brand-logo"><img src="assets/quizall-logo.svg" alt="QuizAll" class="logo-glow"/></div>
+    <nav class="controls">
+      <div class="navlinks">
+        <a href="index.html" class="active" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="create.html" data-i18n="nav.create">Create Quiz</a>
+        <a href="history.html" data-i18n="nav.history">History</a>
+        <a href="settings.html" data-i18n="nav.settings">Settings</a>
+        <a href="account.html" data-i18n="nav.account">Account</a>
+      </div>
+      <label class="control"><span data-i18n="appearance.label">Appearance</span>
+        <select id="themeSelect"><option value="auto" data-i18n="appearance.auto">System</option><option value="light" data-i18n="appearance.light">Light</option><option value="dark" data-i18n="appearance.dark">Dark</option></select>
+      </label>
+      <label class="control"><span data-i18n="language.label">Language</span>
+        <select id="langSelect"></select>
+      </label>
+    </nav>
+  </header>
+
+  <!-- ╔══════════════════════════════════════════╗
+       ║  LOGGED-OUT: Landing Page                 ║
+       ╚══════════════════════════════════════════╝ -->
+  <div id="landingView" class="idx-hidden">
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1 class="hero-title gradient-animated">Turn anything into a quiz</h1>
+      <p class="hero-sub">Upload your study materials, and our AI creates interactive quizzes with detailed explanations — instantly.</p>
+      <div class="hero-actions">
+        <a href="#authSection" class="btn-hero btn-hero-primary">Get Started Free</a>
+        <a href="#howItWorks" class="btn-hero btn-hero-secondary">Learn More ↓</a>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="section" id="howItWorks">
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-sub">Four simple steps from material to mastery</p>
+      <div class="grid grid-4">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <h3>Upload</h3>
+          <p>Upload your study materials — PDF, DOCX, TXT, or paste text directly</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2a9 9 0 019 9c0 3.87-3.13 7-7 7h-2v4l-4-4a9 9 0 01-5-8 9 9 0 019-9z"/><circle cx="12" cy="11" r="1"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/></svg>
+          </div>
+          <h3>Analyze</h3>
+          <p>AI analyzes content, extracts key concepts and topics automatically</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </div>
+          <h3>Quiz</h3>
+          <p>Take interactive quizzes with multiple question types and formats</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <h3>Review</h3>
+          <p>Review results with detailed explanations and track your progress</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section">
+      <h2 class="section-title">Why QuizAll?</h2>
+      <p class="section-sub">Built for learners who want to study smarter</p>
+      <div class="grid grid-2">
+        <div class="feat-card">
+          <div class="feat-icon">⚡</div>
+          <h3>Instant Generation</h3>
+          <p>Upload any document and get a complete quiz in seconds — no manual question writing needed.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🧠</div>
+          <h3>AI-Powered Explanations</h3>
+          <p>Every answer comes with a detailed explanation so you truly understand the material.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">📊</div>
+          <h3>Progress Tracking</h3>
+          <p>Monitor your scores over time, identify weak areas, and focus your study sessions.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">📄</div>
+          <h3>Multiple Formats</h3>
+          <p>Supports PDF, DOCX, TXT files and direct text paste — works with any study material.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Auth Forms -->
+    <section class="auth-section" id="authSection">
+      <div class="auth-card">
+        <div id="authMessage" class="auth-message"></div>
+
+        <div class="oauth-buttons-idx">
+          <button type="button" class="btn-oauth-idx" id="googleLoginBtn">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.20454Z" fill="#4285F4"/>
+              <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
+              <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40681 3.78409 7.83 3.96409 7.29V4.95818H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
+              <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95818L3.96409 7.29C4.67182 5.16273 6.65454 3.57955 9 3.57955Z" fill="#EA4335"/>
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+          <button type="button" class="btn-oauth-idx" id="githubLoginBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            <span>Continue with GitHub</span>
+          </button>
+        </div>
+
+        <div class="oauth-divider-idx"><span>or</span></div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="auth-form">
+          <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Sign in</h3>
+          <label>
+            Email
+            <input type="email" name="loginEmail" autocomplete="email" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="loginPassword" autocomplete="current-password" required minlength="8" />
+          </label>
+          <button type="submit" class="btn-submit">Login</button>
+        </form>
+
+        <!-- Register Form (hidden by default) -->
+        <form id="registerForm" class="auth-form idx-hidden">
+          <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Create account</h3>
+          <label>
+            Email
+            <input type="email" name="registerEmail" autocomplete="email" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="registerPassword" autocomplete="new-password" required minlength="8" />
+          </label>
+          <button type="submit" class="btn-submit">Register</button>
+        </form>
+
+        <div class="auth-toggle" id="authToggle">
+          Don't have an account? <a id="toggleToRegister">Sign up</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ╔══════════════════════════════════════════╗
+       ║  LOGGED-IN: Dashboard                     ║
+       ╚══════════════════════════════════════════╝ -->
+  <div id="dashboardView" class="idx-hidden">
+    <div class="dash">
+
+      <!-- Welcome Banner -->
+      <div class="welcome-banner">
+        <h1 class="welcome-name" id="welcomeName">Welcome back!</h1>
+        <p class="welcome-email" id="welcomeEmail"></p>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-4" id="statsGrid">
+        <div class="stat-card">
+          <span class="stat-label">Total Quizzes</span>
+          <span class="stat-value" id="statQuizzes">–</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Average Score</span>
+          <span class="stat-value" id="statAvg">–</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Questions Answered</span>
+          <span class="stat-value" id="statQuestions">–</span>
+        </div>
+        <a href="create.html" class="cta-card">
+          <span class="cta-card-icon">✨</span>
+          <span class="cta-card-text">Create New Quiz</span>
+        </a>
+      </div>
+
+      <!-- Recent History -->
+      <div class="history-section" id="historySection">
+        <h2>Recent Quizzes</h2>
+        <div id="historyContent"></div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state idx-hidden" id="emptyState">
+        <div class="empty-icon">📝</div>
+        <h3>No quizzes yet</h3>
+        <p>Create your first quiz and start learning smarter!</p>
+        <a href="create.html" class="btn-hero btn-hero-primary" style="display:inline-flex;">Create Your First Quiz</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="idx-footer">
+    <div class="idx-footer-links">
+      <a href="terms.html" data-i18n="footer.terms">Terms</a>
+      <a href="privacy.html" data-i18n="footer.privacy">Privacy</a>
+      <a href="mailto:support@quizall.app" data-i18n="footer.contact">Contact</a>
+    </div>
+    <p class="idx-footer-copy">&copy; 2026 QuizAll. All rights reserved.</p>
+  </footer>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="core.js"></script>
+  <script>
+  (function () {
+    const API_BASE = window.authGuard ? window.authGuard.API_BASE : (window.QUIZALL_API_BASE || "http://localhost:8080");
+    const TOKEN_KEY = "quizall.token";
+
+    const $landing    = document.getElementById("landingView");
+    const $dashboard  = document.getElementById("dashboardView");
+    const $loginForm  = document.getElementById("loginForm");
+    const $regForm    = document.getElementById("registerForm");
+    const $authMsg    = document.getElementById("authMessage");
+    const $toggle     = document.getElementById("authToggle");
+    const $toRegister = document.getElementById("toggleToRegister");
+
+    // ─── View Toggle ───────────────────────────
+    function isLoggedIn() {
+      return !!localStorage.getItem(TOKEN_KEY);
+    }
+
+    function showView() {
+      if (isLoggedIn()) {
+        $landing.classList.add("idx-hidden");
+        $dashboard.classList.remove("idx-hidden");
+        loadDashboard();
+      } else {
+        $landing.classList.remove("idx-hidden");
+        $dashboard.classList.add("idx-hidden");
+      }
+    }
+
+    // ─── OAuth Callback ────────────────────────
+    function handleOAuthCallback() {
+      const params = new URLSearchParams(window.location.search);
+      const token  = params.get("oauth_token");
+      const ok     = params.get("oauth_success");
+      const err    = params.get("oauth_error");
+
+      if (err) {
+        showAuthMsg(decodeURIComponent(err), "error");
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+      if (ok === "true" && token) {
+        localStorage.setItem(TOKEN_KEY, token);
+        window.dispatchEvent(new CustomEvent("authStateChanged"));
+        window.history.replaceState({}, document.title, window.location.pathname);
+        showView();
+      }
+    }
+
+    if (window.location.search.includes("oauth_token") || window.location.search.includes("oauth_error")) {
+      handleOAuthCallback();
+    }
+
+    // ─── Auth Message ──────────────────────────
+    function showAuthMsg(text, type) {
+      $authMsg.textContent = text;
+      $authMsg.className = "auth-message " + type;
+    }
+    function clearAuthMsg() {
+      $authMsg.textContent = "";
+      $authMsg.className = "auth-message";
+    }
+
+    // ─── Toast ─────────────────────────────────
+    function toast(msg, type) {
+      if (window.showToast) { window.showToast(msg, type); return; }
+      const c = document.getElementById("toastContainer");
+      if (!c) return;
+      const el = document.createElement("div");
+      el.className = "toast " + (type || "");
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    // ─── Login / Register Toggle ───────────────
+    let isRegMode = false;
+    $toRegister.addEventListener("click", function (e) {
+      e.preventDefault();
+      isRegMode = !isRegMode;
+      clearAuthMsg();
+      if (isRegMode) {
+        $loginForm.classList.add("idx-hidden");
+        $regForm.classList.remove("idx-hidden");
+        $toggle.innerHTML = 'Already have an account? <a id="toggleToRegister">Sign in</a>';
+      } else {
+        $loginForm.classList.remove("idx-hidden");
+        $regForm.classList.add("idx-hidden");
+        $toggle.innerHTML = 'Don\'t have an account? <a id="toggleToRegister">Sign up</a>';
+      }
+      document.getElementById("toggleToRegister").addEventListener("click", arguments.callee.bind(this));
+    });
+
+    // ─── Login ─────────────────────────────────
+    $loginForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      clearAuthMsg();
+      const fd    = new FormData(this);
+      const email = fd.get("loginEmail");
+      const pass  = fd.get("loginPassword");
+      const btn   = this.querySelector("button[type=submit]");
+      btn.disabled = true;
+      btn.textContent = "Signing in…";
+
+      try {
+        const res  = await fetch(API_BASE + "/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password: pass })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.token) throw new Error(data.error || "Login failed");
+        localStorage.setItem(TOKEN_KEY, data.token);
+        window.dispatchEvent(new CustomEvent("authStateChanged"));
+        showView();
+      } catch (err) {
+        showAuthMsg(err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Login";
+      }
+    });
+
+    // ─── Register ──────────────────────────────
+    $regForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      clearAuthMsg();
+      const fd    = new FormData(this);
+      const email = fd.get("registerEmail");
+      const pass  = fd.get("registerPassword");
+      const btn   = this.querySelector("button[type=submit]");
+      btn.disabled = true;
+      btn.textContent = "Creating account…";
+
+      try {
+        const res  = await fetch(API_BASE + "/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password: pass })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Registration failed");
+        if (data.token) {
+          localStorage.setItem(TOKEN_KEY, data.token);
+          window.dispatchEvent(new CustomEvent("authStateChanged"));
+          showView();
+        } else {
+          showAuthMsg("Account created! Please sign in.", "success");
+          isRegMode = false;
+          $loginForm.classList.remove("idx-hidden");
+          $regForm.classList.add("idx-hidden");
+          $toggle.innerHTML = 'Don\'t have an account? <a id="toggleToRegister">Sign up</a>';
+        }
+      } catch (err) {
+        showAuthMsg(err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Register";
+      }
+    });
+
+    // ─── OAuth Buttons ─────────────────────────
+    var googleBtn = document.getElementById("googleLoginBtn");
+    var githubBtn = document.getElementById("githubLoginBtn");
+    if (googleBtn) googleBtn.addEventListener("click", function () {
+      if (window.oauth) window.oauth.signInWithGoogle();
+    });
+    if (githubBtn) githubBtn.addEventListener("click", function () {
+      if (window.oauth) window.oauth.signInWithGitHub();
+    });
+
+    // ─── Dashboard ─────────────────────────────
+    async function loadDashboard() {
+      var token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return;
+
+      // Decode JWT payload for display name/email
+      try {
+        var payload = JSON.parse(atob(token.split(".")[1]));
+        var name  = payload.name || payload.email || "User";
+        var email = payload.email || "";
+        document.getElementById("welcomeName").textContent = "Welcome back, " + name + "!";
+        document.getElementById("welcomeEmail").textContent = email;
+      } catch (_) {}
+
+      // Fetch history
+      try {
+        var res = await fetch(API_BASE + "/api/quiz/history?limit=5", {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (res.status === 401) {
+          localStorage.removeItem(TOKEN_KEY);
+          window.dispatchEvent(new CustomEvent("authStateChanged"));
+          showView();
+          return;
+        }
+        var data = await res.json();
+        var quizzes = Array.isArray(data) ? data : (data.quizzes || data.history || []);
+
+        if (!quizzes.length) {
+          document.getElementById("historySection").classList.add("idx-hidden");
+          document.getElementById("emptyState").classList.remove("idx-hidden");
+          document.getElementById("statQuizzes").textContent = "0";
+          document.getElementById("statAvg").textContent = "–";
+          document.getElementById("statQuestions").textContent = "0";
+          return;
+        }
+
+        document.getElementById("historySection").classList.remove("idx-hidden");
+        document.getElementById("emptyState").classList.add("idx-hidden");
+
+        // Stats
+        var totalQ      = quizzes.length;
+        var totalQs     = 0;
+        var totalScore  = 0;
+        var scored      = 0;
+        quizzes.forEach(function (q) {
+          var qs = q.total_questions || q.totalQuestions || 0;
+          totalQs += qs;
+          var sc = q.score != null ? q.score : (q.percentage != null ? q.percentage : null);
+          if (sc != null) { totalScore += sc; scored++; }
+        });
+        document.getElementById("statQuizzes").textContent = totalQ;
+        document.getElementById("statAvg").textContent = scored ? Math.round(totalScore / scored) + "%" : "–";
+        document.getElementById("statQuestions").textContent = totalQs;
+
+        // Table
+        var html = '<table class="history-table"><thead><tr><th>Subject</th><th>Score</th><th>Questions</th><th>Date</th></tr></thead><tbody>';
+        quizzes.forEach(function (q) {
+          var subj  = q.subject || q.title || q.topic || "Quiz";
+          var sc    = q.score != null ? q.score : (q.percentage != null ? q.percentage : null);
+          var qs    = q.total_questions || q.totalQuestions || "–";
+          var date  = q.created_at || q.createdAt || q.date || "";
+          var cls   = "mid";
+          if (sc != null) {
+            if (sc >= 80) cls = "good";
+            else if (sc < 50) cls = "low";
+          }
+          var scText = sc != null ? sc + "%" : "–";
+          var dateText = date ? new Date(date).toLocaleDateString() : "–";
+          html += '<tr><td>' + escHtml(subj) + '</td><td><span class="score-badge ' + cls + '">' + scText + '</span></td><td>' + qs + '</td><td>' + dateText + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById("historyContent").innerHTML = html;
+      } catch (err) {
+        console.warn("[index] Failed to load dashboard:", err);
+        document.getElementById("historySection").classList.add("idx-hidden");
+        document.getElementById("emptyState").classList.remove("idx-hidden");
+        document.getElementById("statQuizzes").textContent = "–";
+        document.getElementById("statAvg").textContent = "–";
+        document.getElementById("statQuestions").textContent = "–";
+      }
+    }
+
+    function escHtml(s) {
+      var d = document.createElement("div");
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // ─── Auth State Listener ───────────────────
+    window.addEventListener("authStateChanged", showView);
+    window.addEventListener("storage", function (e) {
+      if (e.key === TOKEN_KEY) showView();
+    });
+
+    // ─── Init ──────────────────────────────────
+    showView();
+  })();
+  </script>
+</body>
+</html>

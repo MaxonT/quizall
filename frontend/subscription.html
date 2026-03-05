@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>QuizAll Pricing & Plans — AI Quiz Generation for Everyone</title>
+  <!-- SEO -->
+  <meta name="description" content="Choose the QuizAll plan that fits you. Get unlimited AI quiz generation, Question Wizard access, and Quiz Enhancer with our flexible subscription options." />
+  <meta name="keywords" content="QuizAll pricing, AI quiz tool plans, quiz generation subscription, LLM tool pricing" />
+  <link rel="canonical" href="https://quizall.app/subscription.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://quizall.app/subscription.html" />
+  <meta property="og:title" content="QuizAll Pricing & Plans" />
+  <meta property="og:description" content="Choose the QuizAll plan that fits you. Unlimited AI quiz generation with flexible pricing." />
+  <meta property="og:image" content="https://quizall.app/assets/quizall-icon.svg" />
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml"/>
+  <!-- 主题初始化脚本 - 必须在所有 CSS 前加载 -->
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="subscription.css" />
+  <script src="config.js"></script>
+  <script src="lib/authGuard.js"></script>
+  <script src="lib/i18next.min.js"></script>
+  <script type="module" src="i18n/index.js"></script>
+</head>
+<body class="subscription-body">
+  <!-- Navigation Header -->
+  <header class="nav-header">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <img src="assets/quizall-icon.svg" alt="QuizAll" class="nav-logo-icon" />
+        <span class="nav-logo-text">QuizAll</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="create.html" data-i18n="nav.create">Create Quiz</a>
+        <a href="history.html" data-i18n="nav.history">History</a>
+        <a href="subscription.html" class="active" data-i18n="nav.subscription">Subscription</a>
+        <a href="settings.html" data-i18n="nav.settings">Settings</a>
+        <a href="account.html" data-i18n="nav.account">Account</a>
+      </nav>
+      <div class="nav-actions">
+        <button id="themeToggle" class="btn btn-icon" title="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <select id="langSelect" class="lang-select">
+          <option value="en">EN</option>
+          <option value="zh-CN">中文</option>
+          <option value="es">ES</option>
+          <option value="fr">FR</option>
+          <option value="ja">JP</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="subscription-page">
+    <!-- Hero Section -->
+    <section class="pricing-hero">
+      <h1 class="gradient-animated" data-i18n="subscription.title">Choose Your Plan</h1>
+      <p class="hero-subtitle" data-i18n="subscription.subtitle">
+        Unlock the full power of AI-powered prompt engineering
+      </p>
+    </section>
+
+    <!-- Trial Banner -->
+    <section id="trialBanner" class="trial-banner hidden">
+      <div class="trial-content">
+        <div class="trial-icon">🎉</div>
+        <div class="trial-text">
+          <h3 data-i18n="subscription.trial_title">Start Your 14-Day Free Trial</h3>
+          <p data-i18n="subscription.trial_description">
+            No credit card required. Full access to all features.
+          </p>
+        </div>
+        <button id="startTrialBtn" class="btn btn-primary btn-lg" data-i18n="subscription.start_trial">
+          Start Free Trial
+        </button>
+      </div>
+    </section>
+
+    <!-- Pricing Cards -->
+    <section class="pricing-section">
+      <div class="billing-toggle">
+        <button id="monthlyToggle" class="toggle-btn active" data-i18n="subscription.monthly">Monthly</button>
+        <button id="yearlyToggle" class="toggle-btn" data-i18n="subscription.yearly">Yearly</button>
+        <span class="save-badge" data-i18n="subscription.save_badge">Save 22%</span>
+      </div>
+
+      <div class="pricing-cards">
+        <!-- Free Plan -->
+        <div class="pricing-card" data-plan="free">
+          <div class="card-header">
+            <h2 class="plan-name" data-i18n="subscription.plan_free">Free</h2>
+            <div class="plan-price">
+              <span class="amount" data-i18n="subscription.plan_free">Free</span>
+            </div>
+          </div>
+          <ul class="plan-features">
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_free_optimization">Prompt optimization 8 times/day</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_free_optimization_mode">Standard/Fast modes only</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_free_wizard">Question Wizard 5 times/day</span></li>
+          </ul>
+          <button class="btn btn-secondary btn-block subscribe-btn" data-plan="free" data-i18n="subscription.current_plan">
+            Current Plan
+          </button>
+        </div>
+
+        <!-- Monthly Plan -->
+        <div class="pricing-card" data-plan="monthly">
+          <div class="card-header">
+            <h2 class="plan-name" data-i18n="subscription.plan_monthly">Monthly</h2>
+            <div class="plan-price">
+              <span class="currency">$</span>
+              <span class="amount">9</span>
+              <span class="period" data-i18n="subscription.per_month">/month</span>
+            </div>
+          </div>
+          <ul class="plan-features">
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_full_access">Full access to all features</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_daily_prompt_optimizations">50 prompt optimizations per day</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_daily_question_wizard">30 question-wizard sessions per day</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_priority_support">Priority support</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_cancel_anytime">Cancel anytime</span></li>
+          </ul>
+          <button class="btn btn-primary btn-block subscribe-btn" data-plan="monthly" data-i18n="subscription.subscribe">
+            Subscribe
+          </button>
+        </div>
+
+        <!-- Yearly Plan (Featured) -->
+        <div class="pricing-card featured" data-plan="yearly">
+          <div class="featured-badge" data-i18n="subscription.best_value">Best Value</div>
+          <div class="card-header">
+            <h2 class="plan-name" data-i18n="subscription.plan_yearly">Annual</h2>
+            <div class="plan-price">
+              <span class="currency">$</span>
+              <span class="amount">84</span>
+              <span class="period" data-i18n="subscription.per_year">/year</span>
+            </div>
+            <div class="monthly-equivalent">
+              <span data-i18n="subscription.equivalent_to">Equivalent to</span> $7<span data-i18n="subscription.per_month">/month</span>
+            </div>
+          </div>
+          <ul class="plan-features">
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_full_access">Full access to all features</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_daily_prompt_optimizations">50 prompt optimizations per day</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_daily_question_wizard">30 question-wizard sessions per day</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_priority_support">Priority support</span></li>
+            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_save">Save $24/year</span></li>
+          </ul>
+          <button class="btn btn-primary btn-block subscribe-btn" data-plan="yearly" data-i18n="subscription.subscribe">
+            Subscribe
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="usage-explanation">
+      <h2 data-i18n="subscription.usage_title">Daily usage limits</h2>
+      <div class="usage-cards">
+        <div class="usage-card">
+          <div class="usage-icon">🎯</div>
+          <h3 data-i18n="subscription.usage_prompt_title">What counts as a Prompt optimization?</h3>
+          <p data-i18n="subscription.usage_prompt_desc">
+            Each time you run an optimization counts as 1.
+          </p>
+        </div>
+        <div class="usage-card">
+          <div class="usage-icon">🧩</div>
+          <h3 data-i18n="subscription.usage_wizard_title">What counts as a Question-wizard session?</h3>
+          <p data-i18n="subscription.usage_wizard_desc">
+            Starting a new wizard session counts toward the daily limit.
+          </p>
+        </div>
+        <div class="usage-card">
+          <div class="usage-icon">🔄</div>
+          <h3 data-i18n="subscription.usage_reset_title">When do limits reset?</h3>
+          <p data-i18n="subscription.usage_reset_desc">
+            Limits reset daily at 00:00 in your timezone.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+      <h2 data-i18n="subscription.faq_title">Frequently Asked Questions</h2>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary data-i18n="subscription.faq_cancel_q">Can I cancel anytime?</summary>
+          <p data-i18n="subscription.faq_cancel_a">
+            Yes! You can cancel your subscription at any time. Your access will continue
+            until the end of your current billing period.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="subscription.faq_trial_q">What happens after my trial?</summary>
+          <p data-i18n="subscription.faq_trial_a">
+            After your 14-day trial ends, you can subscribe to continue using QuizAll.
+            You won't be charged automatically.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="subscription.faq_limits_q">How do daily limits work?</summary>
+          <p data-i18n="subscription.faq_limits_a">
+            Your daily limits reset at 00:00 in your timezone. Both Monthly and Annual plans include the same daily limits.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="subscription.faq_payment_q">What payment methods do you accept?</summary>
+          <p data-i18n="subscription.faq_payment_a">
+            We accept all major credit cards through Stripe's secure payment platform.
+            We never store your card details.
+          </p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="terms.html" data-i18n="footer.terms">Terms</a>
+        <a href="privacy.html" data-i18n="footer.privacy">Privacy</a>
+        <a href="mailto:support@quizall.app" data-i18n="footer.contact">Contact</a>
+      </div>
+      <p class="footer-copyright">© 2026 QuizAll. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p data-i18n="common.loading">Loading...</p>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div id="betaModal" class="beta-modal hidden" role="dialog" aria-modal="true" aria-labelledby="betaModalTitle">
+    <div class="beta-modal-content">
+      <button class="beta-modal-close" aria-label="Close">&times;</button>
+      <h2 id="betaModalTitle" data-i18n="subscription.beta_modal_title">Beta</h2>
+      <p id="betaModalMessage" data-i18n="subscription.beta_modal_message">
+        Subscriptions and trials are not available yet. Coming soon.
+      </p>
+      <div class="beta-modal-actions">
+        <button id="betaModalOk" class="btn btn-primary" type="button" data-i18n="subscription.beta_modal_ok">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="auth-modal hidden">
+    <div class="auth-modal-content">
+      <button class="auth-modal-close" aria-label="Close">&times;</button>
+      <div class="auth-modal-header">
+        <h2 id="authModalTitle" data-i18n="subscription.auth_required">Sign In Required</h2>
+        <p id="authModalMessage" data-i18n="subscription.auth_message">
+          Please sign in or create an account to continue with your subscription.
+        </p>
+      </div>
+      
+      <!-- Progress Stepper -->
+      <div class="checkout-stepper">
+        <div class="step" data-step="auth">
+          <div class="step-icon">1</div>
+          <span class="step-label" data-i18n="subscription.step_auth">Sign In</span>
+        </div>
+        <div class="step" data-step="checkout">
+          <div class="step-icon">2</div>
+          <span class="step-label" data-i18n="subscription.step_checkout">Checkout</span>
+        </div>
+        <div class="step" data-step="confirm">
+          <div class="step-icon">3</div>
+          <span class="step-label" data-i18n="subscription.step_confirm">Confirm</span>
+        </div>
+      </div>
+      
+      <!-- Auth Forms -->
+      <div class="auth-forms">
+        <div class="auth-toggle">
+          <button id="showLoginBtn" class="auth-toggle-btn active" data-i18n="subscription.sign_in">Sign In</button>
+          <button id="showRegisterBtn" class="auth-toggle-btn" data-i18n="subscription.create_account">Create Account</button>
+        </div>
+        
+        <!-- Auth Message -->
+        <div id="authMessage" class="auth-message"></div>
+        
+        <!-- OAuth Buttons -->
+        <div class="oauth-buttons-auth">
+          <button type="button" class="btn-oauth-auth btn-google-auth" id="googleSignInBtnAuth">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.20454Z" fill="#4285F4"/>
+              <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
+              <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40681 3.78409 7.83 3.96409 7.29V4.95818H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
+              <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95818L3.96409 7.29C4.67182 5.16273 6.65454 3.57955 9 3.57955Z" fill="#EA4335"/>
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+          <button type="button" class="btn-oauth-auth btn-github-auth" id="githubSignInBtnAuth">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            <span>Continue with GitHub</span>
+          </button>
+        </div>
+        <div class="auth-divider">
+          <span>or</span>
+        </div>
+        
+        <!-- Login Form -->
+        <form id="loginForm" class="auth-form">
+          <div class="form-group">
+            <label for="loginEmail" data-i18n="subscription.email">Email</label>
+            <input type="email" id="loginEmail" name="loginEmail" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword" data-i18n="subscription.password">Password</label>
+            <input type="password" id="loginPassword" name="loginPassword" required autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" data-i18n="subscription.sign_in">
+            Sign In
+          </button>
+        </form>
+        
+        <!-- Register Form -->
+        <form id="registerForm" class="auth-form hidden">
+          <div class="form-group">
+            <label for="registerEmail" data-i18n="subscription.email">Email</label>
+            <input type="email" id="registerEmail" name="registerEmail" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="registerPassword" data-i18n="subscription.password">Password</label>
+            <input type="password" id="registerPassword" name="registerPassword" required autocomplete="new-password" />
+          </div>
+          <div class="form-group">
+            <label for="registerConfirm" data-i18n="subscription.confirm_password">Confirm Password</label>
+            <input type="password" id="registerConfirm" name="registerConfirm" required autocomplete="new-password" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" data-i18n="subscription.create_account">
+            Create Account
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="lib/subscriptionStateMachine.js"></script>
+  <script type="module" src="lib/analytics.js"></script>
+  <script type="module" src="lib/oauth.js"></script>
+  <script type="module" src="subscription.js"></script>
+  <script src="lib/redeemBubble.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: quizall-backend
+    runtime: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: quizall-db
+          property: connectionString
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: SUBSCRIPTIONS_ENABLED
+        value: "false"
+    healthCheckPath: /api/health
+
+  - type: web
+    name: quizall-frontend
+    runtime: static
+    plan: free
+    buildCommand: echo "Static site - no build needed"
+    staticPublishPath: frontend
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /404.html
+
+databases:
+  - name: quizall-db
+    plan: free
+    databaseName: quizall

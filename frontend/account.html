@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>Account - QuizAll</title>
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml"/>
+  <!-- Theme Manager - Must load before CSS -->
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="account.css" />
+  <script src="config.js"></script>
+  <script src="lib/authGuard.js"></script>
+  <script src="lib/i18next.min.js"></script>
+  <script type="module" src="i18n/index.js"></script>
+  <script type="module" src="lib/authState.js"></script>
+  <script src="lib/oauth.js"></script>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header class="nav-header">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <img src="assets/quizall-icon.svg" alt="QuizAll" class="nav-logo-icon" />
+        <span class="nav-logo-text">QuizAll</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="create.html" data-i18n="nav.create">Create Quiz</a>
+        <a href="history.html" data-i18n="nav.history">History</a>
+        <a href="settings.html" data-i18n="nav.settings">Settings</a>
+        <a href="account.html" class="active" data-i18n="nav.account">Account</a>
+      </nav>
+      <div class="nav-actions">
+        <button id="themeToggle" class="btn btn-icon" title="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <select id="langSelect" class="lang-select">
+          <option value="en">EN</option>
+          <option value="zh-CN">中文</option>
+          <option value="es">ES</option>
+          <option value="fr">FR</option>
+          <option value="ja">JP</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="account-page">
+    <!-- Login Required Notice (shown if not logged in) -->
+    <section id="loginRequired" class="login-required hidden">
+      <div class="login-card">
+        <h2 data-i18n="account.login_required">Login Required</h2>
+        <p data-i18n="account.login_required_desc">Please log in to view your account details.</p>
+        
+        <!-- OAuth Buttons -->
+        <div class="oauth-buttons-account">
+          <button type="button" class="btn-oauth-account btn-google-account" id="googleLoginBtnAccount">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.20454Z" fill="#4285F4"/>
+              <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
+              <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40681 3.78409 7.83 3.96409 7.29V4.95818H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
+              <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95818L3.96409 7.29C4.67182 5.16273 6.65454 3.57955 9 3.57955Z" fill="#EA4335"/>
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+          <button type="button" class="btn-oauth-account btn-github-account" id="githubLoginBtnAccount">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            <span>Continue with GitHub</span>
+          </button>
+        </div>
+        
+        <div class="oauth-divider-account">
+          <span>or</span>
+        </div>
+        
+        <a href="settings.html#accountPanel" class="btn btn-primary" data-i18n="account.email_login">Email Login</a>
+      </div>
+    </section>
+
+    <!-- Account Content (shown if logged in) -->
+    <section id="accountContent" class="account-content hidden">
+      <h1 class="page-title" data-i18n="account.title">My Account</h1>
+
+      <!-- Subscription Card -->
+      <div class="account-card">
+        <div class="card-header">
+          <h2 data-i18n="account.subscription">Subscription</h2>
+          <span id="subscriptionStatus" class="status-badge">--</span>
+        </div>
+        <div class="card-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label" data-i18n="account.plan">Plan</span>
+              <span id="planName" class="info-value">--</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label" data-i18n="account.period_end">Period End</span>
+              <span id="periodEnd" class="info-value">--</span>
+            </div>
+            <div class="info-item" id="trialEndItem" style="display: none;">
+              <span class="info-label" data-i18n="account.trial_ends">Trial Ends</span>
+              <span id="trialEnd" class="info-value">--</span>
+            </div>
+            <div class="info-item" id="cancelNotice" style="display: none;">
+              <span class="cancel-notice" data-i18n="account.cancel_notice">
+                Your subscription will end at the period end date.
+              </span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button id="manageSubscriptionBtn" class="btn btn-primary" data-i18n="account.manage_subscription">
+              Manage Subscription
+            </button>
+            <a href="subscription.html" class="btn btn-secondary" data-i18n="account.view_plans">
+              View Plans
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Usage Limits Card -->
+      <div class="account-card">
+        <div class="card-header">
+          <h2 data-i18n="account.usage_limits">Usage limits</h2>
+        </div>
+        <div class="card-body">
+          <div class="usage-limits-grid">
+            <div class="usage-limit-item">
+              <span class="usage-limit-label" data-i18n="account.prompt_optimizations_today">Prompt optimizations today</span>
+              <span id="promptUsageToday" class="usage-limit-value">--</span>
+            </div>
+            <div class="usage-limit-item">
+              <span class="usage-limit-label" data-i18n="account.question_wizard_today">Question-wizard sessions today</span>
+              <span id="wizardUsageToday" class="usage-limit-value">--</span>
+            </div>
+            <div class="usage-limit-note" id="dailyResetNote" data-i18n="account.daily_reset_note">Resets daily at 00:00 in your timezone</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Info Card -->
+      <div class="account-card">
+        <div class="card-header">
+          <h2 data-i18n="account.account_info">Account Information</h2>
+        </div>
+        <div class="card-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label" data-i18n="account.email">Email</span>
+              <span id="userEmail" class="info-value">--</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label" data-i18n="account.member_since">Member Since</span>
+              <span id="memberSince" class="info-value">--</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button id="logoutBtn" class="btn btn-danger" data-i18n="account.logout">
+              Log Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="terms.html" data-i18n="footer.terms">Terms</a>
+        <a href="privacy.html" data-i18n="footer.privacy">Privacy</a>
+        <a href="mailto:support@quizall.app" data-i18n="footer.contact">Contact</a>
+      </div>
+      <p class="footer-copyright">© 2026 QuizAll. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p data-i18n="common.loading">Loading...</p>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script type="module" src="account.js"></script>
+</body>
+</html>

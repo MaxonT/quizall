@@ -1,0 +1,234 @@
+/**
+ * ========================================================================
+ * QuizAll Global Theme System
+ * v0.6.8.3 - Complete Light/Dark Mode Support
+ * ========================================================================
+ * 
+ * 原则:
+ * 1. 深浅色是两套完整的视觉状态
+ * 2. 用语义token，不用硬编码色值
+ * 3. 对比度是第一原则
+ * 4. 组件身份唯一
+ * 5. 全局优先于局部
+ */
+
+:root {
+  /* === Base Colors === */
+  --bg: #050814;
+  --bg-soft: #0b1024;
+  --card: #0f162e;
+  --text: #eef3ff;
+  --text-secondary: #c8d5f0;
+  --muted: #93a0c0;
+  
+  /* === Surface Colors (for cards, panels, modals) === */
+  --surface: rgba(15, 23, 42, 0.95);
+  --surface-light: rgba(15, 23, 42, 0.78);
+  --surface-lighter: rgba(15, 23, 42, 0.6);
+  --surface-hover: rgba(20, 30, 55, 0.95);
+  --surface-active: rgba(25, 35, 65, 0.98);
+  
+  /* === Border Colors === */
+  --border: #202a46;
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-lighter: rgba(255, 255, 255, 0.04);
+  --border-hover: rgba(124, 58, 237, 0.5);
+  
+  /* === Interactive Colors === */
+  --primary: #8b5cf6;
+  --primary-hover: #7c3aed;
+  --primary-active: #6d28d9;
+  --accent: #22d3ee;
+  --accent-hover: #06b6d4;
+  
+  /* === Status Colors === */
+  --ok: #2dd4bf;
+  --warn: #fbbf24;
+  --err: #f87171;
+  
+  /* === Status Background/Text Colors === */
+  --success-bg: rgba(45, 212, 191, 0.15);
+  --success-color: #2dd4bf;
+  --error-bg: rgba(248, 113, 113, 0.15);
+  --error-color: #f87171;
+  --info-bg: rgba(34, 211, 238, 0.15);
+  --info-color: #22d3ee;
+  
+  /* === Legacy Aliases (for compatibility) === */
+  --bg-primary: var(--bg);
+  --bg-secondary: var(--bg-soft);
+  --border-color: var(--border);
+  
+  /* === Input/Form Colors === */
+  --input-bg: rgba(15, 23, 42, 0.9);
+  --input-border: rgba(148, 163, 184, 0.7);
+  --input-border-focus: rgba(124, 58, 237, 0.8);
+  --input-text: #eef3ff;
+  --input-placeholder: rgba(147, 160, 192, 0.6);
+  
+  /* === Overlay Colors === */
+  --overlay: rgba(5, 8, 20, 0.85);
+  --backdrop: rgba(0, 0, 0, 0.5);
+  
+  /* === Shadow === */
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --glow: 0 0 0 1px rgba(139, 92, 246, 0.5), 0 18px 50px rgba(74, 35, 148, 0.55);
+  
+  /* === Brand Gradient === */
+  --brand-1: #7C3AED;
+  --brand-2: #06B6D4;
+  --brand-3: #22D3EE;
+  --brand-4: #4ADE80;
+  --brand-5: #F59E0B;
+}
+
+[data-theme="light"] {
+  /* === Base Colors === */
+  --bg: #f6f8fb;
+  --bg-soft: #ffffff;
+  --card: #ffffff;
+  --text: #05070c;
+  --text-secondary: #1e293b;
+  --muted: #64748b;
+  
+  /* === Surface Colors === */
+  --surface: rgba(255, 255, 255, 0.95);
+  --surface-light: rgba(248, 250, 252, 0.95);
+  --surface-lighter: rgba(241, 245, 249, 0.9);
+  --surface-hover: rgba(241, 245, 249, 1);
+  --surface-active: rgba(226, 232, 240, 1);
+  
+  /* === Border Colors === */
+  --border: #dfe3ef;
+  --border-light: rgba(148, 163, 184, 0.3);
+  --border-lighter: rgba(148, 163, 184, 0.15);
+  --border-hover: rgba(109, 40, 217, 0.5);
+  
+  /* === Interactive Colors === */
+  --primary: #6d28d9;
+  --primary-hover: #5b21b6;
+  --primary-active: #4c1d95;
+  --accent: #0ea5b7;
+  --accent-hover: #0891a1;
+  
+  /* === Status Colors === */
+  --ok: #059669;
+  --warn: #b45309;
+  --err: #b91c1c;
+  
+  /* === Status Background/Text Colors === */
+  --success-bg: rgba(5, 150, 105, 0.1);
+  --success-color: #059669;
+  --error-bg: rgba(185, 28, 28, 0.1);
+  --error-color: #b91c1c;
+  --info-bg: rgba(14, 165, 183, 0.1);
+  --info-color: #0ea5b7;
+  
+  /* === Legacy Aliases (for compatibility) === */
+  --bg-primary: var(--bg);
+  --bg-secondary: var(--bg-soft);
+  --border-color: var(--border);
+  
+  /* === Input/Form Colors === */
+  --input-bg: rgba(255, 255, 255, 1);
+  --input-border: rgba(148, 163, 184, 0.5);
+  --input-border-focus: rgba(109, 40, 217, 0.7);
+  --input-text: #05070c;
+  --input-placeholder: rgba(100, 116, 139, 0.5);
+  
+  /* === Overlay Colors === */
+  --overlay: rgba(248, 250, 252, 0.95);
+  --backdrop: rgba(0, 0, 0, 0.2);
+  
+  /* === Shadow === */
+  --shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --glow: 0 0 0 1px rgba(109, 40, 217, 0.2), 0 10px 26px rgba(0, 0, 0, 0.08);
+}
+
+/* === Global Form Controls === */
+input,
+textarea,
+select {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--input-border-focus) !important;
+  outline: none !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder) !important;
+}
+
+/* === Browser Autofill Override === */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+  -webkit-text-fill-color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+/* === Scrollbar Theme === */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-soft);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: var(--surface-light);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* === Selection === */
+::selection {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+
+
+
+
+
+
+

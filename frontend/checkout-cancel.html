@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout Canceled - QuizAll</title>
+  <!-- Theme Manager - Must load before CSS -->
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .cancel-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      background: var(--bg-color);
+    }
+    
+    .cancel-card {
+      max-width: 480px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 3rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    }
+    
+    .cancel-icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .cancel-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+    }
+    
+    .cancel-message {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    
+    .info-box {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      text-align: left;
+    }
+    
+    .info-box h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+    }
+    
+    .info-box ul {
+      margin: 0;
+      padding-left: 1.25rem;
+      color: var(--text-secondary);
+    }
+    
+    .info-box li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      padding: 0.875rem 2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
+    }
+    
+    .btn-primary {
+      background: var(--primary-color);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--border-color);
+    }
+    
+    .help-text {
+      margin-top: 2rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    
+    .help-text a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    .help-text a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="cancel-page">
+    <div class="cancel-card">
+      <div class="cancel-icon">🛒</div>
+      <h1 class="cancel-title" data-i18n="cancel.title">Checkout Canceled</h1>
+      <p class="cancel-message" data-i18n="cancel.message">
+        No worries! Your checkout was canceled and you haven't been charged. You can continue using the free tier or try again when you're ready.
+      </p>
+      
+      <div class="info-box">
+        <h3 data-i18n="cancel.free_features">Free Tier Features</h3>
+        <ul>
+          <li data-i18n="cancel.feature_1">Daily limits: 8 prompt optimizations/day · 5 question-wizard sessions/day</li>
+          <li data-i18n="cancel.feature_2">Full access to prompt wizard</li>
+          <li data-i18n="cancel.feature_3">Unlimited specs storage</li>
+          <li data-i18n="cancel.feature_4">Basic evaluations</li>
+        </ul>
+      </div>
+      
+      <div class="btn-group">
+        <a href="subscription.html" class="btn btn-primary" data-i18n="cancel.try_again">Try Again</a>
+        <a href="index.html" class="btn btn-secondary" data-i18n="cancel.continue_free">Continue Free</a>
+      </div>
+      
+      <p class="help-text" data-i18n="cancel.help">
+        Have questions? <a href="mailto:support@quizall.app">Contact Support</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Apply theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+  </script>
+</body>
+</html>

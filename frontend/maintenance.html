@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizAll - Under Maintenance</title>
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --glass-bg: rgba(255, 255, 255, 0.95);
+      --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      --text-main: #2d3748;
+      --text-sub: #718096;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+      background-color: #0f172a;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(102, 126, 234, 0.3) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(118, 75, 162, 0.3) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(102, 126, 234, 0.3) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(118, 75, 162, 0.3) 0px, transparent 50%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+      position: relative;
+      color: #e2e8f0;
+    }
+
+    /* 噪点纹理层 - 增加磨砂质感 */
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.4;
+    }
+
+    /* 科技网格背景 */
+    .grid-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: 0;
+      mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+      -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+    }
+
+    .code-bg-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .code-chunk {
+      position: absolute;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(226, 232, 240, 0.15); /* 稍微提亮一点 */
+      white-space: pre;
+      user-select: none;
+      animation: floatCode 20s infinite linear;
+      filter: blur(0px); /* 移除模糊，增加清晰度 */
+      transition: all 0.5s ease;
+      /* 增加文字阴影，模拟 CRT 辉光 */
+      text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    
+    /* 模拟光标闪烁 */
+    .cursor-blink::after {
+      content: '|';
+      animation: blink 1s step-end infinite;
+      color: #667eea;
+      font-weight: bold;
+    }
+    
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .code-chunk:nth-child(1) { top: 10%; left: 5%; animation-duration: 25s; font-size: 16px; color: rgba(226, 232, 240, 0.2); }
+    .code-chunk:nth-child(2) { top: 20%; right: 10%; animation-duration: 30s; animation-delay: -5s; }
+    .code-chunk:nth-child(3) { bottom: 15%; left: 15%; animation-duration: 22s; animation-delay: -10s; }
+    .code-chunk:nth-child(4) { bottom: 25%; right: 5%; animation-duration: 28s; animation-delay: -2s; color: rgba(255, 255, 255, 0.1); }
+    .code-chunk:nth-child(5) { top: 40%; left: -5%; animation-duration: 35s; animation-delay: -8s; opacity: 0.6; }
+    
+    /* 增加更多代码块的样式 */
+    .code-chunk:nth-child(6) { top: 5%; left: 40%; animation-duration: 40s; animation-delay: -15s; font-size: 12px; opacity: 0.5; }
+    .code-chunk:nth-child(7) { bottom: 5%; right: 30%; animation-duration: 32s; animation-delay: -3s; }
+    .code-chunk:nth-child(8) { top: 50%; right: -2%; animation-duration: 26s; animation-delay: -12s; opacity: 0.7; }
+    .code-chunk:nth-child(9) { bottom: 40%; left: 2%; animation-duration: 29s; animation-delay: -7s; }
+    .code-chunk:nth-child(10) { top: 15%; left: 70%; animation-duration: 36s; animation-delay: -20s; font-size: 13px; }
+    .code-chunk:nth-child(11) { bottom: 10%; left: 60%; animation-duration: 24s; animation-delay: -6s; opacity: 0.4; }
+    .code-chunk:nth-child(12) { top: 60%; right: 15%; animation-duration: 31s; animation-delay: -18s; }
+
+    .code-keyword { color: rgba(244, 114, 182, 0.6); font-weight: bold; text-shadow: 0 0 5px rgba(244, 114, 182, 0.3); }
+    .code-func { color: rgba(96, 165, 250, 0.6); text-shadow: 0 0 5px rgba(96, 165, 250, 0.3); }
+    .code-string { color: rgba(74, 222, 128, 0.6); text-shadow: 0 0 5px rgba(74, 222, 128, 0.3); }
+    .code-comment { color: rgba(148, 163, 184, 0.4); font-style: italic; }
+
+    @keyframes floatCode {
+      0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+      20% { opacity: 1; }
+      50% { transform: translateY(-40px) rotate(1deg); }
+      80% { opacity: 1; }
+      100% { transform: translateY(-80px) rotate(-1deg); opacity: 0; }
+    }
+
+    /* 光晕特效 */
+    .glow-effect {
+      text-shadow: 0 0 10px rgba(102, 126, 234, 0.5), 0 0 20px rgba(102, 126, 234, 0.3);
+    }
+
+
+    /* 左上角 Logo 样式 */
+    .brand-logo {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 20;
+      opacity: 0;
+      animation: fadeInDown 1s ease-out 0.5s forwards;
+    }
+
+    .brand-logo img {
+      width: 40px;
+      height: 40px;
+      filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6));
+    }
+
+    .brand-text {
+      font-size: 24px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.5px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; /* 保持 Logo 字体清晰 */
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .container {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      /* 复合阴影增加层次 */
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+      max-width: 420px; /* 进一步缩小卡片宽度 */
+      width: 90%;
+      padding: 40px 30px;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+      animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+      font-style: italic; /* 全局斜体 */
+      
+      /* 花纹纹路边框效果 */
+      border: 2px solid transparent;
+      background-clip: padding-box, border-box;
+      background-origin: padding-box, border-box;
+      background-image: 
+        linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)),
+        repeating-linear-gradient(45deg, #667eea 0, #667eea 10px, #764ba2 10px, #764ba2 20px);
+    }
+
+    @keyframes slideUpFade {
+      from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .icon-wrapper {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 30px;
+    }
+
+    .icon {
+      width: 100%;
+      height: 100%;
+      background: var(--primary-gradient);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 20px rgba(118, 75, 162, 0.3);
+      position: relative;
+      z-index: 2;
+      animation: pulseIcon 3s infinite ease-in-out;
+    }
+
+    .icon-ring {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid rgba(118, 75, 162, 0.3);
+      animation: ripple 2s infinite cubic-bezier(0, 0.2, 0.8, 1);
+      z-index: 1;
+    }
+
+    @keyframes pulseIcon {
+      0%, 100% { transform: scale(1); box-shadow: 0 10px 20px rgba(118, 75, 162, 0.3); }
+      50% { transform: scale(1.05); box-shadow: 0 15px 30px rgba(118, 75, 162, 0.5); }
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    .icon svg {
+      width: 56px;
+      height: 56px;
+      fill: white;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(254, 245, 231, 0.8);
+      color: #f39c12;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      border: 1px solid rgba(243, 156, 18, 0.2);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* 标题流光渐变动画 */
+    h1 {
+      font-size: 32px; /* 稍微调小字体适配小卡片 */
+      margin-bottom: 16px;
+      font-weight: 800;
+      background: linear-gradient(to right, #667eea, #764ba2, #f472b6, #667eea);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+      animation: textShine 5s linear infinite;
+    }
+
+    @keyframes textShine {
+      to { background-position: 200% center; }
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: var(--text-sub);
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+
+    .info-box {
+      background: rgba(255, 255, 255, 0.05); /* 改为深色透明 */
+      border-radius: 16px;
+      padding: 20px;
+      margin: 24px 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+    }
+    
+    .info-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .info-box::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--primary-gradient);
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 0;
+      color: #e2e8f0; /* 文字改为浅色 */
+      font-size: 15px;
+    }
+
+    .info-item svg {
+      width: 24px;
+      height: 24px;
+      margin-right: 0;
+      fill: #667eea;
+      margin-bottom: 4px;
+    }
+    
+    .info-item a {
+      color: #93c5fd; /* 链接颜色调亮 */
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.2s;
+      font-family: 'Consolas', monospace; /* 邮箱用等宽字体 */
+      font-style: normal; /* 邮箱不斜体，易读 */
+    }
+    
+    .info-item a:hover {
+      color: #764ba2;
+    }
+
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(226, 232, 240, 0.1);
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    /* 呼吸边框特效 */
+    @keyframes borderBreathe {
+      0%, 100% { border-color: rgba(102, 126, 234, 0.3); box-shadow: 0 0 15px rgba(102, 126, 234, 0.1), inset 0 0 10px rgba(102, 126, 234, 0.05); }
+      50% { border-color: rgba(244, 114, 182, 0.5); box-shadow: 0 0 25px rgba(244, 114, 182, 0.2), inset 0 0 20px rgba(244, 114, 182, 0.1); }
+    }
+    
+    .status-badge {
+      animation: borderBreathe 4s infinite ease-in-out;
+      background: rgba(15, 23, 42, 0.4); /* 更深的背景适配深色主题 */
+      backdrop-filter: blur(4px);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 30px 20px;
+      }
+      h1 { font-size: 24px; }
+      .subtitle { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="brand-logo">
+    <img src="assets/quizall-icon.svg" alt="QuizAll Logo">
+    <span class="brand-text">QuizAll</span>
+  </div>
+
+  <div class="code-bg-layer">
+    <div class="code-chunk glow-effect cursor-blink">
+<span class="code-keyword">async function</span> <span class="code-func">initSystem</span>() {
+  <span class="code-keyword">const</span> core = <span class="code-keyword">await</span> loadKernel();
+  <span class="code-comment">// Optimizing neural pathways...</span>
+  core.<span class="code-func">connect</span>(<span class="code-string">'wss://quizall.app'</span>);
+  <span class="code-keyword">return</span> true;
+}</div>
+    <div class="code-chunk">
+<span class="code-keyword">const</span> config = {
+  mode: <span class="code-string">'maintenance'</span>,
+  theme: <span class="code-string">'neon-dream'</span>,
+  retry: <span class="code-keyword">true</span>,
+  <span class="code-comment">// Applying magic dust</span>
+  opacity: 0.95
+};</div>
+    <div class="code-chunk glow-effect cursor-blink">
+<span class="code-keyword">class</span> <span class="code-func">PromptEngine</span> {
+  <span class="code-func">constructor</span>() {
+    <span class="code-keyword">this</span>.state = <span class="code-string">'upgrading'</span>;
+    <span class="code-keyword">this</span>.power = 9000;
+  }
+}</div>
+    <div class="code-chunk">
+<span class="code-keyword">export default</span> {
+  status: <span class="code-keyword">null</span>,
+  check: () => {
+    <span class="code-comment">// Still working on it...</span>
+    <span class="code-func">fetch</span>(<span class="code-string">'/api/health'</span>);
+  }
+}</div>
+    <div class="code-chunk glow-effect">
+<span class="code-keyword">if</span> (system.<span class="code-func">isReady</span>()) {
+  <span class="code-func">launch</span>(<span class="code-string">'Production'</span>);
+} <span class="code-keyword">else</span> {
+  <span class="code-func">wait</span>(60000);
+}</div>
+    <div class="code-chunk">
+<span class="code-keyword">import</span> React, { <span class="code-func">useState</span> } <span class="code-keyword">from</span> <span class="code-string">'react'</span>;
+<span class="code-keyword">const</span> App = () => {
+  <span class="code-keyword">const</span> [state, setState] = <span class="code-func">useState</span>(<span class="code-string">'init'</span>);
+  <span class="code-keyword">return</span> <span class="code-string">&lt;Loader /&gt;</span>;
+}</div>
+    <div class="code-chunk glow-effect">
+SELECT * FROM systems
+WHERE status = <span class="code-string">'active'</span>
+AND performance > 99.9
+ORDER BY uptime DESC;</div>
+    <div class="code-chunk">
+<span class="code-keyword">def</span> <span class="code-func">optimize_model</span>(layers):
+    <span class="code-keyword">for</span> layer <span class="code-keyword">in</span> layers:
+        layer.<span class="code-func">train</span>(epochs=100)
+    <span class="code-keyword">return</span> <span class="code-string">"Optimized"</span></div>
+    <div class="code-chunk">
+{
+  <span class="code-string">"version"</span>: <span class="code-string">"2.0.0"</span>,
+  <span class="code-string">"features"</span>: [<span class="code-string">"AI"</span>, <span class="code-string">"Cloud"</span>],
+  <span class="code-string">"stable"</span>: <span class="code-keyword">true</span>
+}</div>
+    <div class="code-chunk glow-effect">
+<span class="code-keyword">try</span> {
+  <span class="code-keyword">await</span> database.<span class="code-func">migrate</span>();
+  logger.<span class="code-func">info</span>(<span class="code-string">'Migration done'</span>);
+} <span class="code-keyword">catch</span> (e) {
+  <span class="code-func">rollback</span>();
+}</div>
+    <div class="code-chunk">
+<span class="code-keyword">interface</span> <span class="code-func">User</span> {
+  id: <span class="code-func">string</span>;
+  role: <span class="code-string">'admin'</span> | <span class="code-string">'user'</span>;
+  permissions: <span class="code-func">string</span>[];
+}</div>
+    <div class="code-chunk glow-effect">
+<span class="code-keyword">while</span> (server.<span class="code-func">isBusy</span>()) {
+  <span class="code-func">scaleUp</span>(instances + 1);
+  <span class="code-comment">// Adding more power</span>
+  <span class="code-func">sleep</span>(1000);
+}</div>
+  </div>
+
+  <div class="container">
+    <div class="icon-wrapper">
+      <div class="icon-ring"></div>
+      <div class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="status-badge">
+      <span>🔧</span>
+      <span>Under Maintenance</span>
+    </div>
+
+    <h1>We're Upgrading Our Systems</h1>
+    <p class="subtitle">
+      To provide you with a better experience, we're performing necessary system maintenance and optimization.<br>
+      Thank you for your patience.
+    </p>
+
+    <div class="info-box">
+      <div class="info-item">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+        </svg>
+        <span>Questions? Contact us: <a href="mailto:support@quizall.app">support@quizall.app</a></span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Your data is safe during maintenance.</p>
+    </div>
+  </div>
+
+  <script>
+    // Auto-refresh when maintenance is complete
+    // Check backend status every 60 seconds
+    setInterval(() => {
+      fetch('/api/health')
+        .then(res => {
+          if (res.ok) {
+            // Backend is back online, reload the page
+            window.location.reload();
+          }
+        })
+        .catch(() => {
+          // Still under maintenance, keep waiting
+        });
+    }, 60000); // Check every 60 seconds
+  </script>
+</body>
+</html>

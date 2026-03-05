@@ -1,0 +1,14 @@
+node_modules/
+.env
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/
+.DS_Store
+_promptly_src/
+*.zip
+*.pyc
+__pycache__/
+pipeline_monitor_logs/
+.trae/

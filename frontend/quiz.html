@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz — QuizAll</title>
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="quiz.css" />
+  <script src="config.js"></script>
+  <script src="lib/authGuard.js"></script>
+  <script src="lib/i18next.min.js"></script>
+  <script type="module" src="i18n/index.js"></script>
+</head>
+<body class="app-shell">
+  <header class="topbar">
+    <div class="brand brand-logo"><img src="assets/quizall-logo.svg" alt="QuizAll" class="logo-glow"/></div>
+    <nav class="controls">
+      <div class="navlinks">
+        <a href="index.html">Dashboard</a>
+        <a href="create.html">Create Quiz</a>
+        <a href="history.html">History</a>
+        <a href="settings.html">Settings</a>
+        <a href="account.html">Account</a>
+      </div>
+      <label class="control"><span>Appearance</span>
+        <select id="themeSelect"><option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
+      </label>
+      <label class="control"><span>Language</span>
+        <select id="langSelect"></select>
+      </label>
+    </nav>
+  </header>
+
+  <main class="container" style="max-width:800px">
+
+    <!-- Quiz header bar -->
+    <div class="quiz-header">
+      <span class="quiz-subject" id="quizSubject">—</span>
+      <span class="quiz-timer" id="quizTimer">00:00</span>
+      <button class="quiz-restart" id="startOverBtn">Start over</button>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="quiz-progress">
+      <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="progressFill"></div></div>
+      <span class="quiz-progress-text" id="progressText">0 of 0 answered</span>
+    </div>
+
+    <!-- Question navigation dots -->
+    <div class="quiz-nav" id="quizNav"></div>
+
+    <!-- Questions container -->
+    <div id="questionsContainer"></div>
+
+    <!-- Submit button -->
+    <button class="quiz-submit" id="submitBtn" disabled>Answer all (0/0)</button>
+
+  </main>
+
+  <script>
+  (function () {
+    const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    const DIFF_CLASS = { easy: 'q-diff--easy', medium: 'q-diff--medium', hard: 'q-diff--hard' };
+
+    const raw = sessionStorage.getItem('quizall.currentQuiz');
+    if (!raw) { window.location.href = 'create.html'; return; }
+
+    const quiz = JSON.parse(raw);
+    const questions = quiz.questions || [];
+    const total = questions.length;
+    const answers = {};
+
+    const $subject   = document.getElementById('quizSubject');
+    const $timer     = document.getElementById('quizTimer');
+    const $restart   = document.getElementById('startOverBtn');
+    const $fill      = document.getElementById('progressFill');
+    const $progText  = document.getElementById('progressText');
+    const $nav       = document.getElementById('quizNav');
+    const $container = document.getElementById('questionsContainer');
+    const $submit    = document.getElementById('submitBtn');
+
+    $subject.textContent = quiz.subject || quiz.title || 'Quiz';
+
+    /* ---- Timer ---- */
+    let seconds = 0;
+    function tick() {
+      seconds++;
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      $timer.textContent = m + ':' + s;
+    }
+    const timerInterval = setInterval(tick, 1000);
+
+    /* ---- Progress helpers ---- */
+    function countAnswered() {
+      return Object.keys(answers).length;
+    }
+
+    function syncProgress() {
+      const n = countAnswered();
+      $fill.style.width = (total ? (n / total) * 100 : 0) + '%';
+      $progText.textContent = n + ' of ' + total + ' answered';
+
+      document.querySelectorAll('.quiz-nav-dot').forEach(function (dot, i) {
+        dot.classList.toggle('answered', answers[i] !== undefined);
+      });
+
+      if (n === total) {
+        $submit.disabled = false;
+        $submit.textContent = 'Submit Answers';
+      } else {
+        $submit.disabled = true;
+        $submit.textContent = 'Answer all (' + n + '/' + total + ')';
+      }
+    }
+
+    /* ---- Nav dots ---- */
+    questions.forEach(function (_, i) {
+      const dot = document.createElement('button');
+      dot.className = 'quiz-nav-dot';
+      dot.textContent = i + 1;
+      dot.addEventListener('click', function () {
+        var card = document.getElementById('q-' + i);
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      $nav.appendChild(dot);
+    });
+
+    /* ---- Render questions ---- */
+    questions.forEach(function (q, i) {
+      var card = document.createElement('div');
+      card.className = 'card q-card';
+      card.id = 'q-' + i;
+      card.style.animationDelay = (i * 0.06) + 's';
+
+      var type = (q.type || 'multiple_choice').toLowerCase().replace(/[\s-]/g, '_');
+      var diff = (q.difficulty || 'medium').toLowerCase();
+      var topic = q.topic || q.category || '';
+
+      /* Header */
+      var hdr = '<div class="q-header">'
+        + '<span class="q-number">Q' + (i + 1) + '</span>';
+      if (topic) hdr += '<span class="q-tag">' + escHtml(topic) + '</span>';
+      hdr += '<span class="q-diff ' + (DIFF_CLASS[diff] || 'q-diff--medium') + '">' + escHtml(capitalise(diff)) + '</span>';
+      hdr += '<span class="q-type">' + escHtml(friendlyType(type)) + '</span>';
+      hdr += '</div>';
+
+      /* Question text */
+      hdr += '<div class="q-text">' + escHtml(q.question || q.text || '') + '</div>';
+
+      /* Answer area */
+      if (type === 'true_false') {
+        hdr += '<div class="q-tf">'
+          + '<button class="q-tf-btn" data-qi="' + i + '" data-val="true">True</button>'
+          + '<button class="q-tf-btn" data-qi="' + i + '" data-val="false">False</button>'
+          + '</div>';
+      } else if (type === 'fill_in_the_blank') {
+        hdr += '<input class="q-fill-input" data-qi="' + i + '" placeholder="Type your answer…" />';
+      } else {
+        var opts = q.options || q.choices || [];
+        hdr += '<div class="q-options">';
+        opts.forEach(function (opt, oi) {
+          var text = typeof opt === 'string' ? opt : (opt.text || opt.label || '');
+          hdr += '<button class="q-option" data-qi="' + i + '" data-oi="' + oi + '">'
+            + '<span class="q-option-label">' + (LABELS[oi] || oi) + '</span>'
+            + '<span>' + escHtml(text) + '</span>'
+            + '</button>';
+        });
+        hdr += '</div>';
+      }
+
+      card.innerHTML = hdr;
+      $container.appendChild(card);
+    });
+
+    /* ---- Event delegation for answers ---- */
+    $container.addEventListener('click', function (e) {
+      var btn = e.target.closest('.q-option');
+      if (btn) {
+        var qi = Number(btn.dataset.qi);
+        var oi = Number(btn.dataset.oi);
+        answers[qi] = oi;
+        btn.closest('.q-options').querySelectorAll('.q-option').forEach(function (b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        syncProgress();
+        return;
+      }
+
+      var tf = e.target.closest('.q-tf-btn');
+      if (tf) {
+        var qi2 = Number(tf.dataset.qi);
+        answers[qi2] = tf.dataset.val === 'true';
+        tf.closest('.q-tf').querySelectorAll('.q-tf-btn').forEach(function (b) { b.classList.remove('selected'); });
+        tf.classList.add('selected');
+        syncProgress();
+      }
+    });
+
+    $container.addEventListener('input', function (e) {
+      if (e.target.classList.contains('q-fill-input')) {
+        var qi = Number(e.target.dataset.qi);
+        var val = e.target.value.trim();
+        if (val) { answers[qi] = val; } else { delete answers[qi]; }
+        syncProgress();
+      }
+    });
+
+    /* ---- Start over ---- */
+    $restart.addEventListener('click', function () {
+      if (!confirm('Restart this quiz? Your current answers will be lost.')) return;
+      clearInterval(timerInterval);
+      seconds = 0;
+      Object.keys(answers).forEach(function (k) { delete answers[k]; });
+      $container.querySelectorAll('.selected').forEach(function (el) { el.classList.remove('selected'); });
+      $container.querySelectorAll('.q-fill-input').forEach(function (el) { el.value = ''; });
+      $timer.textContent = '00:00';
+      setInterval(tick, 1000);
+      syncProgress();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    /* ---- Submit ---- */
+    $submit.addEventListener('click', function () {
+      if (countAnswered() < total) return;
+
+      clearInterval(timerInterval);
+
+      var correct = 0;
+      var results = questions.map(function (q, i) {
+        var type = (q.type || 'multiple_choice').toLowerCase().replace(/[\s-]/g, '_');
+        var userAns = answers[i];
+        var isCorrect = false;
+
+        if (type === 'fill_in_the_blank') {
+          var expected = (q.answer || q.correct || '').toString().toLowerCase().trim();
+          isCorrect = userAns.toString().toLowerCase().trim() === expected;
+        } else if (type === 'true_false') {
+          var correctVal = q.correct;
+          if (typeof correctVal === 'string') correctVal = correctVal.toLowerCase() === 'true';
+          isCorrect = userAns === correctVal;
+        } else {
+          isCorrect = userAns === q.correct;
+        }
+
+        if (isCorrect) correct++;
+
+        return {
+          question: q.question || q.text,
+          type: type,
+          userAnswer: userAns,
+          correctAnswer: type === 'fill_in_the_blank' ? (q.answer || q.correct) : q.correct,
+          isCorrect: isCorrect
+        };
+      });
+
+      var score = total ? Math.round((correct / total) * 100) : 0;
+
+      var result = {
+        quizId: quiz.id || null,
+        subject: quiz.subject || quiz.title || '',
+        score: score,
+        correct: correct,
+        total: total,
+        timeSeconds: seconds,
+        results: results,
+        completedAt: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('quizall.lastResult', JSON.stringify(result));
+
+      var token = localStorage.getItem('quizall.token') || sessionStorage.getItem('quizall.token');
+      var headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      fetch((window.QUIZALL_API_BASE || '') + '/api/quiz/history', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(result)
+      }).catch(function () {});
+
+      window.location.href = 'results.html';
+    });
+
+    /* ---- Helpers ---- */
+    function escHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+    function capitalise(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+    function friendlyType(t) {
+      return { multiple_choice: 'Multiple Choice', true_false: 'True / False', fill_in_the_blank: 'Fill in the Blank' }[t] || t;
+    }
+
+    syncProgress();
+  })();
+  </script>
+</body>
+</html>
