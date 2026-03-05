@@ -32,10 +32,8 @@ services:
         value: "false"
     healthCheckPath: /api/health
 
-  - type: web
+  - type: static
     name: quizall-frontend
-    runtime: static
-    plan: free
     buildCommand: echo "Static site - no build needed"
     staticPublishPath: frontend
     headers:
