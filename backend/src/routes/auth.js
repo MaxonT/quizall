@@ -144,8 +144,8 @@ authRouter.get("/me", requireAuth, async (req, res) => {
   try {
     const row = await dbGet("SELECT * FROM users WHERE id = ?", [req.user.sub]);
     if (!row) {
-      // Token 有效但用户已被删或库不一致，返回 401 让前端清 token 并重新登录
-      return res.status(401).json({ ok: false, error: "User not found" });
+      // 返回 404 而非 401，避免前端误清 token 导致 OAuth 用户被登出
+      return res.status(404).json({ ok: false, error: "User not found" });
     }
     return res.json({ ok: true, user: buildUserPayload(row) });
   } catch (err) {
