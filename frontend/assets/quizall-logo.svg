@@ -9,15 +9,16 @@
       <stop offset="0%" stop-color="rgba(124,58,237,0.55)"/>
       <stop offset="100%" stop-color="rgba(6,182,212,0.00)"/>
     </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
-  <!-- Icon: rounded square + ribbon P -->
-  <g>
-    <rect x="6" y="6" rx="12" ry="12" width="44" height="44" fill="url(#g2)" />
-    <path d="M20 16 h10 a8 8 0 0 1 0 16 h-6 v8" fill="none" stroke="url(#g1)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="30" cy="24" r="3" fill="url(#g1)"/>
-    <!-- Wordmark -->
-    <g transform="translate(64, 12)">
-      <text x="0" y="24" font-family="Poppins, Inter, system-ui" font-weight="800" font-size="26" fill="url(#g1)">QuizAll</text>
-    </g>
-  </g>
+  <!-- Icon box -->
+  <rect x="6" y="6" rx="12" ry="12" width="44" height="44" fill="url(#g2)" />
+  <!-- Q shape: circle + tail -->
+  <circle cx="28" cy="25" r="9" fill="none" stroke="url(#g1)" stroke-width="4.5" stroke-linecap="round" filter="url(#glow)"/>
+  <line x1="34" y1="31" x2="40" y2="39" stroke="url(#g1)" stroke-width="4.5" stroke-linecap="round" filter="url(#glow)"/>
+  <!-- Wordmark -->
+  <text x="64" y="36" font-family="Poppins, Inter, system-ui" font-weight="800" font-size="26" fill="url(#g1)">QuizAll</text>
 </svg>
