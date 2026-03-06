@@ -24,8 +24,7 @@
       if (parts.length < 2) return null;
       const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
       const pad = "=".repeat((4 - (b64.length % 4)) % 4);
-      const json = atob(b64 + pad);
-      return JSON.parse(json);
+      return JSON.parse(atob(b64 + pad));
     } catch {
       return null;
     }
@@ -33,7 +32,9 @@
 
   function getEmailFromToken(token) {
     const payload = decodeJwtPayload(token);
-    return (payload && typeof payload.email === "string" && payload.email) ? payload.email : null;
+    if (!payload) return null;
+    const email = payload.email ?? payload.email_address;
+    return (typeof email === "string" && email.length > 0) ? email : null;
   }
 
   function clearToken() {
@@ -61,7 +62,7 @@
         })
         .then((data) => {
           if (!data) return; // 已在上面处理 401
-          const email = (data.ok && data.user && data.user.email) || getEmailFromToken(token) || "User";
+          const email = (data.ok && data.user && (data.user.email || data.user.email_address)) || getEmailFromToken(token) || (window.authState?.getUser?.()?.email) || "User";
           container.innerHTML = `
             <div class="nav-user-wrap" id="navUserWrap">
               <button type="button" class="nav-user-trigger" id="navUserTrigger" aria-haspopup="true" aria-expanded="false">
@@ -69,7 +70,7 @@
                 <span class="nav-user-chevron">▼</span>
               </button>
               <div class="nav-user-dropdown hidden" id="navUserDropdown">
-                <a href="account.html" class="nav-user-item">Account</a>
+                <a href="settings.html" class="nav-user-item">Account</a>
                 <button type="button" class="nav-user-item nav-user-logout" id="navUserLogout">Log out</button>
               </div>
             </div>
@@ -78,7 +79,7 @@
         })
         .catch(() => {
           // 网络/CORS 等错误：不清除 token，显示 "User" 作为回退（OAuth 刚成功时常见）
-          const email = getEmailFromToken(token) || "User";
+          const email = getEmailFromToken(token) || (window.authState?.getUser?.()?.email) || "User";
           container.innerHTML = `
             <div class="nav-user-wrap" id="navUserWrap">
               <button type="button" class="nav-user-trigger" id="navUserTrigger" aria-haspopup="true" aria-expanded="false">
@@ -86,7 +87,7 @@
                 <span class="nav-user-chevron">▼</span>
               </button>
               <div class="nav-user-dropdown hidden" id="navUserDropdown">
-                <a href="account.html" class="nav-user-item">Account</a>
+                <a href="settings.html" class="nav-user-item">Account</a>
                 <button type="button" class="nav-user-item nav-user-logout" id="navUserLogout">Log out</button>
               </div>
             </div>
