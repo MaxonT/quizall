@@ -181,31 +181,36 @@ CREATE INDEX IF NOT EXISTS idx_analytics_daily_date ON analytics_daily(date);
 // ─── Main migration ────────────────────────────────────────────────────────
 
 export async function up() {
-  console.log('[migration 002] Creating analytics tables...');
+  try {
+    console.log('[migration 002] Creating analytics tables...');
 
-  // Skip if already populated
-  const exists = await tableExists('analytics_users');
-  if (exists) {
-    const row = await dbGet('SELECT COUNT(*) as count FROM analytics_users');
-    const count = Number(row?.count ?? 0);
-    if (count > 0) {
-      console.log(`[migration 002] ⚠️  Analytics tables already exist with ${count} users — skipping`);
-      return;
+    // Skip if already populated
+    const exists = await tableExists('analytics_users');
+    if (exists) {
+      const row = await dbGet('SELECT COUNT(*) as count FROM analytics_users');
+      const count = Number(row?.count ?? 0);
+      if (count > 0) {
+        console.log(`[migration 002] ⚠️  Analytics tables already exist with ${count} users — skipping`);
+        return;
+      }
     }
+
+    await dbExec(USE_POSTGRES ? PG_TABLES : SQLITE_TABLES);
+    console.log('[migration 002] ✅ Analytics tables created');
+
+    if (USE_POSTGRES) {
+      // Production: start with real data, no fake seeding
+      console.log('[migration 002] PostgreSQL mode — skipping demo data (will show real user data)');
+    } else {
+      // Local dev: seed demo S-curve data
+      await generateHistoricalData();
+    }
+
+    console.log('[migration 002] ✅ Migration complete');
+  } catch (err) {
+    console.error('[migration 002] Error:', err.message);
+    throw err;
   }
-
-  await dbExec(USE_POSTGRES ? PG_TABLES : SQLITE_TABLES);
-  console.log('[migration 002] ✅ Analytics tables created');
-
-  if (USE_POSTGRES) {
-    // Production: start with real data, no fake seeding
-    console.log('[migration 002] PostgreSQL mode — skipping demo data (will show real user data)');
-  } else {
-    // Local dev: seed demo S-curve data
-    await generateHistoricalData();
-  }
-
-  console.log('[migration 002] ✅ Migration complete');
 }
 
 export async function down() {

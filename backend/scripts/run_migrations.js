@@ -15,8 +15,9 @@ const env = {
 
 function runMigration(migration, args = '') {
   try {
+    const migrationPath = path.join(rootDir, migration);
     console.log(`[QuizAll] Running ${migration}...`);
-    execSync(`node ${migration}${args}`, {
+    execSync(`node "${migrationPath}"${args}`, {
       cwd: rootDir,
       stdio: 'inherit',
       env,
