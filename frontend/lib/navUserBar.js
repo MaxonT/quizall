@@ -17,6 +17,25 @@
     return localStorage.getItem(TOKEN_KEY);
   }
 
+  function decodeJwtPayload(token) {
+    try {
+      if (!token || typeof token !== "string") return null;
+      const parts = token.split(".");
+      if (parts.length < 2) return null;
+      const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+      const json = atob(b64 + pad);
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
+  function getEmailFromToken(token) {
+    const payload = decodeJwtPayload(token);
+    return (payload && typeof payload.email === "string" && payload.email) ? payload.email : null;
+  }
+
   function clearToken() {
     localStorage.removeItem(TOKEN_KEY);
     window.dispatchEvent(new CustomEvent("authStateChanged"));
@@ -42,7 +61,7 @@
         })
         .then((data) => {
           if (!data) return; // 已在上面处理 401
-          const email = (data.ok && data.user && data.user.email) || "User";
+          const email = (data.ok && data.user && data.user.email) || getEmailFromToken(token) || "User";
           container.innerHTML = `
             <div class="nav-user-wrap" id="navUserWrap">
               <button type="button" class="nav-user-trigger" id="navUserTrigger" aria-haspopup="true" aria-expanded="false">
@@ -59,7 +78,7 @@
         })
         .catch(() => {
           // 网络/CORS 等错误：不清除 token，显示 "User" 作为回退（OAuth 刚成功时常见）
-          const email = "User";
+          const email = getEmailFromToken(token) || "User";
           container.innerHTML = `
             <div class="nav-user-wrap" id="navUserWrap">
               <button type="button" class="nav-user-trigger" id="navUserTrigger" aria-haspopup="true" aria-expanded="false">

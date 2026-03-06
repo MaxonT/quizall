@@ -3,10 +3,24 @@
    ============================================ */
 
 .account-page {
-  max-width: 800px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2.25rem 1.5rem 3.5rem;
+  position: relative;
 }
+
+.account-page::before{
+  content:"";
+  position:absolute;
+  inset:-220px -10% auto -10%;
+  height: 420px;
+  background: radial-gradient(55% 55% at 50% 40%, rgba(139,92,246,0.18), transparent 65%);
+  filter: blur(40px);
+  pointer-events:none;
+  z-index: 0;
+}
+
+.account-content, .login-required { position: relative; z-index: 1; }
 
 .page-title {
   font-size: 2rem;
@@ -158,6 +172,14 @@
   border-radius: 1rem;
   margin-bottom: 1.5rem;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.account-card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(139,92,246,0.35);
+  box-shadow: 0 18px 48px rgba(0,0,0,0.35);
 }
 
 .account-card .card-header {
@@ -494,7 +516,7 @@
 /* Responsive */
 @media (max-width: 640px) {
   .account-page {
-    padding: 1rem;
+    padding: 1.25rem 1rem 2.5rem;
   }
   
   .page-title {

@@ -18,36 +18,25 @@
   <script type="module" src="lib/authState.js"></script>
   <script src="lib/oauth.js"></script>
 </head>
-<body>
-  <!-- Navigation Header -->
-  <header class="nav-header">
-    <div class="nav-container">
-      <a href="index.html" class="nav-logo">
-        <img src="assets/quizall-icon.svg" alt="QuizAll" class="nav-logo-icon" />
-        <span class="nav-logo-text">QuizAll</span>
-      </a>
-      <nav class="nav-links">
+<body class="app-shell">
+  <header class="topbar">
+    <div class="brand brand-logo"><img src="assets/quizall-logo.svg" alt="QuizAll" class="logo-glow"/></div>
+    <nav class="controls">
+      <div class="navlinks">
         <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
         <a href="create.html" data-i18n="nav.create">Create Quiz</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="settings.html" data-i18n="nav.settings">Settings</a>
         <a href="account.html" class="active" data-i18n="nav.account">Account</a>
-      </nav>
-      <div id="navUserBar" class="nav-user-bar" style="margin-right:12px"></div>
-      <div class="nav-actions">
-        <div id="navUserBar" class="nav-user-bar"></div>
-        <button id="themeToggle" class="btn btn-icon" title="Toggle theme">
-          <span class="theme-icon">🌙</span>
-        </button>
-        <select id="langSelect" class="lang-select">
-          <option value="en">EN</option>
-          <option value="zh-CN">中文</option>
-          <option value="es">ES</option>
-          <option value="fr">FR</option>
-          <option value="ja">JP</option>
-        </select>
       </div>
-    </div>
+      <div id="navUserBar" class="nav-user-bar"></div>
+      <label class="control"><span data-i18n="appearance.label">Appearance</span>
+        <select id="themeSelect"><option value="dark" data-i18n="appearance.dark">Dark</option><option value="light" data-i18n="appearance.light">Light</option></select>
+      </label>
+      <label class="control"><span data-i18n="language.label">Language</span>
+        <select id="langSelect"></select>
+      </label>
+    </nav>
   </header>
 
   <main class="account-page">

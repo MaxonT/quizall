@@ -9,10 +9,14 @@
  */
 
 (function() {
-  const API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) || 
+  let API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) || 
     (window.location && window.location.origin && window.location.origin !== "null" 
       ? window.location.origin 
       : "http://localhost:8080");
+  // Failsafe: Render 前端域名下不应同源请求 /api
+  if (typeof window !== "undefined" && window.location?.hostname?.includes(".onrender.com") && API_BASE === window.location.origin) {
+    API_BASE = "https://quizall-backend.onrender.com";
+  }
 
   // DOM Elements
   const loginRequired = document.getElementById('loginRequired');
@@ -41,7 +45,7 @@
   // =============================================
 
   async function init() {
-    setupThemeToggle();
+    setupThemeSelect();
     setupEventListeners();
     
     // Check authentication - use unified authState if available
@@ -261,38 +265,32 @@
     });
   }
 
-  function setupThemeToggle() {
-    const themeToggle = document.getElementById('themeToggle');
-    if (!themeToggle) return;
-    
-    const themeIcon = themeToggle.querySelector('.theme-icon');
-    const currentTheme = window.themeManager?.get() || document.documentElement.getAttribute('data-theme');
-    
-    updateThemeIcon(themeIcon, currentTheme);
-    
-    themeToggle.addEventListener('click', () => {
-      const newTheme = window.themeManager?.set() || setLocalTheme();
-      updateThemeIcon(themeIcon, newTheme);
-    });
-    
-    // 监听来自其他页面的主题变化
-    document.addEventListener('themechange', (e) => {
-      updateThemeIcon(themeIcon, e.detail.theme);
-    });
-  }
-  
-  function setLocalTheme() {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    return next;
-  }
+  function setupThemeSelect() {
+    const select = document.getElementById("themeSelect");
+    if (!select) return;
 
-  function updateThemeIcon(icon, theme) {
-    if (icon) {
-      icon.textContent = theme === 'dark' ? '☀️' : '🌙';
-    }
+    const getSaved = () => localStorage.getItem("theme") || document.documentElement.getAttribute("data-theme") || "dark";
+
+    const apply = (theme) => {
+      const t = theme === "light" ? "light" : "dark";
+      if (window.themeManager && typeof window.themeManager.set === "function") {
+        window.themeManager.set(t);
+      } else {
+        document.documentElement.setAttribute("data-theme", t);
+        localStorage.setItem("theme", t);
+      }
+    };
+
+    // Init current
+    const saved = getSaved();
+    select.value = saved === "light" ? "light" : "dark";
+    apply(select.value);
+
+    select.addEventListener("change", () => apply(select.value));
+    document.addEventListener("themechange", (e) => {
+      const t = e?.detail?.theme;
+      if (t === "light" || t === "dark") select.value = t;
+    });
   }
 
   // =============================================
