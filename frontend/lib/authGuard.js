@@ -1,9 +1,15 @@
 (function () {
-  const API_BASE =
+  let API_BASE =
     (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) ||
     (window.location && window.location.origin && window.location.origin !== "null"
       ? window.location.origin
       : "http://localhost:8080");
+
+  // Failsafe: 在 Render 前端域名下，绝不应向同源请求 /api（会拿到 404.html 的 HTML）
+  if (typeof window !== "undefined" && window.location && window.location.hostname.includes(".onrender.com") && API_BASE === window.location.origin) {
+    API_BASE = "https://quizall-backend.onrender.com";
+    console.warn("[authGuard] API_BASE was pointing to frontend, overridden to backend");
+  }
 
   const TOKEN_KEY = "quizall.token";
   const LOGIN_REQUIRED_MESSAGE = "Please log in first";

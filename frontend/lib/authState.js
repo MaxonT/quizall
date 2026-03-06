@@ -4,10 +4,13 @@
  */
 
 (function() {
-  const API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) || 
+  let API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) || 
     (window.location && window.location.origin && window.location.origin !== "null" 
       ? window.location.origin 
       : "http://localhost:8080");
+  if (typeof window !== 'undefined' && window.location && window.location.hostname.includes('.onrender.com') && API_BASE === window.location.origin) {
+    API_BASE = "https://quizall-backend.onrender.com";
+  }
 
   const TOKEN_KEY = "quizall.token";
 

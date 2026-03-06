@@ -72,7 +72,7 @@ analyticsDashboardRouter.get("/summary", async (req, res) => {
       const needs     = await dbGet(`SELECT COUNT(*) as c FROM quiz_results WHERE CAST(score AS REAL) / NULLIF(total, 0) < 0.5`) || { c: 0 };
       scoreDistrib = { excellent: Number(excellent.c), good: Number(good.c), needsWork: Number(needs.c) };
     } catch (_e) {}
-
+    
     res.json({
       ok: true,
       users: {
@@ -124,7 +124,7 @@ analyticsDashboardRouter.get("/timeseries", async (req, res) => {
            ORDER BY date ASC`,
           [since]
         ) || [];
-      } else {
+    } else {
         data = await dbAll(
           `SELECT date(created_at) as date, COUNT(*) as quizzes, COUNT(DISTINCT user_id) as active_users
            FROM quiz_results
@@ -197,7 +197,7 @@ analyticsDashboardRouter.get("/top-subjects", async (req, res) => {
          LIMIT 20`
       ) || [];
     } catch (_e) {}
-
+    
     res.json({
       ok: true,
       subjects: data.map(d => ({
@@ -236,7 +236,7 @@ analyticsDashboardRouter.get("/users", async (req, res) => {
       ) || [];
       counts.forEach(r => { quizCounts[r.user_id] = Number(r.c); });
     } catch (_e) {}
-
+    
     res.json({
       ok: true,
       users: users.map(u => ({

@@ -4,10 +4,16 @@
  */
 
 (function() {
-  const API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) || 
+  let API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) || 
     (window.location && window.location.origin && window.location.origin !== "null" 
       ? window.location.origin 
       : "http://localhost:8080");
+
+  // Failsafe: 在 Render 前端域名下，绝不应向同源请求 /api（会拿到 404.html 的 HTML）
+  if (typeof window !== 'undefined' && window.location && window.location.hostname.includes('.onrender.com') && API_BASE === window.location.origin) {
+    API_BASE = "https://quizall-backend.onrender.com";
+    console.warn("[oauth] API_BASE was pointing to frontend, overridden to backend");
+  }
 
   const TOKEN_KEY = "quizall.token";
 
@@ -22,8 +28,15 @@
       
       const response = await fetch(`${API_BASE}/api/auth/oauth/${provider}/authorize`);
       console.log(`[oauth] Response status: ${response.status}`);
-      
-      const data = await response.json();
+
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("[oauth] Response is not JSON (got HTML?):", text.slice(0, 200));
+        throw new Error("API 返回了非 JSON 响应，请确认后端地址配置正确（config.js 中的 RENDER_BACKEND_URL）");
+      }
       console.log(`[oauth] Response data:`, data);
 
       if (!response.ok || !data.ok) {
