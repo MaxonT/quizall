@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { optionalAuth, requireAuth } from "./auth.js";
 import { db } from "../lib/db.js";
+import { USE_POSTGRES, dbGet, dbRun, dbAll } from "../lib/dbHelpers.js";
 import { chatJsonAnthropic } from "../lib/anthropicClient.js";
 import { nanoid } from "nanoid";
 
@@ -14,7 +15,6 @@ const HISTORY_MAX_LIMIT = 50;
 const AI_MODEL = "claude-sonnet-4-20250514";
 
 // ─── Ensure quiz tables exist (SQLite only — PostgreSQL tables are in db-pg.js initializeSchema) ──
-const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
 if (!USE_POSTGRES) {
   db.exec(`
 CREATE TABLE IF NOT EXISTS quiz_results (
@@ -59,22 +59,17 @@ CREATE INDEX IF NOT EXISTS idx_quiz_api_logs_user ON quiz_api_logs(user_id, crea
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-function logApiCall(userId, action, usage, durationMs) {
+async function logApiCall(userId, action, usage, durationMs) {
   if (!userId) return; // 匿名用户不落库（表结构要求 user_id 非空）
   try {
-    db.prepare(`
-      INSERT INTO quiz_api_logs (id, user_id, action, model, input_tokens, output_tokens, duration_ms, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      nanoid(16),
-      userId,
-      action,
-      AI_MODEL,
-      usage?.input_tokens || 0,
-      usage?.output_tokens || 0,
-      durationMs || 0,
-      new Date().toISOString()
-    );
+    const sql = `INSERT INTO quiz_api_logs (id, user_id, action, model, input_tokens, output_tokens, duration_ms, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    const params = [nanoid(16), userId, action, AI_MODEL, usage?.input_tokens || 0, usage?.output_tokens || 0, durationMs || 0, new Date().toISOString()];
+    if (USE_POSTGRES) {
+      await dbRun(sql, params);
+    } else {
+      db.prepare(sql).run(...params);
+    }
   } catch (err) {
     console.error("[quizall] Failed to log API call:", err.message);
   }
@@ -176,7 +171,7 @@ quizRouter.post("/generate", optionalAuth, async (req, res) => {
       return res.status(502).json({ ok: false, error: "AI analysis returned an unexpected format. Please try again." });
     }
 
-    logApiCall(userId, "generate:analysis", analysisResult.usage, analysisDuration);
+    await logApiCall(userId, "generate:analysis", analysisResult.usage, analysisDuration);
 
     // --- Pass 2: Quiz Generation ---
     const quizStart = Date.now();
@@ -199,7 +194,7 @@ quizRouter.post("/generate", optionalAuth, async (req, res) => {
       return res.status(502).json({ ok: false, error: "AI failed to generate questions. Please try again." });
     }
 
-    logApiCall(userId, "generate:quiz", quizResult.usage, quizDuration);
+    await logApiCall(userId, "generate:quiz", quizResult.usage, quizDuration);
 
     console.log(`[quizall] Generated ${questions.length} questions${userId ? ` for user ${userId}` : " for anonymous user"} (analysis: ${analysisDuration}ms, quiz: ${quizDuration}ms)`);
 
@@ -217,41 +212,50 @@ quizRouter.post("/generate", optionalAuth, async (req, res) => {
     if (err.code === "ANTHROPIC_DISABLED") {
       return res.status(503).json({ ok: false, error: "AI service is currently unavailable" });
     }
+    if (err.status === 429) {
+      const retrySec = err.headers?.get?.("retry-after") || 60;
+      return res.status(429).json({
+        ok: false,
+        error: "AI rate limit reached. Please try again in a minute or reduce the content length.",
+        retryAfter: parseInt(String(retrySec), 10) || 60,
+      });
+    }
     return res.status(500).json({ ok: false, error: "Quiz generation failed" });
   }
 });
 
 // ─── GET /history ──────────────────────────────────────────────────────────
 
-quizRouter.get("/history", requireAuth, (req, res) => {
+quizRouter.get("/history", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(HISTORY_MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const offset = (page - 1) * limit;
 
-    const countRow = db.prepare("SELECT COUNT(*) AS total FROM quiz_results WHERE user_id = ?").get(userId);
-    const total = countRow?.total || 0;
+    let countRow;
+    let results;
+    if (USE_POSTGRES) {
+      countRow = await dbGet("SELECT COUNT(*) AS total FROM quiz_results WHERE user_id = ?", [userId]);
+      results = await dbAll(
+        `SELECT qr.id, qr.subject, qr.score, qr.total, qr.topics, qr.elapsed, qr.created_at,
+          (SELECT COUNT(*)::int FROM quiz_questions qq WHERE qq.result_id = qr.id) AS question_count
+         FROM quiz_results qr WHERE qr.user_id = ? ORDER BY qr.created_at DESC LIMIT ? OFFSET ?`,
+        [userId, limit, offset]
+      );
+    } else {
+      countRow = db.prepare("SELECT COUNT(*) AS total FROM quiz_results WHERE user_id = ?").get(userId);
+      results = db.prepare(`
+        SELECT qr.id, qr.subject, qr.score, qr.total, qr.topics, qr.elapsed, qr.created_at,
+          (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.result_id = qr.id) AS question_count
+        FROM quiz_results qr WHERE qr.user_id = ? ORDER BY qr.created_at DESC LIMIT ? OFFSET ?
+      `).all(userId, limit, offset);
+    }
 
-    const results = db.prepare(`
-      SELECT
-        qr.id,
-        qr.subject,
-        qr.score,
-        qr.total,
-        qr.topics,
-        qr.elapsed,
-        qr.created_at,
-        (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.result_id = qr.id) AS question_count
-      FROM quiz_results qr
-      WHERE qr.user_id = ?
-      ORDER BY qr.created_at DESC
-      LIMIT ? OFFSET ?
-    `).all(userId, limit, offset);
-
+    const total = countRow?.total ?? 0;
     const parsed = results.map((r) => ({
       ...r,
-      topics: r.topics ? JSON.parse(r.topics) : [],
+      topics: r.topics ? (typeof r.topics === "string" ? JSON.parse(r.topics) : r.topics) : [],
     }));
 
     return res.json({
@@ -261,7 +265,7 @@ quizRouter.get("/history", requireAuth, (req, res) => {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(Number(total) / limit),
       },
     });
   } catch (err) {
@@ -272,7 +276,7 @@ quizRouter.get("/history", requireAuth, (req, res) => {
 
 // ─── POST /history ─────────────────────────────────────────────────────────
 
-quizRouter.post("/history", requireAuth, (req, res) => {
+quizRouter.post("/history", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
     const { subject, score, total, topics, questions, answers, elapsed } = req.body || {};
@@ -289,51 +293,63 @@ quizRouter.post("/history", requireAuth, (req, res) => {
 
     const resultId = nanoid(16);
     const now = new Date().toISOString();
+    const answerMap = Array.isArray(answers) ? answers : [];
 
-    const insertResult = db.prepare(`
-      INSERT INTO quiz_results (id, user_id, subject, score, total, topics, elapsed, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const insertQuestion = db.prepare(`
-      INSERT INTO quiz_questions (id, result_id, type, question, options, correct_answer, user_answer, is_correct, explanation, order_index)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const saveAll = db.transaction(() => {
-      insertResult.run(
-        resultId,
-        userId,
-        subject || "Untitled Quiz",
-        score,
-        total,
-        topics ? JSON.stringify(topics) : null,
-        elapsed || null,
-        now
-      );
-
-      const answerMap = Array.isArray(answers) ? answers : [];
-      questions.forEach((q, i) => {
-        const userAnswer = answerMap[i]?.answer ?? answerMap[i] ?? null;
-        const isCorrect = answerMap[i]?.is_correct ?? (userAnswer === q.correct_answer ? 1 : 0);
-        insertQuestion.run(
-          nanoid(16),
+    if (USE_POSTGRES) {
+      await db.transaction(async (tx) => {
+        await tx.run(
+          `INSERT INTO quiz_results (id, user_id, subject, score, total, topics, elapsed, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           resultId,
-          q.type || "unknown",
-          q.question || "",
-          q.options ? JSON.stringify(q.options) : null,
-          q.correct_answer || "",
-          typeof userAnswer === "string" ? userAnswer : JSON.stringify(userAnswer),
-          isCorrect ? 1 : 0,
-          q.explanation || null,
-          i
+          userId,
+          subject || "Untitled Quiz",
+          score,
+          total,
+          topics ? JSON.stringify(topics) : null,
+          elapsed || null,
+          now
         );
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i];
+          const userAnswer = answerMap[i]?.answer ?? answerMap[i] ?? null;
+          const isCorrect = answerMap[i]?.is_correct ?? (userAnswer === q.correct_answer);
+          await tx.run(
+            `INSERT INTO quiz_questions (id, result_id, type, question, options, correct_answer, user_answer, is_correct, explanation, order_index)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            nanoid(16),
+            resultId,
+            q.type || "unknown",
+            q.question || "",
+            q.options ? JSON.stringify(q.options) : null,
+            q.correct_answer || "",
+            typeof userAnswer === "string" ? userAnswer : JSON.stringify(userAnswer),
+            isCorrect,
+            q.explanation || null,
+            i
+          );
+        }
       });
-    });
+    } else {
+      const insertResult = db.prepare(`
+        INSERT INTO quiz_results (id, user_id, subject, score, total, topics, elapsed, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      const insertQuestion = db.prepare(`
+        INSERT INTO quiz_questions (id, result_id, type, question, options, correct_answer, user_answer, is_correct, explanation, order_index)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      const saveAll = db.transaction(() => {
+        insertResult.run(resultId, userId, subject || "Untitled Quiz", score, total, topics ? JSON.stringify(topics) : null, elapsed || null, now);
+        questions.forEach((q, i) => {
+          const userAnswer = answerMap[i]?.answer ?? answerMap[i] ?? null;
+          const isCorrect = answerMap[i]?.is_correct ?? (userAnswer === q.correct_answer ? 1 : 0);
+          insertQuestion.run(nanoid(16), resultId, q.type || "unknown", q.question || "", q.options ? JSON.stringify(q.options) : null, q.correct_answer || "", typeof userAnswer === "string" ? userAnswer : JSON.stringify(userAnswer), isCorrect ? 1 : 0, q.explanation || null, i);
+        });
+      });
+      saveAll();
+    }
 
-    saveAll();
     console.log(`[quizall] Saved quiz result ${resultId} for user ${userId} (${score}/${total})`);
-
     return res.status(201).json({ ok: true, id: resultId });
   } catch (err) {
     console.error("[quizall] history POST error:", err);
@@ -343,12 +359,14 @@ quizRouter.post("/history", requireAuth, (req, res) => {
 
 // ─── DELETE /history/:id ───────────────────────────────────────────────────
 
-quizRouter.delete("/history/:id", requireAuth, (req, res) => {
+quizRouter.delete("/history/:id", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
     const resultId = req.params.id;
 
-    const row = db.prepare("SELECT id, user_id FROM quiz_results WHERE id = ?").get(resultId);
+    const row = USE_POSTGRES
+      ? await dbGet("SELECT id, user_id FROM quiz_results WHERE id = ?", [resultId])
+      : db.prepare("SELECT id, user_id FROM quiz_results WHERE id = ?").get(resultId);
     if (!row) {
       return res.status(404).json({ ok: false, error: "Quiz result not found" });
     }
@@ -356,14 +374,20 @@ quizRouter.delete("/history/:id", requireAuth, (req, res) => {
       return res.status(403).json({ ok: false, error: "You can only delete your own quiz results" });
     }
 
-    const deleteAll = db.transaction(() => {
-      db.prepare("DELETE FROM quiz_questions WHERE result_id = ?").run(resultId);
-      db.prepare("DELETE FROM quiz_results WHERE id = ?").run(resultId);
-    });
+    if (USE_POSTGRES) {
+      await db.transaction(async (tx) => {
+        await tx.run("DELETE FROM quiz_questions WHERE result_id = ?", resultId);
+        await tx.run("DELETE FROM quiz_results WHERE id = ?", resultId);
+      });
+    } else {
+      const deleteAll = db.transaction(() => {
+        db.prepare("DELETE FROM quiz_questions WHERE result_id = ?").run(resultId);
+        db.prepare("DELETE FROM quiz_results WHERE id = ?").run(resultId);
+      });
+      deleteAll();
+    }
 
-    deleteAll();
     console.log(`[quizall] Deleted quiz result ${resultId} for user ${userId}`);
-
     return res.json({ ok: true });
   } catch (err) {
     console.error("[quizall] history DELETE error:", err);

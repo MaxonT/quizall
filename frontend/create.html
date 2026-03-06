@@ -525,7 +525,11 @@
         var data = await res.json();
 
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || 'Quiz generation failed. Please try again.');
+          var msg = data.error || 'Quiz generation failed. Please try again.';
+          if (res.status === 429 && data.retryAfter) {
+            msg = (data.error || 'AI rate limit reached.') + ' Try again in ' + data.retryAfter + ' seconds.';
+          }
+          throw new Error(msg);
         }
 
         if (!Array.isArray(data.quiz) || data.quiz.length === 0) {

@@ -19,8 +19,9 @@ import { FEATURES } from "./lib/subscriptionConfig.js";
 dotenv.config();
 const app = express();
 
+// 生产环境在 Render 等单层反向代理后：用 1 而非 true，避免 express-rate-limit 报 ERR_ERL_PERMISSIVE_TRUST_PROXY（trust proxy true 会允许伪造 X-Forwarded-For 绕过 IP 限流）
 if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', true);
+  app.set('trust proxy', 1);
 }
 
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || "*").trim();
@@ -174,6 +175,14 @@ app.use("/api/*", (req, res) => {
     path: req.path,
     method: req.method,
   });
+});
+
+// 行业惯例：全局错误处理，统一返回 { ok: false, error }，生产环境不泄露堆栈
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  console.error("[quizall] Unhandled error:", err);
+  const message = process.env.NODE_ENV === "production" ? "Internal server error" : (err.message || String(err));
+  res.status(500).json({ ok: false, error: message });
 });
 
 const PORT = process.env.PORT || 8080;
