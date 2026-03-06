@@ -202,6 +202,8 @@ oauthRouter.get("/:provider/authorize", (req, res) => {
       redirect_uri: OAUTH_REDIRECT_URI,
       scope: 'user:email',
       state: state,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
       allow_signup: 'true'
     });
     
@@ -246,27 +248,22 @@ oauthRouter.get("/callback", async (req, res) => {
   console.log(`[oauth] Callback received - code: ${code ? 'present' : 'missing'}, state: ${state ? 'present' : 'missing'}, error: ${error || 'none'}`);
   console.log(`[oauth] FRONTEND_URL (resolved): ${frontendBase}`);
   
+  // 错误用 query 传（仅错误信息，无敏感 token）；成功用 fragment 传 token（不进入 Referer，符合 OAuth 安全实践）
   if (error) {
     const errorUrl = new URL(`${frontendBase}/index.html`);
     errorUrl.searchParams.set('oauth_error', encodeURIComponent(error));
-    console.log('[oauth] Redirecting to frontend with error:', errorUrl.toString());
     return res.redirect(errorUrl.toString());
   }
-  
   if (!code || !state) {
     const errorUrl = new URL(`${frontendBase}/index.html`);
     errorUrl.searchParams.set('oauth_error', encodeURIComponent('Missing code or state'));
-    console.log('[oauth] Redirecting to frontend with error: Missing code or state');
     return res.redirect(errorUrl.toString());
   }
-
-  // Retrieve code_verifier from store
   const stored = codeVerifierStore.get(state);
   if (!stored || stored.expiresAt < Date.now()) {
     codeVerifierStore.delete(state);
     const errorUrl = new URL(`${frontendBase}/index.html`);
     errorUrl.searchParams.set('oauth_error', encodeURIComponent('Invalid or expired state'));
-    console.log('[oauth] Redirecting to frontend with error: Invalid or expired state');
     return res.redirect(errorUrl.toString());
   }
   
@@ -312,14 +309,16 @@ oauthRouter.get("/callback", async (req, res) => {
       const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({
+        body: new URLSearchParams({
           client_id: GITHUB_CLIENT_ID,
           client_secret: GITHUB_CLIENT_SECRET,
-          code: code
-        })
+          code: code,
+          redirect_uri: OAUTH_REDIRECT_URI,
+          code_verifier: codeVerifier
+        }).toString()
       });
       
       const tokenData = await tokenResponse.json();
@@ -361,19 +360,14 @@ oauthRouter.get("/callback", async (req, res) => {
     const user = buildUserPayload(userRow);
     const token = createAuthToken(user);
     
-    // Redirect to frontend with token
-    // Explicitly use /index.html for Vercel compatibility
-    const frontendUrl = new URL(`${frontendBase}/index.html`);
-    frontendUrl.searchParams.set('oauth_token', token);
-    frontendUrl.searchParams.set('oauth_success', 'true');
-    
-    console.log('[oauth] Redirecting to frontend:', frontendUrl.toString());
-    return res.redirect(frontendUrl.toString());
+    // 用 fragment 传 token（不进入 Referer/服务器日志），符合 OAuth 2.0 安全实践
+    const hash = new URLSearchParams({ oauth_token: token, oauth_success: 'true' }).toString();
+    const frontendUrl = `${frontendBase}/index.html#${hash}`;
+    return res.redirect(frontendUrl);
   } catch (err) {
     console.error('[oauth] Callback error:', err);
     const errorUrl = new URL(`${frontendBase}/index.html`);
     errorUrl.searchParams.set('oauth_error', encodeURIComponent(err.message || 'OAuth authentication failed'));
-    console.log('[oauth] Redirecting to frontend with error:', errorUrl.toString());
     return res.redirect(errorUrl.toString());
   }
 });

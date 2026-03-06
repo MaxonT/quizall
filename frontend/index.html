@@ -804,12 +804,15 @@
       }
     }
 
-    // ─── OAuth Callback ────────────────────────
+    // ─── OAuth Callback（支持 fragment # 与 query，与后端 OAuth 2.0 实践一致）──
     function handleOAuthCallback() {
-      const params = new URLSearchParams(window.location.search);
-      const token  = params.get("oauth_token");
-      const ok     = params.get("oauth_success");
-      const err    = params.get("oauth_error");
+      var hash = window.location.hash.slice(1);
+      var search = window.location.search;
+      var fromHash = hash ? new URLSearchParams(hash) : null;
+      var fromSearch = search ? new URLSearchParams(search) : null;
+      var token = (fromHash && fromHash.get("oauth_token")) || (fromSearch && fromSearch.get("oauth_token"));
+      var ok = (fromHash && fromHash.get("oauth_success")) || (fromSearch && fromSearch.get("oauth_success"));
+      var err = (fromSearch && fromSearch.get("oauth_error")) || (fromHash && fromHash.get("oauth_error"));
 
       if (err) {
         showAuthMsg(decodeURIComponent(err), "error");
@@ -824,7 +827,8 @@
       }
     }
 
-    if (window.location.search.includes("oauth_token") || window.location.search.includes("oauth_error")) {
+    var hash = window.location.hash.slice(1);
+    if (window.location.search.includes("oauth_token") || window.location.search.includes("oauth_error") || (hash && (hash.includes("oauth_token") || hash.includes("oauth_error")))) {
       handleOAuthCallback();
     }
 

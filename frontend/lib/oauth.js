@@ -60,45 +60,29 @@
   // =============================================
 
   function handleOAuthCallback() {
-    console.log('[oauth] handleOAuthCallback called');
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('oauth_token');
-    const success = urlParams.get('oauth_success');
-    const error = urlParams.get('oauth_error');
-
-    console.log('[oauth] Callback params:', { token: token ? 'present' : 'missing', success, error });
+    // 行业标准：token 经 fragment (#) 回传，不进入 Referer；错误仍用 query
+    const hash = window.location.hash.slice(1);
+    const search = window.location.search;
+    const fromHash = hash ? new URLSearchParams(hash) : null;
+    const fromSearch = search ? new URLSearchParams(search) : null;
+    const token = (fromHash && fromHash.get('oauth_token')) || (fromSearch && fromSearch.get('oauth_token'));
+    const success = (fromHash && fromHash.get('oauth_success')) || (fromSearch && fromSearch.get('oauth_success'));
+    const error = (fromSearch && fromSearch.get('oauth_error')) || (fromHash && fromHash.get('oauth_error'));
 
     if (error) {
-      console.error('[oauth] OAuth error:', error);
       showError(decodeURIComponent(error));
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
       return;
     }
 
     if (success === 'true' && token) {
-      console.log('[oauth] OAuth success, saving token');
-      // Save token
       localStorage.setItem(TOKEN_KEY, token);
-      
-      // Dispatch auth state change event
       window.dispatchEvent(new CustomEvent('authStateChanged'));
-      
-      // Show success message
       showSuccess('Successfully signed in!');
-      
-      // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // Refresh auth status if available
-      if (window.authStatus && window.authStatus.checkAuthStatus) {
-        console.log('[oauth] Refreshing auth status');
-        window.authStatus.checkAuthStatus();
-      } else {
-        console.warn('[oauth] authStatus not available');
+      if (window.authState && window.authState.fetchUserInfo) {
+        window.authState.fetchUserInfo();
       }
-    } else {
-      console.warn('[oauth] Callback called but no success token found');
     }
   }
 
@@ -134,8 +118,10 @@
     handleCallback: handleOAuthCallback
   };
 
-  // Auto-handle callback on page load
-  if (window.location.search.includes('oauth_token') || window.location.search.includes('oauth_error')) {
+  // Auto-handle callback on page load（fragment 或 query 任一含 oauth 参数即处理）
+  const hash = window.location.hash.slice(1);
+  if (window.location.search.includes('oauth_token') || window.location.search.includes('oauth_error') ||
+      (hash && (hash.includes('oauth_token') || hash.includes('oauth_error')))) {
     handleOAuthCallback();
   }
 })();
