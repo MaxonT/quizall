@@ -794,12 +794,12 @@
     }
 
     function showView() {
+      // 合并体验：Landing 永远可见；登录后额外显示 Dashboard
+      $landing.classList.remove("idx-hidden");
       if (isLoggedIn()) {
-        $landing.classList.add("idx-hidden");
         $dashboard.classList.remove("idx-hidden");
         loadDashboard();
       } else {
-        $landing.classList.remove("idx-hidden");
         $dashboard.classList.add("idx-hidden");
       }
     }
@@ -955,13 +955,25 @@
       var token = localStorage.getItem(TOKEN_KEY);
       if (!token) return;
 
-      // Decode JWT payload for display name/email
+      // Decode JWT payload for display name/email (base64url-safe)
+      function decodeJwtPayload(t) {
+        try {
+          if (!t || typeof t !== "string") return null;
+          var parts = t.split(".");
+          if (parts.length < 2) return null;
+          var b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+          var pad = Array((4 - (b64.length % 4)) % 4 + 1).join("=");
+          return JSON.parse(atob(b64 + pad));
+        } catch (e) { return null; }
+      }
+      function getEmailFromToken(t) {
+        var p = decodeJwtPayload(t);
+        return p && typeof p.email === "string" ? p.email : "";
+      }
       try {
-        var payload = JSON.parse(atob(token.split(".")[1]));
-        var name  = payload.name || payload.email || "User";
-        var email = payload.email || "";
-        document.getElementById("welcomeName").textContent = "Welcome back, " + name + "!";
-        document.getElementById("welcomeEmail").textContent = email;
+        var emailFromToken = getEmailFromToken(token);
+        document.getElementById("welcomeName").textContent = "Welcome back" + (emailFromToken ? ", " + emailFromToken : "") + "!";
+        document.getElementById("welcomeEmail").textContent = emailFromToken;
       } catch (_) {}
 
       // Fetch history

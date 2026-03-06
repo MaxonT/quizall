@@ -8,6 +8,7 @@ data/
 .DS_Store
 _promptly_src/
 *.zip
+Promptly-cloud-v0.6.8.3-fullstack/
 *.pyc
 __pycache__/
 pipeline_monitor_logs/

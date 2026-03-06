@@ -34,6 +34,24 @@
 
   let currentUser = null;
 
+  function decodeJwtPayload(token) {
+    try {
+      if (!token || typeof token !== "string") return null;
+      const parts = token.split(".");
+      if (parts.length < 2) return null;
+      const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+      return JSON.parse(atob(b64 + pad));
+    } catch {
+      return null;
+    }
+  }
+
+  function getEmailFromToken(token) {
+    const payload = decodeJwtPayload(token);
+    return (payload && typeof payload.email === "string" && payload.email) ? payload.email : null;
+  }
+
   // =============================================
   // Initialization
   // =============================================
@@ -132,20 +150,26 @@
         }
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok && data.ok && data.user) {
         currentUser = data.user;
         showAuthenticatedState(data.user);
       } else {
-        // Token invalid, clear it
-        localStorage.removeItem(TOKEN_KEY);
-        showUnauthenticatedState();
+        // 只有 401 才清 token；否则可能是后端暂时错误/CORS，不应把用户踢下线
+        if (response.status === 401) {
+          localStorage.removeItem(TOKEN_KEY);
+          showUnauthenticatedState();
+        } else {
+          const email = getEmailFromToken(token) || 'User';
+          showAuthenticatedState({ email });
+        }
       }
     } catch (err) {
       console.error('[authStatus] Error checking auth status:', err);
-      // On error, assume not authenticated
-      showUnauthenticatedState();
+      // 网络错误：不清 token，使用 JWT email 兜底
+      const email = getEmailFromToken(token) || 'User';
+      showAuthenticatedState({ email });
     }
   }
 

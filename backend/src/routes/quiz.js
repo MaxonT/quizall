@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "./auth.js";
+import { optionalAuth, requireAuth } from "./auth.js";
 import { db } from "../lib/db.js";
 import { chatJsonAnthropic } from "../lib/anthropicClient.js";
 import { nanoid } from "nanoid";
@@ -60,6 +60,7 @@ CREATE INDEX IF NOT EXISTS idx_quiz_api_logs_user ON quiz_api_logs(user_id, crea
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function logApiCall(userId, action, usage, durationMs) {
+  if (!userId) return; // 匿名用户不落库（表结构要求 user_id 非空）
   try {
     db.prepare(`
       INSERT INTO quiz_api_logs (id, user_id, action, model, input_tokens, output_tokens, duration_ms, created_at)
@@ -124,9 +125,10 @@ function buildQuizPrompt(content, analysis, types, numQuestions) {
 
 // ─── POST /generate ────────────────────────────────────────────────────────
 
-quizRouter.post("/generate", requireAuth, async (req, res) => {
+// 未登录也可生成 quiz（不写入历史、不落 api log）；登录用户照常记录
+quizRouter.post("/generate", optionalAuth, async (req, res) => {
   try {
-    const userId = req.user.sub;
+    const userId = req.user?.sub || null;
     const { content, types, numQuestions } = req.body || {};
 
     // --- Validation ---
@@ -199,7 +201,7 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
 
     logApiCall(userId, "generate:quiz", quizResult.usage, quizDuration);
 
-    console.log(`[quizall] Generated ${questions.length} questions for user ${userId} (analysis: ${analysisDuration}ms, quiz: ${quizDuration}ms)`);
+    console.log(`[quizall] Generated ${questions.length} questions${userId ? ` for user ${userId}` : " for anonymous user"} (analysis: ${analysisDuration}ms, quiz: ${quizDuration}ms)`);
 
     return res.json({
       ok: true,

@@ -1,7 +1,11 @@
-const API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim())
+let API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim())
   || (window.location && window.location.origin && window.location.origin !== "null"
     ? window.location.origin
     : "http://localhost:8080");
+// Failsafe: Render 前端域名下不应同源请求 /api
+if (typeof window !== "undefined" && window.location?.hostname?.includes(".onrender.com") && API_BASE === window.location.origin) {
+  API_BASE = "https://quizall-backend.onrender.com";
+}
 
 (() => {
   const envSummaryEl = document.getElementById("envSummary");
@@ -94,6 +98,36 @@ const API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim())
     return window.authGuard.fetchWithAuth(`${API_BASE}${path}`, { ...options, headers });
   }
 
+  function decodeJwtPayload(token) {
+    try {
+      if (!token || typeof token !== "string") return null;
+      const parts = token.split(".");
+      if (parts.length < 2) return null;
+      const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+      return JSON.parse(atob(b64 + pad));
+    } catch {
+      return null;
+    }
+  }
+
+  function getEmailFromToken(token) {
+    const payload = decodeJwtPayload(token);
+    return (payload && typeof payload.email === "string" && payload.email) ? payload.email : null;
+  }
+
+  function showSignedInDegraded(token, reason) {
+    const email = getEmailFromToken(token) || "User";
+    // 保持“已登录”的感觉：不展示登录表单，也不清 token
+    authStatusEl.textContent = `Signed in as ${email}`;
+    authFormsEl?.classList.add("hidden");
+    logoutBtn?.classList.remove("hidden");
+    accountManagementSection?.classList.add("hidden");
+    accountDetailsPanel?.classList.add("hidden");
+    if (toggleIcon) toggleIcon.textContent = "▶";
+    setAuthMessage(reason || "Temporarily unable to load account details. Please retry.", true);
+  }
+
   async function loadAccount() {
     if (!authStatusEl) return;
     const token = getToken();
@@ -106,18 +140,27 @@ const API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim())
       const res = await fetchWithAuth("/api/auth/me");
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Unable to load account");
+        // 只有 401 才意味着登录失效；其它错误不应清 token（否则会“点一下就被登出”）
+        if (res.status === 401) {
+          saveToken(null);
+          updateAuthView(null);
+          window.authGuard?.showLoginRequired?.();
+          setAuthMessage("Please log in first", true);
+          log("Account 401: token cleared.");
+          return;
+        }
+        showSignedInDegraded(token, data.error || "Unable to load account (server error).");
+        log(`Account load non-401 error: ${res.status}`);
+        return;
       }
       updateAuthView(data.user);
       setAuthMessage("");
       log("Account loaded.");
     } catch (err) {
       console.error(err);
-      saveToken(null);
-      updateAuthView(null);
-      window.authGuard?.showLoginRequired?.();
-      setAuthMessage("Please log in first", true);
-      log("Account error: " + err.message);
+      // 网络/CORS/JSON 解析等错误：不要清 token，不要强制当成“未登录”
+      showSignedInDegraded(token, "Network error while loading account. Please retry.");
+      log("Account error (network): " + (err.message || String(err)));
     }
   }
   async function submitAuthForm(path, payload) {

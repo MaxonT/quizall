@@ -508,9 +508,14 @@
 
         updateStatus('Analyzing materials...');
 
-        var res = await window.authGuard.fetchWithAuth(API_BASE + '/api/quiz/generate', {
+        // 未登录也可生成：有 token 则带上 Authorization，没有则匿名请求
+        var token = localStorage.getItem("quizall.token");
+        var headers = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = "Bearer " + token;
+
+        var res = await fetch(API_BASE + '/api/quiz/generate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: headers,
           body: JSON.stringify({
             content: content.trim(),
             types: selectedTypes,
