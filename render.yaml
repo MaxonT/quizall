@@ -1,10 +1,12 @@
 services:
+  # Backend: Node.js web service
   - type: web
     name: quizall-backend
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: cd backend && npm install
     startCommand: cd backend && npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -30,10 +32,11 @@ services:
         sync: false
       - key: SUBSCRIPTIONS_ENABLED
         value: "false"
-    healthCheckPath: /api/health
 
-  - type: static
+  # Frontend: Static site
+  - type: web
     name: quizall-frontend
+    runtime: static
     buildCommand: echo "Static site - no build needed"
     staticPublishPath: frontend
     headers:
@@ -47,5 +50,4 @@ services:
 
 databases:
   - name: quizall-db
-    plan: free
     databaseName: quizall
