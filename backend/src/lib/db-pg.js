@@ -458,6 +458,52 @@ export async function initializeSchema() {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- Quiz results
+    CREATE TABLE IF NOT EXISTS quiz_results (
+      id VARCHAR(255) PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      subject TEXT,
+      score INTEGER NOT NULL DEFAULT 0,
+      total INTEGER NOT NULL DEFAULT 0,
+      topics TEXT,
+      elapsed INTEGER,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_qr_user FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_quiz_results_user ON quiz_results(user_id, created_at);
+
+    -- Quiz questions
+    CREATE TABLE IF NOT EXISTS quiz_questions (
+      id VARCHAR(255) PRIMARY KEY,
+      result_id VARCHAR(255) NOT NULL,
+      type VARCHAR(50) NOT NULL,
+      question TEXT NOT NULL,
+      options TEXT,
+      correct_answer TEXT NOT NULL,
+      user_answer TEXT,
+      is_correct BOOLEAN NOT NULL DEFAULT false,
+      explanation TEXT,
+      order_index INTEGER NOT NULL DEFAULT 0,
+      CONSTRAINT fk_qq_result FOREIGN KEY (result_id) REFERENCES quiz_results(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_quiz_questions_result ON quiz_questions(result_id);
+
+    -- Quiz API usage logs
+    CREATE TABLE IF NOT EXISTS quiz_api_logs (
+      id VARCHAR(255) PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      action VARCHAR(100) NOT NULL,
+      model VARCHAR(100),
+      input_tokens INTEGER DEFAULT 0,
+      output_tokens INTEGER DEFAULT 0,
+      duration_ms INTEGER,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_quiz_api_logs_user ON quiz_api_logs(user_id, created_at);
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_plan_usage_user_date ON plan_usage(user_id, date, feature_type);
     CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at);

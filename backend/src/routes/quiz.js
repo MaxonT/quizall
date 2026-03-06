@@ -13,8 +13,10 @@ const NUM_QUESTIONS_MAX = 20;
 const HISTORY_MAX_LIMIT = 50;
 const AI_MODEL = "claude-sonnet-4-20250514";
 
-// ─── Ensure quiz tables exist ──────────────────────────────────────────────
-db.exec(`
+// ─── Ensure quiz tables exist (SQLite only — PostgreSQL tables are in db-pg.js initializeSchema) ──
+const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
+if (!USE_POSTGRES) {
+  db.exec(`
 CREATE TABLE IF NOT EXISTS quiz_results (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -26,9 +28,7 @@ CREATE TABLE IF NOT EXISTS quiz_results (
   created_at TEXT NOT NULL,
   CONSTRAINT fk_qr_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_quiz_results_user ON quiz_results(user_id, created_at);
-
 CREATE TABLE IF NOT EXISTS quiz_questions (
   id TEXT PRIMARY KEY,
   result_id TEXT NOT NULL,
@@ -42,9 +42,7 @@ CREATE TABLE IF NOT EXISTS quiz_questions (
   order_index INTEGER NOT NULL DEFAULT 0,
   CONSTRAINT fk_qq_result FOREIGN KEY (result_id) REFERENCES quiz_results(id) ON DELETE CASCADE
 );
-
 CREATE INDEX IF NOT EXISTS idx_quiz_questions_result ON quiz_questions(result_id);
-
 CREATE TABLE IF NOT EXISTS quiz_api_logs (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -55,9 +53,9 @@ CREATE TABLE IF NOT EXISTS quiz_api_logs (
   duration_ms INTEGER,
   created_at TEXT NOT NULL
 );
-
 CREATE INDEX IF NOT EXISTS idx_quiz_api_logs_user ON quiz_api_logs(user_id, created_at);
-`);
+  `);
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
