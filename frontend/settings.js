@@ -140,13 +140,14 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
       const res = await fetchWithAuth("/api/auth/me");
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
-        // 只有 401 才意味着登录失效；其它错误不应清 token（否则会“点一下就被登出”）
-        if (res.status === 401) {
+        const errMsg = (data.error || "").toLowerCase();
+        const isUserNotFound = res.status === 404 || errMsg.includes("user not found");
+        if (res.status === 401 || isUserNotFound) {
           saveToken(null);
           updateAuthView(null);
           window.authGuard?.showLoginRequired?.();
-          setAuthMessage("Please log in first", true);
-          log("Account 401: token cleared.");
+          setAuthMessage(isUserNotFound ? "Account no longer exists. Please sign in again." : "Please log in first", true);
+          log(isUserNotFound ? "User not found: token cleared." : "Account 401: token cleared.");
           return;
         }
         showSignedInDegraded(token, data.error || "Unable to load account (server error).");
