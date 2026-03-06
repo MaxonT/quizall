@@ -11,6 +11,18 @@ import { nanoid } from "nanoid";
 
 export const oauthRouter = Router();
 
+const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
+
+// 与 auth.js 一致：PG 下必须用异步 query，否则 oauth 回调拿到的是 Promise 而非用户行，导致 JWT 里 sub/email 为 undefined、/me 查不到用户
+async function dbGet(sql, params = []) {
+  if (USE_POSTGRES) return await db.get(sql, ...params);
+  return db.prepare(sql).get(...params);
+}
+async function dbRun(sql, params = []) {
+  if (USE_POSTGRES) return await db.run(sql, ...params);
+  return db.prepare(sql).run(...params);
+}
+
 // OAuth Configuration
 // Problem C: JWT_SECRET 必须显式设置，任何环境均不允许使用默认弱密钥
 const TOKEN_SECRET = process.env.JWT_SECRET;
@@ -87,38 +99,30 @@ function normalizeEmail(email = "") {
   return email.trim().toLowerCase();
 }
 
-function findOrCreateUser(email, provider, providerId) {
+async function findOrCreateUser(email, provider, providerId) {
   const normalizedEmail = normalizeEmail(email);
   
   // First, try to find existing user by email
-  let user = db.prepare("SELECT * FROM users WHERE email = ?").get(normalizedEmail);
+  let user = await dbGet("SELECT * FROM users WHERE email = ?", [normalizedEmail]);
   
   if (user) {
     // Update OAuth provider info if not set or different
     if (!user.oauth_provider || user.oauth_provider !== provider || user.oauth_id !== providerId) {
-      db.prepare(`
-        UPDATE users 
-        SET oauth_provider = ?, oauth_id = ?, updated_at = ?
-        WHERE id = ?
-      `).run(provider, providerId, new Date().toISOString(), user.id);
-      // Reload user to get updated data
-      user = db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+      await dbRun(
+        `UPDATE users SET oauth_provider = ?, oauth_id = ?, updated_at = ? WHERE id = ?`,
+        [provider, providerId, new Date().toISOString(), user.id]
+      );
+      user = await dbGet("SELECT * FROM users WHERE id = ?", [user.id]);
     }
-    
     return user;
   }
   
   // Try to find user by OAuth provider and ID (in case email changed)
-  user = db.prepare("SELECT * FROM users WHERE oauth_provider = ? AND oauth_id = ?").get(provider, providerId);
+  user = await dbGet("SELECT * FROM users WHERE oauth_provider = ? AND oauth_id = ?", [provider, providerId]);
   if (user) {
-    // Update email if it changed
     if (user.email !== normalizedEmail) {
-      db.prepare(`
-        UPDATE users 
-        SET email = ?, updated_at = ?
-        WHERE id = ?
-      `).run(normalizedEmail, new Date().toISOString(), user.id);
-      user = db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+      await dbRun(`UPDATE users SET email = ?, updated_at = ? WHERE id = ?`, [normalizedEmail, new Date().toISOString(), user.id]);
+      user = await dbGet("SELECT * FROM users WHERE id = ?", [user.id]);
     }
     return user;
   }
@@ -126,13 +130,12 @@ function findOrCreateUser(email, provider, providerId) {
   // Create new user
   const userId = nanoid(16);
   const now = new Date().toISOString();
-  
-  db.prepare(`
-    INSERT INTO users (id, email, oauth_provider, oauth_id, subscription_tier, subscription_active, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(userId, normalizedEmail, provider, providerId, "free", 1, now, now);
-  
-  return db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+  await dbRun(
+    `INSERT INTO users (id, email, oauth_provider, oauth_id, subscription_tier, subscription_active, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [userId, normalizedEmail, provider, providerId, "free", 1, now, now]
+  );
+  return await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
 }
 
 // =============================================
@@ -355,8 +358,11 @@ oauthRouter.get("/callback", async (req, res) => {
       throw new Error('Failed to retrieve user information');
     }
     
-    // Find or create user
-    const userRow = findOrCreateUser(userInfo.email, provider, userInfo.providerId);
+    // Find or create user（必须 await：PG 下为异步，否则 userRow 为 Promise，JWT 会带 undefined）
+    const userRow = await findOrCreateUser(userInfo.email, provider, userInfo.providerId);
+    if (!userRow) {
+      throw new Error('Failed to find or create user');
+    }
     const user = buildUserPayload(userRow);
     const token = createAuthToken(user);
     
