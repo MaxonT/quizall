@@ -31,6 +31,41 @@ header.topbar{position:sticky;top:0;display:flex;align-items:center;justify-cont
 .navlinks a{color:var(--muted);text-decoration:none;margin-left:12px}
 .navlinks a:hover{color:var(--text)}
 
+/* Nav User Bar — 登录状态条 */
+.nav-user-bar{display:flex;align-items:center;margin-left:8px}
+.nav-auth-buttons{display:flex;gap:8px;align-items:center}
+.nav-auth-btn{
+  padding:6px 14px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;
+  border:1px solid var(--border);background:var(--card);color:var(--text);
+  transition:border-color .2s,box-shadow .2s
+}
+.nav-auth-btn:hover{border-color:rgba(139,92,246,.5);box-shadow:0 4px 12px rgba(139,92,246,.15)}
+.nav-auth-signup{background:linear-gradient(135deg,var(--primary),rgba(6,182,212,.9));border:none;color:#fff}
+.nav-auth-signup:hover{box-shadow:0 4px 16px rgba(139,92,246,.35)}
+.nav-user-wrap{position:relative}
+.nav-user-trigger{
+  display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;
+  background:var(--card);border:1px solid var(--border);color:var(--text);
+  font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;
+  transition:border-color .2s,box-shadow .2s
+}
+.nav-user-trigger:hover{border-color:rgba(139,92,246,.5)}
+.nav-user-email{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-user-chevron{font-size:10px;opacity:.7}
+.nav-user-dropdown{
+  position:absolute;top:100%;right:0;margin-top:4px;min-width:160px;
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  box-shadow:var(--shadow);padding:6px;z-index:100
+}
+.nav-user-dropdown.hidden{display:none}
+.nav-user-item{
+  display:block;width:100%;padding:10px 14px;border-radius:8px;
+  font-size:14px;color:var(--text);text-decoration:none;text-align:left;
+  background:none;border:none;cursor:pointer;font-family:inherit
+}
+.nav-user-item:hover{background:rgba(139,92,246,.1)}
+.nav-user-logout{color:var(--muted)}
+
 .container{max-width:1200px;margin:24px auto;padding:0 10px}
 .grid{display:grid;gap:16px}
 .grid-2{grid-template-columns:1fr 1fr}

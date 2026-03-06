@@ -559,6 +559,7 @@
         <a href="settings.html" data-i18n="nav.settings">Settings</a>
         <a href="account.html" data-i18n="nav.account">Account</a>
       </div>
+      <div id="navUserBar" class="nav-user-bar"></div>
       <label class="control"><span data-i18n="appearance.label">Appearance</span>
         <select id="themeSelect"><option value="auto" data-i18n="appearance.auto">System</option><option value="light" data-i18n="appearance.light">Light</option><option value="dark" data-i18n="appearance.dark">Dark</option></select>
       </label>
@@ -772,6 +773,7 @@
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container"></div>
 
+  <script src="lib/navUserBar.js"></script>
   <script src="core.js"></script>
   <script>
   (function () {
@@ -964,13 +966,24 @@
           headers: { "Authorization": "Bearer " + token }
         });
         if (res.status === 401) {
+          toast("Session expired. Please sign in again.", "error");
           localStorage.removeItem(TOKEN_KEY);
           window.dispatchEvent(new CustomEvent("authStateChanged"));
           showView();
           return;
         }
         var data = await res.json();
-        var quizzes = Array.isArray(data) ? data : (data.quizzes || data.history || []);
+        var raw = Array.isArray(data) ? data : (data.results || data.quizzes || data.history || []);
+        var quizzes = raw.map(function (r) {
+          var pct = (r.total && r.total > 0) ? Math.round((r.score / r.total) * 100) : null;
+          return {
+            subject: r.subject,
+            score: pct,
+            percentage: pct,
+            total_questions: r.question_count || r.total_questions || r.totalQuestions || r.total || 0,
+            created_at: r.created_at || r.createdAt
+          };
+        });
 
         if (!quizzes.length) {
           document.getElementById("historySection").classList.add("idx-hidden");
