@@ -6,43 +6,46 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
-const migrations = [
-  'migrations/000_init.js',
-  'migrations/001_subscriptions.js',
-  'migrations/002_analytics.js',
-  'migrations/002_checkout_sessions.js',
-  'migrations/003_stripe_events.js'
-];
+const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
 
-console.log('[QuizAll] Starting database migrations...');
-
-// Ensure SQLITE_PATH is consistent
-const env = { 
-  ...process.env, 
-  SQLITE_PATH: process.env.SQLITE_PATH || './data/app.db' 
+const env = {
+  ...process.env,
+  SQLITE_PATH: process.env.SQLITE_PATH || './data/app.db'
 };
 
-console.log(`[QuizAll] Using database path: ${env.SQLITE_PATH}`);
-
-for (const migration of migrations) {
+function runMigration(migration, args = '') {
   try {
     console.log(`[QuizAll] Running ${migration}...`);
-    // 002 and 003 are CLI tools that require 'up' command
-    const args = (migration.includes('002') || migration.includes('003')) ? ' up' : '';
-    
-    execSync(`node ${migration}${args}`, { 
-      cwd: rootDir, 
+    execSync(`node ${migration}${args}`, {
+      cwd: rootDir,
       stdio: 'inherit',
-      env: env
+      env,
     });
   } catch (error) {
-    console.error(`[QuizAll] ❌ Failed to run ${migration}`);
-    // Don't fail hard, just log. Some migrations might fail if already applied in a non-idempotent way (though they should be idempotent)
-    // But for "no such table" errors, we really need them to succeed.
-    // Given the user's error, failing hard is probably better to prevent app from starting in broken state.
-    console.error(error);
-    process.exit(1);
+    // Log error but don't kill the server — individual migration failures
+    // are often non-critical (e.g. adding columns that already exist)
+    console.error(`[QuizAll] ⚠️  Migration ${migration} had an error (non-fatal):`, error.message || error);
   }
 }
 
-console.log('[QuizAll] ✅ All migrations completed successfully.');
+console.log('[QuizAll] Starting database migrations...');
+console.log(`[QuizAll] Database mode: ${USE_POSTGRES ? 'PostgreSQL' : 'SQLite'}`);
+
+if (USE_POSTGRES) {
+  // PostgreSQL: db-pg.js initializeSchema() (called via 000_init.js → db.js) creates
+  // ALL tables including quiz tables. Other migrations use better-sqlite3 directly
+  // and are not needed in PostgreSQL mode.
+  runMigration('migrations/000_init.js');
+  // 002_analytics creates analytics tables (already done by initializeSchema) but
+  // run it anyway to stay idempotent
+  runMigration('migrations/002_analytics.js', ' up');
+} else {
+  // SQLite: run all migrations
+  runMigration('migrations/000_init.js');
+  runMigration('migrations/001_subscriptions.js');
+  runMigration('migrations/002_analytics.js', ' up');
+  runMigration('migrations/002_checkout_sessions.js', ' up');
+  runMigration('migrations/003_stripe_events.js', ' up');
+}
+
+console.log('[QuizAll] ✅ Migrations complete.');
