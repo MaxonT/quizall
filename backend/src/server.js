@@ -23,8 +23,19 @@ if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', true);
 }
 
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
-app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
+const CORS_ORIGIN = (process.env.CORS_ORIGIN || "*").trim();
+app.use(cors({
+  origin: CORS_ORIGIN === "*" ? "*" : (origin, cb) => {
+    // Allow exact match or if no CORS_ORIGIN set
+    if (!origin || CORS_ORIGIN === "*" || origin.trim() === CORS_ORIGIN) {
+      cb(null, true);
+    } else {
+      console.warn(`[quizall] CORS blocked origin: "${origin}" (allowed: "${CORS_ORIGIN}")`);
+      cb(null, false);
+    }
+  },
+  credentials: true
+}));
 app.use(helmet());
 
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));

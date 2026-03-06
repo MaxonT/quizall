@@ -30,11 +30,11 @@ const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 // OAuth redirect URI should be the backend callback URL
 // If OAUTH_REDIRECT_URI is explicitly set, use it directly
 // Otherwise, construct it from CORS_ORIGIN
-const OAUTH_REDIRECT_URI = process.env.OAUTH_REDIRECT_URI || 
-  `${process.env.CORS_ORIGIN || "http://localhost:8080"}/api/auth/oauth/callback`;
+const OAUTH_REDIRECT_URI = (process.env.OAUTH_REDIRECT_URI ||
+  `${(process.env.CORS_ORIGIN || "http://localhost:8080").trim()}/api/auth/oauth/callback`).trim();
 
 // Frontend URL for redirecting after OAuth callback
-const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173";
+const FRONTEND_URL = (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173").trim();
 
 // In-memory store for code_verifier (in production, use Redis or database)
 const codeVerifierStore = new Map();
