@@ -58,16 +58,18 @@
         }
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok && data.ok && data.user) {
         currentUser = data.user;
         return data.user;
-      } else {
-        // Token invalid
-        clearToken();
-        return null;
       }
+      // 仅 401 时清除 token；500/502 等服务器错误不应清除刚拿到的 OAuth token
+      if (response.status === 401) {
+        clearToken();
+      }
+      currentUser = null;
+      return null;
     } catch (err) {
       console.error('[authState] Error fetching user info:', err);
       currentUser = null;

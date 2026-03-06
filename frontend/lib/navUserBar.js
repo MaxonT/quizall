@@ -4,11 +4,14 @@
  */
 (function () {
   const TOKEN_KEY = "quizall.token";
-  const API_BASE =
+  let API_BASE =
     (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) ||
     (window.location && window.location.origin && window.location.origin !== "null"
       ? window.location.origin
       : "http://localhost:8080");
+  if (typeof window !== "undefined" && window.location?.hostname?.includes(".onrender.com") && API_BASE === window.location.origin) {
+    API_BASE = "https://quizall-backend.onrender.com";
+  }
 
   function getToken() {
     return localStorage.getItem(TOKEN_KEY);
@@ -28,8 +31,17 @@
       fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-        .then((res) => res.json())
+        .then((res) => {
+          // 仅 401 时清除 token；网络/CORS 等错误不应清除刚拿到的 OAuth token
+          if (res.status === 401) {
+            clearToken();
+            renderLoggedOut(container);
+            return null;
+          }
+          return res.json();
+        })
         .then((data) => {
+          if (!data) return; // 已在上面处理 401
           const email = (data.ok && data.user && data.user.email) || "User";
           container.innerHTML = `
             <div class="nav-user-wrap" id="navUserWrap">
@@ -46,9 +58,21 @@
           setupLoggedInEvents(container);
         })
         .catch(() => {
-          // Token 可能无效，显示未登录态
-          clearToken();
-          renderLoggedOut(container);
+          // 网络/CORS 等错误：不清除 token，显示 "User" 作为回退（OAuth 刚成功时常见）
+          const email = "User";
+          container.innerHTML = `
+            <div class="nav-user-wrap" id="navUserWrap">
+              <button type="button" class="nav-user-trigger" id="navUserTrigger" aria-haspopup="true" aria-expanded="false">
+                <span class="nav-user-email">${escapeHtml(email)}</span>
+                <span class="nav-user-chevron">▼</span>
+              </button>
+              <div class="nav-user-dropdown hidden" id="navUserDropdown">
+                <a href="account.html" class="nav-user-item">Account</a>
+                <button type="button" class="nav-user-item nav-user-logout" id="navUserLogout">Log out</button>
+              </div>
+            </div>
+          `;
+          setupLoggedInEvents(container);
         });
     } else {
       renderLoggedOut(container);
