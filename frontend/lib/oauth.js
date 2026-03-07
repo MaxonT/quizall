@@ -25,8 +25,12 @@
     try {
       console.log(`[oauth] Initiating ${provider} OAuth flow...`);
       console.log(`[oauth] API_BASE: ${API_BASE}`);
-      
-      const response = await fetch(`${API_BASE}/api/auth/oauth/${provider}/authorize`);
+      // So backend redirects back to this origin after OAuth (avoids cross-origin redirect / security blocks)
+      const returnOrigin = typeof window !== 'undefined' && window.location && window.location.origin ? window.location.origin : '';
+      const authorizeUrl = returnOrigin
+        ? `${API_BASE}/api/auth/oauth/${provider}/authorize?return_origin=${encodeURIComponent(returnOrigin)}`
+        : `${API_BASE}/api/auth/oauth/${provider}/authorize`;
+      const response = await fetch(authorizeUrl);
       console.log(`[oauth] Response status: ${response.status}`);
 
       const text = await response.text();

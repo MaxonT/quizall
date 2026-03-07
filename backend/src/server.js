@@ -24,16 +24,15 @@ if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
 
-const CORS_ORIGIN = (process.env.CORS_ORIGIN || "*").trim();
+// 支持单个域名或逗号分隔多域名，例如：https://quizall.app 或 https://quizall.app,https://www.quizall.app,https://newdomain.com
+const CORS_ORIGIN_RAW = (process.env.CORS_ORIGIN || "*").trim();
+const CORS_ALLOWED = CORS_ORIGIN_RAW === "*" ? ["*"] : CORS_ORIGIN_RAW.split(",").map((o) => o.trim()).filter(Boolean);
 app.use(cors({
-  origin: CORS_ORIGIN === "*" ? "*" : (origin, cb) => {
-    // Allow exact match or if no CORS_ORIGIN set
-    if (!origin || CORS_ORIGIN === "*" || origin.trim() === CORS_ORIGIN) {
-      cb(null, true);
-    } else {
-      console.warn(`[quizall] CORS blocked origin: "${origin}" (allowed: "${CORS_ORIGIN}")`);
-      cb(null, false);
-    }
+  origin: CORS_ALLOWED[0] === "*" ? "*" : (origin, cb) => {
+    if (!origin) return cb(null, true);
+    const ok = CORS_ALLOWED.includes(origin) || CORS_ALLOWED.includes("*");
+    if (!ok) console.warn(`[quizall] CORS blocked origin: "${origin}" (allowed: ${CORS_ALLOWED.join(", ")})`);
+    cb(null, ok);
   },
   credentials: true
 }));

@@ -45,8 +45,12 @@ const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 const OAUTH_REDIRECT_URI = (process.env.OAUTH_REDIRECT_URI ||
   `${(process.env.CORS_ORIGIN || "http://localhost:8080").trim()}/api/auth/oauth/callback`).trim();
 
-// Frontend URL for redirecting after OAuth callback
+// Frontend URL for redirecting after OAuth callback (fallback when no return_origin or not in allow list)
 const FRONTEND_URL = (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173").trim();
+
+// Allowed origins for OAuth redirect (must match CORS_ORIGIN so "where you came from" is trusted)
+const CORS_ORIGIN_RAW = (process.env.CORS_ORIGIN || "").trim();
+const ALLOWED_REDIRECT_ORIGINS = CORS_ORIGIN_RAW === "*" ? [] : CORS_ORIGIN_RAW.split(",").map((o) => o.trim()).filter(Boolean);
 
 // In-memory store for code_verifier (in production, use Redis or database)
 const codeVerifierStore = new Map();
@@ -153,15 +157,26 @@ oauthRouter.get("/:provider/authorize", (req, res) => {
     return res.status(400).json({ ok: false, error: "Invalid provider" });
   }
 
+  // Optional: frontend sends return_origin so we redirect back to the same origin (avoids cross-origin redirect)
+  const returnOriginRaw = (req.query.return_origin || "").trim();
+  const returnOrigin =
+    returnOriginRaw && ALLOWED_REDIRECT_ORIGINS.length > 0 && ALLOWED_REDIRECT_ORIGINS.includes(returnOriginRaw)
+      ? returnOriginRaw
+      : null;
+  if (returnOriginRaw && ALLOWED_REDIRECT_ORIGINS.length > 0 && !returnOrigin) {
+    return res.status(400).json({ ok: false, error: "return_origin is not in CORS allow list" });
+  }
+
   // Generate PKCE code verifier and challenge
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
   
-  // Store code_verifier (with expiration in 10 minutes)
+  // Store code_verifier and optional return_origin (with expiration in 10 minutes)
   const state = nanoid(32);
   codeVerifierStore.set(state, {
     codeVerifier,
     provider,
+    returnOrigin,
     expiresAt: Date.now() + 10 * 60 * 1000
   });
   
@@ -230,16 +245,18 @@ oauthRouter.get("/callback", async (req, res) => {
   const { code, state, error } = req.query;
   
   // Determine frontend URL dynamically if not set
-  // PRIORITY 1: FRONTEND_URL env var (MUST be set for separate frontend/backend deployment)
-  // PRIORITY 2: CORS_ORIGIN env var (fallback)
-  // PRIORITY 3: Request host (only works if frontend/backend are same domain)
-  let frontendBase = process.env.FRONTEND_URL;
+  // Redirect to same origin user came from (if allowed), else fallback to FRONTEND_URL / CORS_ORIGIN / request host
+  let frontendBase =
+    (returnOrigin && ALLOWED_REDIRECT_ORIGINS.includes(returnOrigin))
+      ? returnOrigin
+      : process.env.FRONTEND_URL;
 
   if (!frontendBase) {
     if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== "*") {
-       frontendBase = process.env.CORS_ORIGIN;
+      const first = (process.env.CORS_ORIGIN || "").split(",").map((o) => o.trim()).filter(Boolean)[0];
+      frontendBase = first || `${req.protocol}://${req.get('host')}`;
     } else {
-       frontendBase = `${req.protocol}://${req.get('host')}`;
+      frontendBase = `${req.protocol}://${req.get('host')}`;
     }
   }
 
@@ -270,7 +287,7 @@ oauthRouter.get("/callback", async (req, res) => {
     return res.redirect(errorUrl.toString());
   }
   
-  const { codeVerifier, provider } = stored;
+  const { codeVerifier, provider, returnOrigin } = stored;
   codeVerifierStore.delete(state);
 
   try {
