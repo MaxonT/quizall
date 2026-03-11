@@ -31,7 +31,7 @@
     /* ---------- Hero ---------- */
     .hero {
       text-align: center;
-      padding: 5rem 2rem 3rem;
+      padding: 3.2rem 1.35rem 1.9rem;
       position: relative;
     }
     .hero::before {
@@ -44,11 +44,11 @@
       pointer-events: none;
     }
     .hero-title {
-      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-size: clamp(1.74rem, 3.8vw, 2.85rem);
       font-weight: 900;
       letter-spacing: -0.5px;
       line-height: 1.15;
-      margin: 0 0 1rem;
+      margin: 0 0 0.82rem;
       position: relative;
       text-align: center;
       width: 100%;
@@ -67,11 +67,11 @@
       100% { background-position: 0% 50%; }
     }
     .hero-sub {
-      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-size: clamp(0.9rem, 1.45vw, 1.02rem);
       color: var(--muted);
-      max-width: 600px;
-      margin: 0 auto 2.5rem;
-      line-height: 1.6;
+      max-width: 560px;
+      margin: 0 auto 2.05rem;
+      line-height: 1.52;
       position: relative;
     }
     .hero-actions {
@@ -87,9 +87,9 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 14px 32px;
-      border-radius: 14px;
-      font-size: 1rem;
+      padding: 11px 24px;
+      border-radius: 12px;
+      font-size: 0.94rem;
       font-weight: 700;
       cursor: pointer;
       border: none;
@@ -118,19 +118,19 @@
 
     /* ---------- Why Output Matters ---------- */
     .output-matters {
-      padding-top: 0.5rem;
-      padding-bottom: 1.75rem;
+      padding-top: 0.3rem;
+      padding-bottom: 1.28rem;
     }
     .output-shell {
       position: relative;
-      border-radius: 28px;
+      border-radius: 24px;
       border: 1px solid rgba(139,92,246,0.38);
       background:
         radial-gradient(90% 110% at 0% 0%, rgba(34,211,238,0.16), transparent 60%),
         radial-gradient(90% 110% at 100% 100%, rgba(139,92,246,0.24), transparent 65%),
         linear-gradient(135deg, rgba(5,8,20,0.94), rgba(15,22,46,0.96));
       box-shadow: 0 24px 48px rgba(5,8,20,0.4);
-      padding: 2.2rem;
+      padding: 1.9rem;
       overflow: hidden;
       isolation: isolate;
     }
@@ -178,14 +178,14 @@
     }
     .output-header h2 {
       margin: 0;
-      font-size: clamp(1.55rem, 3.5vw, 2.35rem);
+      font-size: clamp(1.38rem, 3vw, 2rem);
       line-height: 1.2;
       max-width: 820px;
       letter-spacing: -0.02em;
     }
     .output-headline {
       margin: 0;
-      font-size: clamp(2.2rem, 7vw, 4.35rem);
+      font-size: clamp(1.95rem, 5.8vw, 3.6rem);
       line-height: 1.02;
       letter-spacing: -0.03em;
       font-weight: 950;
@@ -219,7 +219,7 @@
       background: linear-gradient(160deg, rgba(15,22,46,0.92), rgba(11,16,36,0.74));
       backdrop-filter: blur(4px);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
-      padding: 1.3rem 1.25rem 1.35rem;
+      padding: 1.1rem 1.05rem 1.12rem;
       align-self: start;
     }
     .output-quote {
@@ -328,19 +328,22 @@
 
     /* ---------- Trust Marquee ---------- */
     .trust-marquee {
-      padding-top: 1rem;
-      padding-bottom: 1rem;
+      max-width: 1360px;
+      padding-top: 0.7rem;
+      padding-bottom: 1.1rem;
     }
     .trust-marquee .section-sub {
       margin-bottom: 1.35rem;
     }
     .logo-marquee-wrap {
       position: relative;
-      border-radius: 18px;
+      --logo-marquee-speed: 200s;
+      border-radius: 20px;
       border: 1px solid rgba(139,92,246,0.28);
       background: linear-gradient(180deg, rgba(15,22,46,0.88), rgba(5,8,20,0.95));
       overflow: hidden;
       box-shadow: var(--shadow);
+      padding: 0.28rem 0;
     }
     .logo-marquee-wrap::before,
     .logo-marquee-wrap::after {
@@ -360,21 +363,32 @@
       right: 0;
       background: linear-gradient(270deg, rgba(5,8,20,0.97), rgba(5,8,20,0));
     }
+    .logo-marquee-row {
+      position: relative;
+      overflow: hidden;
+    }
+    .logo-marquee-row + .logo-marquee-row {
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
     .logo-marquee-track {
       display: flex;
       align-items: center;
-      gap: 0.85rem;
+      gap: 1rem;
       width: max-content;
-      padding: 0.95rem 0;
-      animation: logoMarquee 62s linear infinite;
+      padding: 0.88rem 0;
+      animation: logoMarquee var(--logo-marquee-speed) linear infinite;
       will-change: transform;
+    }
+    .logo-marquee-track.reverse {
+      animation-name: logoMarqueeReverse;
+      animation-duration: var(--logo-marquee-speed);
     }
     .uni-logo-item {
       display: inline-flex;
       align-items: center;
       gap: 0.65rem;
-      min-width: 250px;
-      padding: 0.62rem 0.86rem;
+      min-width: 320px;
+      padding: 0.72rem 1.05rem;
       border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.1);
       background: rgba(11,16,36,0.6);
@@ -388,8 +402,8 @@
       background: rgba(15,22,46,0.95);
     }
     .uni-logo-mark {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 10px;
       display: inline-flex;
       align-items: center;
@@ -410,7 +424,7 @@
       transform: scale(1.04);
     }
     .uni-logo-name {
-      font-size: 0.9rem;
+      font-size: 0.98rem;
       font-weight: 600;
       line-height: 1.25;
       white-space: nowrap;
@@ -418,6 +432,10 @@
     @keyframes logoMarquee {
       from { transform: translate3d(0, 0, 0); }
       to { transform: translate3d(-50%, 0, 0); }
+    }
+    @keyframes logoMarqueeReverse {
+      from { transform: translate3d(-50%, 0, 0); }
+      to { transform: translate3d(0, 0, 0); }
     }
 
     /* ---------- Logged-in Hero ---------- */
@@ -510,7 +528,7 @@
     body.logged-in-home #landingView { order: 1; }
 
     /* ---------- How It Works ---------- */
-    .section { max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem; }
+    .section { max-width: 1020px; margin: 0 auto; padding: 2.05rem 1.05rem; }
     .section-title {
       text-align: center;
       font-size: 1.75rem;
@@ -604,16 +622,16 @@
 
     /* ---------- Auth Section ---------- */
     .auth-section {
-      max-width: 440px;
+      max-width: 420px;
       margin: 0 auto;
-      padding: 0 1.5rem 4rem;
+      padding: 0 1rem 2.8rem;
     }
     .auth-card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 20px;
       box-shadow: var(--shadow);
-      padding: 2rem;
+      padding: 1.7rem;
     }
     .oauth-buttons-idx {
       display: flex;
@@ -743,7 +761,10 @@
     }
 
     /* ---------- Dashboard ---------- */
-    .dash { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .dash { max-width: 1020px; margin: 0 auto; padding: 1.45rem 1.05rem; }
+    @media (min-width: 901px) {
+      body.app-shell { font-size: 14px; }
+    }
     .welcome-banner {
       background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(34,211,238,0.1));
       border: 1px solid rgba(139,92,246,0.25);
@@ -1143,6 +1164,9 @@
       background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,247,255,0.95));
       box-shadow: 0 12px 24px rgba(15,23,42,0.08);
     }
+    html[data-theme="light"] .logo-marquee-row + .logo-marquee-row {
+      border-top-color: rgba(15,23,42,0.08);
+    }
     html[data-theme="light"] .logo-marquee-wrap::before {
       background: linear-gradient(90deg, rgba(246,248,251,0.98), rgba(246,248,251,0));
     }
@@ -1189,20 +1213,20 @@
     }
     /* ---------- Responsive ---------- */
     @media (max-width: 640px) {
-      .hero { padding: 3rem 1rem 2rem; }
+      .hero { padding: 2.65rem 0.9rem 1.75rem; }
       .hero-actions { flex-direction: column; align-items: stretch; }
       .btn-hero { justify-content: center; }
       .welcome-banner { padding: 1.5rem; }
       .welcome-name { font-size: 1.35rem; }
       .heatmap-grid { grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 4px; }
-      .auth-section { padding: 0 1rem 3rem; }
+      .auth-section { padding: 0 1rem 2.6rem; }
       .output-shell { padding: 1.35rem 1.1rem; }
       .output-grid { grid-template-columns: 1fr; }
       .output-quote { padding-left: 1.2rem; padding-top: 3rem; }
       .output-quote-icon { left: 1rem; top: 0.9rem; }
       .logo-marquee-wrap::before,
       .logo-marquee-wrap::after { width: 48px; }
-      .uni-logo-item { min-width: 220px; }
+      .uni-logo-item { min-width: 270px; }
       .uni-logo-name { font-size: 0.84rem; }
       .member-hero { padding: 1.45rem 1.15rem; }
       .member-hero-actions { flex-direction: column; align-items: stretch; }
@@ -1231,7 +1255,7 @@
       <div class="navlinks">
         <a href="index.html" class="active" data-i18n="nav.dashboard">Dashboard</a>
         <a href="create.html" data-i18n="nav.create">Exam Prep Workspace</a>
-        <a href="/science">Science</a>
+        <a href="/science" class="nav-science-link" data-i18n="nav.science">Science</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
       </div>
@@ -1266,7 +1290,12 @@
         <h2 class="section-title">Used by students &amp; educators from</h2>
         <p class="section-sub">US News Top 40 universities</p>
         <div class="logo-marquee-wrap" aria-label="Universities">
-          <div class="logo-marquee-track" id="logoMarqueeTrack" role="list" aria-live="off"></div>
+          <div class="logo-marquee-row">
+            <div class="logo-marquee-track" id="logoMarqueeTrackTop" role="list" aria-live="off"></div>
+          </div>
+          <div class="logo-marquee-row">
+            <div class="logo-marquee-track reverse" id="logoMarqueeTrackBottom" role="list" aria-live="off"></div>
+          </div>
         </div>
       </section>
 
@@ -1554,7 +1583,8 @@
     const $authMsg    = document.getElementById("authMessage");
     const $toggle     = document.getElementById("authToggle");
     const $toRegister = document.getElementById("toggleToRegister");
-    const $logoTrack  = document.getElementById("logoMarqueeTrack");
+    const $logoTrackTop = document.getElementById("logoMarqueeTrackTop");
+    const $logoTrackBottom = document.getElementById("logoMarqueeTrackBottom");
 
     const TOP_UNIVERSITIES = [
       { name: "Princeton University", domain: "princeton.edu", logo: "assets/university-logos/princeton-university.svg" },
@@ -1571,7 +1601,7 @@
       { name: "Cornell University", domain: "cornell.edu", logo: "assets/university-logos/cornell-university.svg" },
       { name: "Brown University", domain: "brown.edu", logo: "assets/university-logos/brown-university.svg" },
       { name: "Dartmouth College", domain: "dartmouth.edu", logo: "assets/university-logos/dartmouth-college.png" },
-      { name: "Columbia University", domain: "columbia.edu", logo: "assets/university-logos/columbia-university.svg" },
+      { name: "Columbia University", domain: "columbia.edu", logo: "assets/university-logos/columbia-university-optimized.png" },
       { name: "UC Berkeley", domain: "berkeley.edu", logo: "assets/university-logos/uc-berkeley.png" },
       { name: "Rice University", domain: "rice.edu", logo: "assets/university-logos/rice-university.png" },
       { name: "UCLA", domain: "ucla.edu", logo: "assets/university-logos/ucla.png" },
@@ -1639,15 +1669,22 @@
     }
 
     function renderTrustMarquee() {
-      if (!$logoTrack) return;
-      var fragment = document.createDocumentFragment();
-      for (var loop = 0; loop < 2; loop++) {
-        TOP_UNIVERSITIES.forEach(function (school) {
-          fragment.appendChild(buildUniversityNode(school));
-        });
-      }
-      $logoTrack.innerHTML = "";
-      $logoTrack.appendChild(fragment);
+      var tracks = [
+        { el: $logoTrackTop, list: TOP_UNIVERSITIES },
+        { el: $logoTrackBottom, list: TOP_UNIVERSITIES.slice().reverse() }
+      ];
+
+      tracks.forEach(function (trackMeta) {
+        if (!trackMeta.el) return;
+        var fragment = document.createDocumentFragment();
+        for (var loop = 0; loop < 2; loop++) {
+          trackMeta.list.forEach(function (school) {
+            fragment.appendChild(buildUniversityNode(school));
+          });
+        }
+        trackMeta.el.innerHTML = "";
+        trackMeta.el.appendChild(fragment);
+      });
     }
 
     function renderScienceWidget() {

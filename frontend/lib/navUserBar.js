@@ -312,15 +312,12 @@
     window.__quizallCursorFxInitialized = true;
     const body = document.body;
     const glow = document.createElement("div");
-    const ring = document.createElement("div");
     const trailDots = [];
+    const trailDotCount = 6;
     glow.className = "qa-cursor-glow";
-    ring.className = "qa-cursor-ring";
     glow.setAttribute("aria-hidden", "true");
-    ring.setAttribute("aria-hidden", "true");
     body.appendChild(glow);
-    body.appendChild(ring);
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < trailDotCount; i += 1) {
       const dot = document.createElement("div");
       dot.className = "qa-cursor-tail";
       dot.style.setProperty("--qa-tail-index", String(i));
@@ -329,94 +326,36 @@
       trailDots.push(dot);
     }
 
-    body.classList.add("qa-cursor-enabled", "qa-cursor-mode-normal");
-
-    const textInputTypes = {
-      text: true,
-      search: true,
-      email: true,
-      password: true,
-      url: true,
-      tel: true,
-      number: true,
-      date: true,
-      "datetime-local": true,
-      month: true,
-      time: true,
-      week: true
-    };
-
-    let currentMode = "normal";
-    let activeInteractiveTarget = null;
     let raf = 0;
     let cursorX = -9999;
     let cursorY = -9999;
     const trailPoints = [];
+    let effectEnabled = false;
 
-    function setInteractiveTarget(target) {
-      if (activeInteractiveTarget === target) return;
-      if (activeInteractiveTarget) {
-        activeInteractiveTarget.classList.remove("qa-cursor-target-active");
-      }
-      activeInteractiveTarget = target || null;
-      if (activeInteractiveTarget) {
-        activeInteractiveTarget.classList.add("qa-cursor-target-active");
-      }
+    function isDarkTheme() {
+      return (document.documentElement.getAttribute("data-theme") || "dark") === "dark";
     }
 
-    function setMode(mode) {
-      if (mode === currentMode) return;
-      currentMode = mode;
-      body.classList.toggle("qa-cursor-mode-normal", mode === "normal");
-      body.classList.toggle("qa-cursor-mode-click", mode === "click");
-      body.classList.toggle("qa-cursor-mode-type", mode === "type");
-    }
-
-    function isTypingTarget(target) {
-      if (!(target instanceof Element)) return false;
-      if (target.closest("textarea,[contenteditable='true'],[contenteditable=''],[data-cursor='type']")) return true;
-      const input = target.closest("input");
-      if (!input || input.disabled || input.readOnly) return false;
-      const inputType = (input.getAttribute("type") || "text").toLowerCase();
-      return !!textInputTypes[inputType];
-    }
-
-    function findClickableTarget(target) {
-      if (!(target instanceof Element)) return false;
-      const clickable = target.closest("[data-cursor='click'],a[href],button,summary,label[for],select,[role='button'],[tabindex]:not([tabindex='-1'])");
-      if (!clickable) return null;
-      if (clickable.matches("[disabled],[aria-disabled='true']")) return null;
-      return clickable;
-    }
-
-    function updateMode(target) {
-      if (isTypingTarget(target)) {
-        setInteractiveTarget(null);
-        setMode("type");
-        return;
-      }
-      const clickable = findClickableTarget(target);
-      if (clickable) {
-        setInteractiveTarget(clickable);
-        setMode("click");
-        return;
-      }
-      setInteractiveTarget(null);
-      setMode("normal");
+    function syncThemeState() {
+      effectEnabled = isDarkTheme();
+      body.classList.toggle("qa-cursor-enabled", effectEnabled);
+      if (!effectEnabled) resetCursorState();
+      queuePaint();
     }
 
     function paint() {
       raf = 0;
       body.style.setProperty("--qa-cursor-x", `${cursorX}px`);
       body.style.setProperty("--qa-cursor-y", `${cursorY}px`);
-      const active = body.classList.contains("qa-cursor-active");
+      const active = effectEnabled && body.classList.contains("qa-cursor-active");
+      glow.style.opacity = active ? "0.95" : "0";
       trailDots.forEach((dot, index) => {
         const point = trailPoints[Math.min(index * 2, trailPoints.length - 1)];
         const x = point ? point.x : cursorX;
         const y = point ? point.y : cursorY;
-        const scale = Math.max(0.24, 1 - index * 0.1);
+        const scale = Math.max(0.35, 1 - index * 0.12);
         dot.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) scale(${scale})`;
-        dot.style.opacity = active ? String(Math.max(0.12, 0.62 - index * 0.07)) : "0";
+        dot.style.opacity = active ? String(Math.max(0.08, 0.5 - index * 0.08)) : "0";
       });
     }
 
@@ -427,39 +366,27 @@
 
     window.addEventListener("pointermove", (event) => {
       if (event.pointerType && event.pointerType !== "mouse") return;
+      if (!effectEnabled) return;
       cursorX = event.clientX;
       cursorY = event.clientY;
       body.classList.add("qa-cursor-active");
       trailPoints.unshift({ x: cursorX, y: cursorY });
-      if (trailPoints.length > 28) trailPoints.length = 28;
-      updateMode(event.target);
+      if (trailPoints.length > 18) trailPoints.length = 18;
       queuePaint();
     }, { passive: true });
 
     window.addEventListener("pointerdown", (event) => {
       if (event.pointerType && event.pointerType !== "mouse") return;
-      updateMode(event.target);
+      if (!effectEnabled) return;
       body.classList.add("qa-cursor-pressing");
     });
 
     window.addEventListener("pointerup", (event) => {
       body.classList.remove("qa-cursor-pressing");
-      if (event && event.target) updateMode(event.target);
-    });
-
-    document.addEventListener("focusin", (event) => {
-      updateMode(event.target);
-    });
-
-    document.addEventListener("focusout", () => {
-      setInteractiveTarget(null);
-      setMode("normal");
     });
 
     function resetCursorState() {
       body.classList.remove("qa-cursor-active", "qa-cursor-pressing");
-      setInteractiveTarget(null);
-      setMode("normal");
       cursorX = -9999;
       cursorY = -9999;
       trailPoints.length = 0;
@@ -478,10 +405,53 @@
       if (event.relatedTarget || event.toElement) return;
       resetCursorState();
     });
+
+    document.addEventListener("themechange", syncThemeState);
+    const observer = new MutationObserver(syncThemeState);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+    if (finePointer.addEventListener) {
+      finePointer.addEventListener("change", (event) => {
+        if (!event.matches) {
+          effectEnabled = false;
+          body.classList.remove("qa-cursor-enabled");
+          resetCursorState();
+          return;
+        }
+        syncThemeState();
+      });
+    }
+
+    if (reducedMotion.addEventListener) {
+      reducedMotion.addEventListener("change", (event) => {
+        if (event.matches) {
+          effectEnabled = false;
+          body.classList.remove("qa-cursor-enabled");
+          resetCursorState();
+          return;
+        }
+        syncThemeState();
+      });
+    }
+
+    syncThemeState();
   }
 
   function init() {
-    initCursorFx();
+    // Disable custom cursor FX and ensure system cursor is used.
+    if (document.body) {
+      document.body.classList.remove(
+        "qa-cursor-enabled",
+        "qa-cursor-active",
+        "qa-cursor-pressing",
+        "qa-cursor-mode-normal",
+        "qa-cursor-mode-click",
+        "qa-cursor-mode-type"
+      );
+      document.body.style.removeProperty("--qa-cursor-x");
+      document.body.style.removeProperty("--qa-cursor-y");
+      document.querySelectorAll(".qa-cursor-glow,.qa-cursor-ring,.qa-cursor-tail").forEach((node) => node.remove());
+    }
     initThemeSelect();
     initAdaptiveNav();
 
