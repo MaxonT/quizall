@@ -458,6 +458,179 @@
       font-size: 0.87rem;
     }
 
+    .workspace {
+      max-width: 1320px;
+      gap: 18px;
+    }
+
+    .workflow-strip {
+      border: 1px solid rgba(148,163,184,0.24);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(11,18,38,0.74);
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .workflow-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.3);
+      background: rgba(10,14,31,0.75);
+      color: var(--muted);
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .workflow-item b {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,211,238,0.38);
+      background: rgba(34,211,238,0.16);
+      color: #ccfbf1;
+      font-size: 0.7rem;
+    }
+
+    .workflow-item.is-active {
+      border-color: rgba(34,211,238,0.42);
+      color: #d7f9ff;
+      background: linear-gradient(135deg, rgba(14,165,183,0.2), rgba(109,40,217,0.22));
+    }
+
+    .card.card-elevated {
+      position: relative;
+      overflow: hidden;
+      border-color: rgba(148,163,184,0.22);
+      background:
+        radial-gradient(120% 140% at 0% 0%, rgba(14,165,183,0.08), transparent 52%),
+        linear-gradient(180deg, rgba(15,22,46,0.94), rgba(10,14,32,0.95));
+      box-shadow: 0 16px 32px rgba(2,8,23,0.32);
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .card.card-elevated::before {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 0;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(14,165,183,0.55), rgba(167,139,250,0.22), rgba(52,211,153,0.4));
+    }
+
+    .card.card-elevated:hover {
+      border-color: rgba(34,211,238,0.34);
+      box-shadow: 0 20px 38px rgba(2,8,23,0.38);
+      transform: translateY(-2px);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .card-step {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid rgba(34,211,238,0.36);
+      border-radius: 999px;
+      background: rgba(34,211,238,0.12);
+      color: rgba(209,250,255,0.96);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 5px 10px;
+      min-height: 26px;
+    }
+
+    .card-head-copy {
+      min-width: 260px;
+      flex: 1;
+    }
+
+    .card-head-copy .card-sub {
+      margin-top: 6px;
+    }
+
+    .upload-shell,
+    .prep-shell {
+      display: grid;
+      gap: 14px;
+    }
+
+    .asset-lists {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .list-panel {
+      border: 1px solid rgba(148,163,184,0.2);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(8,12,30,0.5);
+      min-height: 88px;
+    }
+
+    .list-panel .field-label {
+      margin-bottom: 8px;
+    }
+
+    .prep-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+      gap: 12px;
+      align-items: start;
+      margin-top: 4px;
+    }
+
+    .prep-toolbar {
+      margin-top: 2px;
+    }
+
+    .workspace-bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .card-session .types,
+    .card-session .nums {
+      margin-top: 4px;
+    }
+
+    .card-session .toggle {
+      min-height: 34px;
+      font-size: 0.81rem;
+    }
+
+    .card-analytics .analytics-wrap {
+      margin-top: 4px;
+    }
+
+    .status.workspace-status {
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
     html[data-theme="light"] body.app-shell {
       background:
         radial-gradient(110% 120% at 0% 0%, rgba(14,165,183,0.14), transparent 58%),
@@ -629,9 +802,67 @@
       box-shadow: 0 16px 36px rgba(15,23,42,0.14);
     }
 
+    html[data-theme="light"] .workflow-strip {
+      border-color: rgba(148,163,184,0.36);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,250,255,0.94)),
+        repeating-linear-gradient(0deg, rgba(71,85,105,0.04) 0 1px, transparent 1px 20px);
+      box-shadow: 0 10px 22px rgba(15,23,42,0.08);
+    }
+
+    html[data-theme="light"] .workflow-item {
+      border-color: rgba(148,163,184,0.42);
+      background: rgba(255,255,255,0.94);
+      color: #475569;
+    }
+
+    html[data-theme="light"] .workflow-item b {
+      border-color: rgba(79,70,229,0.38);
+      background: rgba(99,102,241,0.1);
+      color: #4338ca;
+    }
+
+    html[data-theme="light"] .workflow-item.is-active {
+      color: #0f172a;
+      border-color: rgba(79,70,229,0.34);
+      background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(99,102,241,0.12));
+    }
+
+    html[data-theme="light"] .card.card-elevated {
+      border-color: rgba(148,163,184,0.34);
+      background:
+        radial-gradient(120% 140% at 0% 0%, rgba(59,130,246,0.07), transparent 54%),
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,255,0.96));
+      box-shadow: 0 14px 28px rgba(15,23,42,0.09);
+    }
+
+    html[data-theme="light"] .card.card-elevated:hover {
+      border-color: rgba(79,70,229,0.32);
+      box-shadow: 0 18px 30px rgba(15,23,42,0.13);
+    }
+
+    html[data-theme="light"] .card.card-elevated::before {
+      background: linear-gradient(90deg, rgba(79,70,229,0.34), rgba(30,64,175,0.16), rgba(14,165,183,0.26));
+    }
+
+    html[data-theme="light"] .card-step {
+      border-color: rgba(79,70,229,0.3);
+      background: rgba(99,102,241,0.1);
+      color: #3730a3;
+    }
+
+    html[data-theme="light"] .list-panel {
+      border-color: rgba(148,163,184,0.32);
+      background: rgba(255,255,255,0.86);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.92);
+    }
+
     @media (max-width: 980px) {
       .project-grid { grid-template-columns: 1fr; }
       .stats { grid-template-columns: 1fr; }
+      .prep-grid { grid-template-columns: 1fr; }
+      .asset-lists { grid-template-columns: 1fr; }
+      .workspace-bottom-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -662,10 +893,23 @@
       <p>Create a project per course/exam, upload materials once, lock exam topics, then generate focused quizzes with source references.</p>
     </section>
 
-    <section class="card">
-      <h2>Project Workspace</h2>
-      <p class="card-sub">One project per course or exam. Everything below is scoped to the selected project.</p>
-      <div class="project-grid" style="margin-top:12px;">
+    <section class="workflow-strip" aria-label="Exam prep workflow">
+      <span class="workflow-item is-active"><b>1</b> Project Scope</span>
+      <span class="workflow-item"><b>2</b> Materials</span>
+      <span class="workflow-item"><b>3</b> Topics &amp; Mindmap</span>
+      <span class="workflow-item"><b>4</b> Quiz Setup</span>
+      <span class="workflow-item"><b>5</b> Analytics</span>
+    </section>
+
+    <section class="card card-elevated card-project">
+      <div class="card-head">
+        <span class="card-step">Step 1</span>
+        <div class="card-head-copy">
+          <h2>Project Workspace</h2>
+          <p class="card-sub">One project per course or exam. Everything below is scoped to the selected project.</p>
+        </div>
+      </div>
+      <div class="project-grid">
         <div class="stack">
           <div>
             <p class="field-label">Active Project</p>
@@ -694,113 +938,135 @@
       </div>
     </section>
 
-    <section class="card">
-      <h2>Upload Study Materials</h2>
-      <p class="card-sub">Upload PDFs/slides/notes once and keep them in this project for future sessions.</p>
-      <div id="dropzone" class="dropzone" role="button" tabindex="0" style="margin-top:10px;">
-        <strong>Drop files here or click to upload</strong>
-        <small>PDF, DOCX, TXT, MD, CSV, JSON</small>
-        <input id="fileInput" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json" hidden />
+    <section class="card card-elevated card-upload">
+      <div class="card-head">
+        <span class="card-step">Step 2</span>
+        <div class="card-head-copy">
+          <h2>Upload Study Materials</h2>
+          <p class="card-sub">Upload PDFs/slides/notes once and keep them in this project for future sessions.</p>
+        </div>
       </div>
-      <div class="row" style="margin-top:10px;">
-        <button class="btn btn-soft" id="clearPendingBtn" type="button">Clear Pending</button>
-        <button class="btn btn-primary" id="saveFilesBtn" type="button">Save Pending Files to Project</button>
-      </div>
-
-      <div style="margin-top:12px;">
-        <p class="field-label">Pending Upload</p>
-        <div id="pendingFiles" class="pending-list"></div>
-      </div>
-
-      <div style="margin-top:12px;">
-        <p class="field-label">Saved in Project</p>
-        <div id="savedFiles" class="saved-list"></div>
+      <div class="upload-shell">
+        <div id="dropzone" class="dropzone" role="button" tabindex="0">
+          <strong>Drop files here or click to upload</strong>
+          <small>PDF, DOCX, TXT, MD, CSV, JSON</small>
+          <input id="fileInput" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json" hidden />
+        </div>
+        <div class="row">
+          <button class="btn btn-soft" id="clearPendingBtn" type="button">Clear Pending</button>
+          <button class="btn btn-primary" id="saveFilesBtn" type="button">Save Pending Files to Project</button>
+        </div>
+        <div class="asset-lists">
+          <div class="list-panel">
+            <p class="field-label">Pending Upload</p>
+            <div id="pendingFiles" class="pending-list"></div>
+          </div>
+          <div class="list-panel">
+            <p class="field-label">Saved in Project</p>
+            <div id="savedFiles" class="saved-list"></div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="card">
-      <h2>Exam Prep: Collect Topics → Generate Mindmap</h2>
-      <p class="card-sub">Tier 1 auto-scan tries to find syllabus/outline/review/考纲 files. Or type your exam topics directly.</p>
-
-      <div class="row" style="margin-top:10px; align-items:flex-start;">
-        <div style="flex:1; min-width:280px;">
-          <p class="field-label">Exam Topics (typed or pasted)</p>
-          <textarea id="topicsInput" class="textarea" placeholder="Example: Cellular respiration, ATP synthesis, glycolysis regulation, oxidative phosphorylation..."></textarea>
-        </div>
-        <div style="width:min(360px,100%);" class="stack">
-          <div class="nudge">
-            <strong>Question quality can improve up to 8x</strong>
-            <p>Tell us your exam topics. If you do not have them, email your professor with the template below, then paste the reply.</p>
-          </div>
-          <textarea id="emailTemplate" class="textarea" style="min-height:124px; font-size:0.82rem;" readonly></textarea>
-          <button class="btn btn-soft" id="copyEmailTemplateBtn" type="button">Copy Email Template</button>
+    <section class="card card-elevated card-prep">
+      <div class="card-head">
+        <span class="card-step">Step 3</span>
+        <div class="card-head-copy">
+          <h2>Exam Prep: Collect Topics → Generate Mindmap</h2>
+          <p class="card-sub">Tier 1 auto-scan tries to find syllabus/outline/review/考纲 files. Or type your exam topics directly.</p>
         </div>
       </div>
-
-      <div class="row" style="margin-top:12px;">
-        <button class="btn btn-soft" id="scanOutlineBtn" type="button">Tier 1 Auto-Scan Outline Files</button>
-        <button class="btn btn-primary" id="generateMindmapBtn" type="button">Generate ExamTopics Mindmap</button>
-      </div>
-
-      <div style="margin-top:12px;">
-        <p class="field-label">Auto-Scan Candidates</p>
-        <div id="outlineCandidates" class="candidate-list"></div>
-      </div>
-
-      <div id="mindmapShell" class="mindmap-shell" style="margin-top:14px; display:none;">
-        <div class="mindmap-head">
+      <div class="prep-shell">
+        <div class="prep-grid">
           <div>
-            <h3 id="mindmapTitle">ExamTopics Mindmap</h3>
-            <div class="mindmap-meta" id="mindmapMeta"></div>
+            <p class="field-label">Exam Topics (typed or pasted)</p>
+            <textarea id="topicsInput" class="textarea" placeholder="Example: Cellular respiration, ATP synthesis, glycolysis regulation, oxidative phosphorylation..."></textarea>
           </div>
-          <div class="row">
-            <button class="btn btn-soft" id="addRootNodeBtn" type="button">+ Root Node</button>
-            <button class="btn btn-primary" id="saveMindmapBtn" type="button">Save Mindmap</button>
+          <div class="stack prep-assist">
+            <div class="nudge">
+              <strong>Question quality can improve up to 8x</strong>
+              <p>Tell us your exam topics. If you do not have them, email your professor with the template below, then paste the reply.</p>
+            </div>
+            <textarea id="emailTemplate" class="textarea" style="min-height:124px; font-size:0.82rem;" readonly></textarea>
+            <button class="btn btn-soft" id="copyEmailTemplateBtn" type="button">Copy Email Template</button>
           </div>
         </div>
-        <div id="mindmapTree" class="mindmap-tree"></div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Start Quiz Session</h2>
-      <p class="card-sub">FRQ is prioritized by default for stronger retrieval practice. Results feed project analytics.</p>
-
-      <div>
-        <p class="field-label">Question Types</p>
-        <div id="typeToggles" class="types">
-          <button type="button" class="toggle active" data-type="free_response">FRQ (Priority)</button>
-          <button type="button" class="toggle active" data-type="multiple_choice">MCQ</button>
-          <button type="button" class="toggle active" data-type="true_false">True / False</button>
-          <button type="button" class="toggle" data-type="fill_in_the_blank">Fill in the Blank</button>
+        <div class="row prep-toolbar">
+          <button class="btn btn-soft" id="scanOutlineBtn" type="button">Tier 1 Auto-Scan Outline Files</button>
+          <button class="btn btn-primary" id="generateMindmapBtn" type="button">Generate ExamTopics Mindmap</button>
+        </div>
+        <div class="list-panel">
+          <p class="field-label">Auto-Scan Candidates</p>
+          <div id="outlineCandidates" class="candidate-list"></div>
+        </div>
+        <div id="mindmapShell" class="mindmap-shell" style="margin-top:2px; display:none;">
+          <div class="mindmap-head">
+            <div>
+              <h3 id="mindmapTitle">ExamTopics Mindmap</h3>
+              <div class="mindmap-meta" id="mindmapMeta"></div>
+            </div>
+            <div class="row">
+              <button class="btn btn-soft" id="addRootNodeBtn" type="button">+ Root Node</button>
+              <button class="btn btn-primary" id="saveMindmapBtn" type="button">Save Mindmap</button>
+            </div>
+          </div>
+          <div id="mindmapTree" class="mindmap-tree"></div>
         </div>
       </div>
+    </section>
 
-      <div style="margin-top:12px;">
-        <p class="field-label">Number of Questions</p>
-        <div id="numToggles" class="nums">
-          <button type="button" class="toggle" data-num="5">5</button>
-          <button type="button" class="toggle" data-num="8">8</button>
-          <button type="button" class="toggle active" data-num="10">10</button>
-          <button type="button" class="toggle" data-num="15">15</button>
+    <div class="workspace-bottom-grid">
+      <section class="card card-elevated card-session">
+        <div class="card-head">
+          <span class="card-step">Step 4</span>
+          <div class="card-head-copy">
+            <h2>Start Quiz Session</h2>
+            <p class="card-sub">FRQ is prioritized by default for stronger retrieval practice. Results feed project analytics.</p>
+          </div>
         </div>
-      </div>
 
-      <div class="row" style="margin-top:12px;">
-        <button class="btn btn-primary" id="generateQuizBtn" type="button">Generate Quiz from Project</button>
-      </div>
-    </section>
+        <div>
+          <p class="field-label">Question Types</p>
+          <div id="typeToggles" class="types">
+            <button type="button" class="toggle active" data-type="free_response">FRQ (Priority)</button>
+            <button type="button" class="toggle active" data-type="multiple_choice">MCQ</button>
+            <button type="button" class="toggle active" data-type="true_false">True / False</button>
+            <button type="button" class="toggle" data-type="fill_in_the_blank">Fill in the Blank</button>
+          </div>
+        </div>
 
-    <section class="card">
-      <h2>Project Analytics (Accuracy Trend)</h2>
-      <p class="card-sub">Project-scoped correctness trend over time.</p>
-      <div class="analytics-wrap" style="margin-top:10px;">
-        <canvas id="analyticsCanvas" class="analytics-canvas"></canvas>
-      </div>
-      <p id="analyticsEmpty" class="empty-text" style="margin-top:10px;">No quiz sessions yet for this project.</p>
-    </section>
+        <div style="margin-top:12px;">
+          <p class="field-label">Number of Questions</p>
+          <div id="numToggles" class="nums">
+            <button type="button" class="toggle" data-num="5">5</button>
+            <button type="button" class="toggle" data-num="8">8</button>
+            <button type="button" class="toggle active" data-num="10">10</button>
+            <button type="button" class="toggle" data-num="15">15</button>
+          </div>
+        </div>
 
-    <div id="statusMessage" class="status">Ready.</div>
+        <div class="row" style="margin-top:12px;">
+          <button class="btn btn-primary" id="generateQuizBtn" type="button">Generate Quiz from Project</button>
+        </div>
+      </section>
+
+      <section class="card card-elevated card-analytics">
+        <div class="card-head">
+          <span class="card-step">Step 5</span>
+          <div class="card-head-copy">
+            <h2>Project Analytics (Accuracy Trend)</h2>
+            <p class="card-sub">Project-scoped correctness trend over time.</p>
+          </div>
+        </div>
+        <div class="analytics-wrap">
+          <canvas id="analyticsCanvas" class="analytics-canvas"></canvas>
+        </div>
+        <p id="analyticsEmpty" class="empty-text" style="margin-top:10px;">No quiz sessions yet for this project.</p>
+      </section>
+    </div>
+
+    <div id="statusMessage" class="status workspace-status">Ready.</div>
   </main>
 
   <div class="modal" id="newProjectModal">
