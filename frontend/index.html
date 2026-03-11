@@ -183,13 +183,35 @@
       max-width: 820px;
       letter-spacing: -0.02em;
     }
+    .output-headline {
+      margin: 0;
+      font-size: clamp(2.2rem, 7vw, 4.35rem);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      font-weight: 950;
+      background: linear-gradient(90deg, #7dd3fc 0%, #22d3ee 34%, #60a5fa 62%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-wrap: balance;
+      filter: drop-shadow(0 0 18px rgba(34,211,238,0.3)) drop-shadow(0 0 28px rgba(139,92,246,0.26));
+      animation: outputHeadlineGlow 2.35s ease-in-out infinite alternate;
+    }
+    @keyframes outputHeadlineGlow {
+      0% {
+        filter: drop-shadow(0 0 10px rgba(34,211,238,0.24)) drop-shadow(0 0 20px rgba(139,92,246,0.2));
+      }
+      100% {
+        filter: drop-shadow(0 0 20px rgba(34,211,238,0.5)) drop-shadow(0 0 34px rgba(139,92,246,0.42));
+      }
+    }
     .output-grid {
       position: relative;
       z-index: 1;
       display: grid;
       grid-template-columns: 1.2fr 0.8fr;
       gap: 1rem;
-      align-items: stretch;
+      align-items: start;
     }
     .output-card {
       border-radius: 20px;
@@ -198,6 +220,7 @@
       backdrop-filter: blur(4px);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
       padding: 1.3rem 1.25rem 1.35rem;
+      align-self: start;
     }
     .output-quote {
       position: relative;
@@ -225,6 +248,51 @@
       line-height: 1.72;
       font-size: 0.97rem;
     }
+    .output-main-copy {
+      margin: 0;
+      color: rgba(238,243,255,0.94);
+      line-height: 1.74;
+      font-size: 1.01rem;
+    }
+    .output-emphasis {
+      font-weight: 900;
+      color: var(--accent);
+    }
+    .output-focus {
+      font-weight: 800;
+      color: #fff;
+    }
+    .output-main-copy em {
+      font-style: italic;
+      color: rgba(167,139,250,0.96);
+    }
+    .output-pill-row {
+      margin-top: 0.95rem;
+      margin-bottom: 0.2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .output-pill {
+      padding: 0.26rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(34,211,238,0.3);
+      background: rgba(34,211,238,0.12);
+      color: rgba(238,243,255,0.95);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+    .output-quote-attribution {
+      margin: 0.48rem 0 0;
+      font-size: 0.89rem;
+      line-height: 1.35;
+      color: rgba(167,139,250,0.96);
+      letter-spacing: 0.015em;
+      font-style: italic;
+      opacity: 0.96;
+    }
     .output-bridge h3 {
       margin: 0 0 0.7rem;
       font-size: 1rem;
@@ -237,6 +305,25 @@
       line-height: 1.7;
       color: rgba(238,243,255,0.9);
       font-size: 0.96rem;
+    }
+    .output-citations {
+      margin-top: 0.9rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed rgba(255,255,255,0.2);
+      font-size: 0.78rem;
+      color: rgba(238,243,255,0.78);
+      line-height: 1.45;
+    }
+    .output-citations p {
+      margin: 0 0 0.4rem;
+    }
+    .output-citations p:last-child {
+      margin-bottom: 0;
+    }
+    .output-citation-index {
+      color: var(--accent);
+      font-weight: 700;
+      margin-right: 0.25rem;
     }
 
     /* ---------- Trust Marquee ---------- */
@@ -319,11 +406,11 @@
       width: 100%;
       height: 100%;
       object-fit: contain;
-      filter: grayscale(100%);
-      transition: filter 0.25s ease;
+      filter: none;
+      transition: transform 0.25s ease;
     }
     .uni-logo-item:hover .uni-logo-mark img {
-      filter: grayscale(0%);
+      transform: scale(1.04);
     }
     .uni-logo-name {
       font-size: 0.9rem;
@@ -847,37 +934,149 @@
     }
 
     /* ---------- Cursor FX ---------- */
-    .cursor-layer {
+    .cursor-ring {
       position: fixed;
-      inset: 0;
+      left: 0;
+      top: 0;
       pointer-events: none;
-      z-index: 1100;
-      overflow: hidden;
+      transform: translate3d(-9999px, -9999px, 0) translate(-50%, -50%) scale(1);
+      opacity: 0;
     }
-    .cursor-canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-    .cursor-ripple {
-      position: fixed;
-      width: 20px;
-      height: 20px;
+    .cursor-ring {
+      width: 48px;
+      height: 48px;
       border-radius: 999px;
-      border: 1px solid rgba(34,211,238,0.7);
-      pointer-events: none;
+      border: 1.4px solid rgba(139,92,246,0.7);
+      background: rgba(139,92,246,0.04);
       z-index: 1101;
-      transform: translate(-50%, -50%) scale(0.22);
-      opacity: 0;
-      transition: transform 0.45s ease, opacity 0.45s ease;
+      transition: opacity 0.12s ease, transform 0.1s ease, border-color 0.2s ease;
+      will-change: transform, opacity;
     }
-    .cursor-ripple.active {
-      transform: translate(-50%, -50%) scale(5.2);
-      opacity: 0;
+    body.cursor-active .cursor-ring {
+      opacity: 1;
     }
-    body.cursor-enabled,
+    body.cursor-pressing .cursor-ring {
+      transform: translate3d(var(--cursor-x, -9999px), var(--cursor-y, -9999px), 0) translate(-50%, -50%) scale(0.86);
+    }
+    body.cursor-enabled {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Ccircle cx='5' cy='5' r='2.4' fill='%2322d3ee'/%3E%3C/svg%3E") 5 5, auto;
+    }
     body.cursor-enabled * {
-      cursor: none !important;
+      cursor: inherit !important;
+    }
+
+    /* ---------- Theme Overrides ---------- */
+    html[data-theme="light"] .output-shell {
+      border-color: rgba(109,40,217,0.22);
+      background:
+        radial-gradient(100% 120% at 0% 0%, rgba(14,165,183,0.14), transparent 62%),
+        radial-gradient(90% 110% at 100% 100%, rgba(109,40,217,0.14), transparent 70%),
+        linear-gradient(150deg, rgba(255,255,255,0.96), rgba(246,248,255,0.95));
+      box-shadow: 0 18px 34px rgba(15,23,42,0.12);
+    }
+    html[data-theme="light"] .output-shell::before {
+      background: radial-gradient(circle, rgba(14,165,183,0.18), transparent 70%);
+    }
+    html[data-theme="light"] .output-shell::after {
+      background: radial-gradient(circle, rgba(109,40,217,0.16), transparent 72%);
+    }
+    html[data-theme="light"] .output-card {
+      border-color: rgba(15,23,42,0.12);
+      background: linear-gradient(165deg, rgba(255,255,255,0.96), rgba(246,248,255,0.88));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95);
+    }
+    html[data-theme="light"] .output-quote p,
+    html[data-theme="light"] .output-bridge p {
+      color: rgba(15,23,42,0.86);
+    }
+    html[data-theme="light"] .output-headline {
+      background: linear-gradient(90deg, #0284c7 0%, #0ea5b7 38%, #2563eb 65%, #6d28d9 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      filter: drop-shadow(0 0 8px rgba(14,165,183,0.14)) drop-shadow(0 0 14px rgba(109,40,217,0.12));
+    }
+    html[data-theme="light"] .output-emphasis {
+      color: #0b7f8d;
+    }
+    html[data-theme="light"] .output-focus {
+      color: #111827;
+    }
+    html[data-theme="light"] .output-main-copy em {
+      color: #6d28d9;
+    }
+    html[data-theme="light"] .output-pill {
+      border-color: rgba(14,165,183,0.26);
+      background: rgba(14,165,183,0.1);
+      color: rgba(15,23,42,0.86);
+    }
+    html[data-theme="light"] .output-quote-attribution {
+      color: #6d28d9;
+      opacity: 0.88;
+    }
+    html[data-theme="light"] .output-citations {
+      color: rgba(15,23,42,0.72);
+      border-top-color: rgba(15,23,42,0.16);
+    }
+    html[data-theme="light"] .output-kicker {
+      background: rgba(14,165,183,0.12);
+      border-color: rgba(14,165,183,0.28);
+      color: #0f6d79;
+    }
+    html[data-theme="light"] .output-quote-icon {
+      box-shadow: 0 8px 16px rgba(109,40,217,0.2);
+    }
+    html[data-theme="light"] .logo-marquee-wrap {
+      border-color: rgba(109,40,217,0.2);
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,247,255,0.95));
+      box-shadow: 0 12px 24px rgba(15,23,42,0.08);
+    }
+    html[data-theme="light"] .logo-marquee-wrap::before {
+      background: linear-gradient(90deg, rgba(246,248,251,0.98), rgba(246,248,251,0));
+    }
+    html[data-theme="light"] .logo-marquee-wrap::after {
+      background: linear-gradient(270deg, rgba(246,248,251,0.98), rgba(246,248,251,0));
+    }
+    html[data-theme="light"] .uni-logo-item {
+      border-color: rgba(15,23,42,0.1);
+      background: rgba(255,255,255,0.9);
+      color: rgba(15,23,42,0.86);
+    }
+    html[data-theme="light"] .uni-logo-item:hover {
+      background: rgba(255,255,255,0.98);
+      border-color: rgba(14,165,183,0.42);
+    }
+    html[data-theme="light"] .uni-logo-mark {
+      background: rgba(255,255,255,0.98);
+      border-color: rgba(109,40,217,0.18);
+    }
+    html[data-theme="light"] .member-hero {
+      border-color: rgba(109,40,217,0.24);
+      background:
+        radial-gradient(95% 100% at 12% 0%, rgba(14,165,183,0.16), transparent 68%),
+        radial-gradient(85% 100% at 90% 100%, rgba(109,40,217,0.14), transparent 70%),
+        linear-gradient(142deg, rgba(255,255,255,0.98), rgba(244,247,255,0.95));
+      box-shadow: 0 18px 34px rgba(15,23,42,0.1);
+    }
+    html[data-theme="light"] .member-hero::after {
+      border-color: rgba(15,23,42,0.08);
+    }
+    html[data-theme="light"] .member-hero-kicker {
+      border-color: rgba(14,165,183,0.35);
+      background: rgba(14,165,183,0.12);
+      color: #0f6d79;
+    }
+    html[data-theme="light"] .member-action {
+      border-color: rgba(15,23,42,0.14);
+      background: rgba(255,255,255,0.86);
+      color: rgba(15,23,42,0.9);
+    }
+    html[data-theme="light"] .member-action:hover {
+      border-color: rgba(109,40,217,0.38);
+      box-shadow: 0 8px 18px rgba(109,40,217,0.14);
+    }
+    html[data-theme="light"] .cursor-ring {
+      border-color: rgba(14,165,183,0.62);
+      background: rgba(14,165,183,0.05);
     }
 
     /* ---------- Responsive ---------- */
@@ -907,12 +1106,12 @@
       .logo-marquee-track,
       .uni-logo-item,
       .member-action,
-      .btn-hero {
+      .btn-hero,
+      .output-headline {
         animation: none !important;
         transition: none !important;
       }
-      .cursor-layer,
-      .cursor-ripple {
+      .cursor-ring {
         display: none !important;
       }
       body.cursor-enabled,
@@ -921,8 +1120,7 @@
       }
     }
     @media (hover: none), (pointer: coarse) {
-      .cursor-layer,
-      .cursor-ripple {
+      .cursor-ring {
         display: none !important;
       }
       body.cursor-enabled,
@@ -973,23 +1171,36 @@
         <div class="output-shell">
           <div class="output-header">
             <span class="output-kicker">Brand Philosophy</span>
-            <h2>Why Output Matters</h2>
+            <h2 class="output-headline">Output &gt; Input. Always</h2>
           </div>
           <div class="output-grid">
             <article class="output-card output-quote">
               <span class="output-quote-icon" aria-hidden="true">❝</span>
-              <p>
-                Psychological research shows: Output &gt; Input. Always. Passively consuming information (lectures, books, videos)
-                doesn't update your mental weights. Real learning requires loss calculation — solving problems, teaching others,
-                writing summaries, being tested. Every time you feel "I think I get it," immediately test yourself through output —
-                you'll discover exactly where you don't.
+              <p class="output-main-copy">
+                Psychological research shows: <span class="output-emphasis">Output &gt; Input. Always.</span>
+                <em>Passively consuming information</em> (lectures, books, videos) does not update your mental weights.
+                Real learning requires <span class="output-focus">loss calculation</span> — solving problems, teaching others,
+                writing summaries, and being tested. Every time you feel <em>"I think I get it"</em>, immediately test yourself
+                through output — you'll discover exactly where you don't.<sup>[1][2]</sup>
               </p>
+              <div class="output-pill-row" aria-label="Active output examples">
+                <span class="output-pill">Solve Problems</span>
+                <span class="output-pill">Teach Others</span>
+                <span class="output-pill">Write Summaries</span>
+                <span class="output-pill">Get Tested</span>
+              </div>
+              <p class="output-quote-attribution">---- Roediger &amp; Karpicke, retrieval-practice researchers</p>
             </article>
             <article class="output-card output-bridge">
               <h3>Product Thesis</h3>
               <p>
-                This is exactly why QuizAll exists — turning passive input into active output, helping you pinpoint what you truly don't understand.
+                This is exactly why QuizAll exists — <strong>turning passive input into active output</strong>,
+                helping you pinpoint what you truly don't understand.
               </p>
+              <div class="output-citations" aria-label="Research citations">
+                <p><span class="output-citation-index">[1]</span>Roediger, H. L., &amp; Karpicke, J. D. (2006). <em>Psychological Science, 17</em>(3), 249–255.</p>
+                <p><span class="output-citation-index">[2]</span>Karpicke, J. D., &amp; Blunt, J. R. (2011). <em>Science, 331</em>(6018), 772–775.</p>
+              </div>
             </article>
           </div>
         </div>
@@ -1203,10 +1414,7 @@
 
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container"></div>
-  <div id="cursorLayer" class="cursor-layer" aria-hidden="true">
-    <canvas id="cursorCanvas" class="cursor-canvas"></canvas>
-  </div>
-  <div id="cursorRipple" class="cursor-ripple" aria-hidden="true"></div>
+  <div id="cursorRing" class="cursor-ring" aria-hidden="true"></div>
 
   <script src="lib/navUserBar.js"></script>
   <script src="core.js"></script>
@@ -1225,46 +1433,46 @@
     const $logoTrack  = document.getElementById("logoMarqueeTrack");
 
     const TOP_UNIVERSITIES = [
-      { name: "Princeton University", domain: "princeton.edu" },
-      { name: "MIT", domain: "mit.edu" },
-      { name: "Harvard University", domain: "harvard.edu" },
-      { name: "Stanford University", domain: "stanford.edu" },
-      { name: "Yale University", domain: "yale.edu" },
-      { name: "University of Chicago", domain: "uchicago.edu" },
-      { name: "Duke University", domain: "duke.edu" },
-      { name: "Johns Hopkins University", domain: "jhu.edu" },
-      { name: "Northwestern University", domain: "northwestern.edu" },
-      { name: "University of Pennsylvania", domain: "upenn.edu" },
-      { name: "California Institute of Technology", domain: "caltech.edu" },
-      { name: "Cornell University", domain: "cornell.edu" },
-      { name: "Brown University", domain: "brown.edu" },
-      { name: "Dartmouth College", domain: "dartmouth.edu" },
-      { name: "Columbia University", domain: "columbia.edu" },
-      { name: "UC Berkeley", domain: "berkeley.edu" },
-      { name: "Rice University", domain: "rice.edu" },
-      { name: "UCLA", domain: "ucla.edu" },
-      { name: "Vanderbilt University", domain: "vanderbilt.edu" },
-      { name: "Carnegie Mellon University", domain: "cmu.edu" },
-      { name: "University of Michigan", domain: "umich.edu" },
-      { name: "University of Notre Dame", domain: "nd.edu" },
-      { name: "Washington University in St. Louis", domain: "wustl.edu" },
-      { name: "Emory University", domain: "emory.edu" },
-      { name: "Georgetown University", domain: "georgetown.edu" },
-      { name: "UNC Chapel Hill", domain: "unc.edu" },
-      { name: "University of Virginia", domain: "virginia.edu" },
-      { name: "University of Southern California", domain: "usc.edu" },
-      { name: "UC San Diego", domain: "ucsd.edu" },
-      { name: "University of Florida", domain: "ufl.edu" },
-      { name: "University of Texas at Austin", domain: "utexas.edu" },
-      { name: "Georgia Institute of Technology", domain: "gatech.edu" },
-      { name: "New York University", domain: "nyu.edu" },
-      { name: "UC Davis", domain: "ucdavis.edu" },
-      { name: "UC Irvine", domain: "uci.edu" },
-      { name: "Boston College", domain: "bc.edu" },
-      { name: "Tufts University", domain: "tufts.edu" },
-      { name: "UIUC", domain: "illinois.edu" },
-      { name: "University of Wisconsin-Madison", domain: "wisc.edu" },
-      { name: "UC Santa Barbara", domain: "ucsb.edu" }
+      { name: "Princeton University", domain: "princeton.edu", logo: "assets/university-logos/princeton-university.svg" },
+      { name: "MIT", domain: "mit.edu", logo: "assets/university-logos/mit.svg" },
+      { name: "Harvard University", domain: "harvard.edu", logo: "assets/university-logos/harvard-university.svg" },
+      { name: "Stanford University", domain: "stanford.edu", logo: "assets/university-logos/stanford-university.svg" },
+      { name: "Yale University", domain: "yale.edu", logo: "assets/university-logos/yale-university.png" },
+      { name: "University of Chicago", domain: "uchicago.edu", logo: "assets/university-logos/university-of-chicago.png" },
+      { name: "Duke University", domain: "duke.edu", logo: "assets/university-logos/duke-university.png" },
+      { name: "Johns Hopkins University", domain: "jhu.edu", logo: "assets/university-logos/johns-hopkins-university.png" },
+      { name: "Northwestern University", domain: "northwestern.edu", logo: "assets/university-logos/northwestern-university.png" },
+      { name: "University of Pennsylvania", domain: "upenn.edu", logo: "assets/university-logos/university-of-pennsylvania.png" },
+      { name: "California Institute of Technology", domain: "caltech.edu", logo: "assets/university-logos/california-institute-of-technology.png" },
+      { name: "Cornell University", domain: "cornell.edu", logo: "assets/university-logos/cornell-university.svg" },
+      { name: "Brown University", domain: "brown.edu", logo: "assets/university-logos/brown-university.svg" },
+      { name: "Dartmouth College", domain: "dartmouth.edu", logo: "assets/university-logos/dartmouth-college.png" },
+      { name: "Columbia University", domain: "columbia.edu", logo: "assets/university-logos/columbia-university.svg" },
+      { name: "UC Berkeley", domain: "berkeley.edu", logo: "assets/university-logos/uc-berkeley.png" },
+      { name: "Rice University", domain: "rice.edu", logo: "assets/university-logos/rice-university.png" },
+      { name: "UCLA", domain: "ucla.edu", logo: "assets/university-logos/ucla.png" },
+      { name: "Vanderbilt University", domain: "vanderbilt.edu", logo: "assets/university-logos/vanderbilt-university.png" },
+      { name: "Carnegie Mellon University", domain: "cmu.edu", logo: "assets/university-logos/carnegie-mellon-university.png" },
+      { name: "University of Michigan", domain: "umich.edu", logo: "assets/university-logos/university-of-michigan.svg" },
+      { name: "University of Notre Dame", domain: "nd.edu", logo: "assets/university-logos/university-of-notre-dame.png" },
+      { name: "Washington University in St. Louis", domain: "wustl.edu", logo: "assets/university-logos/washington-university-in-st-louis.png" },
+      { name: "Emory University", domain: "emory.edu", logo: "assets/university-logos/emory-university.png" },
+      { name: "Georgetown University", domain: "georgetown.edu", logo: "assets/university-logos/georgetown-university.png" },
+      { name: "UNC Chapel Hill", domain: "unc.edu", logo: "assets/university-logos/unc-chapel-hill.jpg" },
+      { name: "University of Virginia", domain: "virginia.edu", logo: "assets/university-logos/university-of-virginia.png" },
+      { name: "University of Southern California", domain: "usc.edu", logo: "assets/university-logos/university-of-southern-california.png" },
+      { name: "UC San Diego", domain: "ucsd.edu", logo: "assets/university-logos/uc-san-diego.jpg" },
+      { name: "University of Florida", domain: "ufl.edu", logo: "assets/university-logos/university-of-florida.png" },
+      { name: "University of Texas at Austin", domain: "utexas.edu", logo: "assets/university-logos/university-of-texas-at-austin.svg" },
+      { name: "Georgia Institute of Technology", domain: "gatech.edu", logo: "assets/university-logos/georgia-institute-of-technology.png" },
+      { name: "New York University", domain: "nyu.edu", logo: "assets/university-logos/new-york-university.png" },
+      { name: "UC Davis", domain: "ucdavis.edu", logo: "assets/university-logos/uc-davis.png" },
+      { name: "UC Irvine", domain: "uci.edu", logo: "assets/university-logos/uc-irvine.ico" },
+      { name: "Boston College", domain: "bc.edu", logo: "assets/university-logos/boston-college.png" },
+      { name: "Tufts University", domain: "tufts.edu", logo: "assets/university-logos/tufts-university.png" },
+      { name: "UIUC", domain: "illinois.edu", logo: "assets/university-logos/uiuc.png" },
+      { name: "University of Wisconsin-Madison", domain: "wisc.edu", logo: "assets/university-logos/university-of-wisconsin-madison.png" },
+      { name: "UC Santa Barbara", domain: "ucsb.edu", logo: "assets/university-logos/uc-santa-barbara.png" }
     ];
 
     function buildUniversityNode(school) {
@@ -1284,11 +1492,16 @@
       img.decoding = "async";
       img.referrerPolicy = "no-referrer";
       img.alt = school.name + " logo";
-      img.src = "https://logo.clearbit.com/" + school.domain;
+      img.src = school.logo || ("https://www.google.com/s2/favicons?domain=" + encodeURIComponent(school.domain) + "&sz=256");
       img.addEventListener("error", function () {
-        if (img.dataset.fallback === "1") return;
+        if (img.dataset.fallback === "1") {
+          img.dataset.fallback = "2";
+          img.src = "https://icons.duckduckgo.com/ip3/" + encodeURIComponent(school.domain) + ".ico";
+          return;
+        }
+        if (img.dataset.fallback === "2") return;
         img.dataset.fallback = "1";
-        img.src = "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(school.domain) + "&sz=128";
+        img.src = "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(school.domain) + "&sz=256";
       });
 
       var name = document.createElement("span");
@@ -1318,120 +1531,61 @@
       var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       if (!finePointer.matches || reducedMotion.matches) return;
 
-      var canvas = document.getElementById("cursorCanvas");
-      var ripple = document.getElementById("cursorRipple");
-      if (!canvas || !ripple) return;
-      var ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      var ring = document.getElementById("cursorRing");
+      if (!ring) return;
 
       document.body.classList.add("cursor-enabled");
-
-      var width = window.innerWidth;
-      var height = window.innerHeight;
-      var state = {
-        x: width / 2,
-        y: height / 2,
-        tx: width / 2,
-        ty: height / 2,
-        visible: false
-      };
-      var trail = [];
-      var maxTrail = 16;
       var rafId = 0;
+      var x = -9999;
+      var y = -9999;
 
-      function setCanvasSize() {
-        var dpr = Math.min(window.devicePixelRatio || 1, 2);
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = Math.floor(width * dpr);
-        canvas.height = Math.floor(height * dpr);
-        canvas.style.width = width + "px";
-        canvas.style.height = height + "px";
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-
-      function triggerRipple(x, y) {
-        ripple.style.left = x + "px";
-        ripple.style.top = y + "px";
-        ripple.style.opacity = "0.85";
-        ripple.classList.remove("active");
-        void ripple.offsetWidth;
-        ripple.classList.add("active");
-        window.setTimeout(function () {
-          ripple.style.opacity = "0";
-        }, 320);
-      }
-
-      function drawCursor() {
-        rafId = window.requestAnimationFrame(drawCursor);
-        ctx.clearRect(0, 0, width, height);
-
-        if (!state.visible) {
-          trail.length = 0;
-          return;
+      function renderRing() {
+        rafId = 0;
+        document.body.style.setProperty("--cursor-x", x + "px");
+        document.body.style.setProperty("--cursor-y", y + "px");
+        if (!document.body.classList.contains("cursor-pressing")) {
+          ring.style.transform = "translate3d(" + x + "px, " + y + "px, 0) translate(-50%, -50%)";
         }
-
-        state.x += (state.tx - state.x) * 0.24;
-        state.y += (state.ty - state.y) * 0.24;
-        trail.unshift({ x: state.x, y: state.y });
-        if (trail.length > maxTrail) trail.pop();
-
-        for (var i = trail.length - 1; i >= 0; i--) {
-          var point = trail[i];
-          var ratio = (trail.length - i) / trail.length;
-          var radius = 1.6 + ratio * 3.4;
-          var alpha = 0.03 + ratio * 0.22;
-          ctx.beginPath();
-          ctx.fillStyle = "rgba(34,211,238," + alpha.toFixed(3) + ")";
-          ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        var halo = ctx.createRadialGradient(state.x, state.y, 0, state.x, state.y, 30);
-        halo.addColorStop(0, "rgba(34,211,238,0.28)");
-        halo.addColorStop(1, "rgba(34,211,238,0)");
-        ctx.beginPath();
-        ctx.fillStyle = halo;
-        ctx.arc(state.x, state.y, 30, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.strokeStyle = "rgba(139,92,246,0.95)";
-        ctx.lineWidth = 1.4;
-        ctx.arc(state.x, state.y, 10, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(255,255,255,0.92)";
-        ctx.arc(state.x, state.y, 2.2, 0, Math.PI * 2);
-        ctx.fill();
+      }
+      function scheduleRender() {
+        if (rafId) return;
+        rafId = window.requestAnimationFrame(renderRing);
       }
 
-      setCanvasSize();
-      drawCursor();
-
-      window.addEventListener("resize", setCanvasSize, { passive: true });
       window.addEventListener("pointermove", function (event) {
         if (event.pointerType && event.pointerType !== "mouse") return;
-        state.visible = true;
-        state.tx = event.clientX;
-        state.ty = event.clientY;
+        x = event.clientX;
+        y = event.clientY;
+        document.body.classList.add("cursor-active");
+        scheduleRender();
       }, { passive: true });
       window.addEventListener("pointerdown", function (event) {
         if (event.pointerType && event.pointerType !== "mouse") return;
-        state.visible = true;
-        state.tx = event.clientX;
-        state.ty = event.clientY;
-        triggerRipple(event.clientX, event.clientY);
+        x = event.clientX;
+        y = event.clientY;
+        document.body.classList.add("cursor-pressing");
+        scheduleRender();
+      });
+      window.addEventListener("pointerup", function () {
+        document.body.classList.remove("cursor-pressing");
+        scheduleRender();
       });
       window.addEventListener("blur", function () {
-        state.visible = false;
+        document.body.classList.remove("cursor-pressing");
+        document.body.classList.remove("cursor-active");
+        x = -9999;
+        y = -9999;
+        scheduleRender();
+      });
+      window.addEventListener("focus", function () {
+        document.body.classList.remove("cursor-pressing");
       });
       document.addEventListener("mouseleave", function () {
-        state.visible = false;
-      });
-      window.addEventListener("beforeunload", function () {
-        if (rafId) window.cancelAnimationFrame(rafId);
+        document.body.classList.remove("cursor-active");
+        document.body.classList.remove("cursor-pressing");
+        x = -9999;
+        y = -9999;
+        scheduleRender();
       });
     }
 
