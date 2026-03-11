@@ -116,6 +116,402 @@
       box-shadow: 0 8px 24px rgba(139,92,246,0.15);
     }
 
+    /* ---------- Why Output Matters ---------- */
+    .output-matters {
+      padding-top: 0.5rem;
+      padding-bottom: 1.75rem;
+    }
+    .output-shell {
+      position: relative;
+      border-radius: 28px;
+      border: 1px solid rgba(139,92,246,0.38);
+      background:
+        radial-gradient(90% 110% at 0% 0%, rgba(34,211,238,0.16), transparent 60%),
+        radial-gradient(90% 110% at 100% 100%, rgba(139,92,246,0.24), transparent 65%),
+        linear-gradient(135deg, rgba(5,8,20,0.94), rgba(15,22,46,0.96));
+      box-shadow: 0 24px 48px rgba(5,8,20,0.4);
+      padding: 2.2rem;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .output-shell::before {
+      content: "";
+      position: absolute;
+      inset: auto -20% -55% auto;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,211,238,0.2), transparent 70%);
+      filter: blur(12px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .output-shell::after {
+      content: "";
+      position: absolute;
+      inset: -25% auto auto -15%;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139,92,246,0.22), transparent 72%);
+      filter: blur(10px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .output-header {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 1.3rem;
+    }
+    .output-kicker {
+      display: inline-block;
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(34,211,238,0.15);
+      border: 1px solid rgba(34,211,238,0.3);
+      margin-bottom: 0.8rem;
+    }
+    .output-header h2 {
+      margin: 0;
+      font-size: clamp(1.55rem, 3.5vw, 2.35rem);
+      line-height: 1.2;
+      max-width: 820px;
+      letter-spacing: -0.02em;
+    }
+    .output-headline {
+      margin: 0;
+      font-size: clamp(2.2rem, 7vw, 4.35rem);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      font-weight: 950;
+      background: linear-gradient(90deg, #7dd3fc 0%, #22d3ee 34%, #60a5fa 62%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-wrap: balance;
+      filter: drop-shadow(0 0 18px rgba(34,211,238,0.3)) drop-shadow(0 0 28px rgba(139,92,246,0.26));
+      animation: outputHeadlineGlow 2.35s ease-in-out infinite alternate;
+    }
+    @keyframes outputHeadlineGlow {
+      0% {
+        filter: drop-shadow(0 0 10px rgba(34,211,238,0.24)) drop-shadow(0 0 20px rgba(139,92,246,0.2));
+      }
+      100% {
+        filter: drop-shadow(0 0 20px rgba(34,211,238,0.5)) drop-shadow(0 0 34px rgba(139,92,246,0.42));
+      }
+    }
+    .output-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    .output-card {
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: linear-gradient(160deg, rgba(15,22,46,0.92), rgba(11,16,36,0.74));
+      backdrop-filter: blur(4px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      padding: 1.3rem 1.25rem 1.35rem;
+      align-self: start;
+    }
+    .output-quote {
+      position: relative;
+      padding-left: 4.2rem;
+    }
+    .output-quote-icon {
+      position: absolute;
+      left: 1.25rem;
+      top: 1.1rem;
+      width: 2.1rem;
+      height: 2.1rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      box-shadow: 0 10px 20px rgba(139,92,246,0.35);
+    }
+    .output-quote p {
+      margin: 0;
+      color: rgba(238,243,255,0.94);
+      line-height: 1.72;
+      font-size: 0.97rem;
+    }
+    .output-main-copy {
+      margin: 0;
+      color: rgba(238,243,255,0.94);
+      line-height: 1.74;
+      font-size: 1.01rem;
+    }
+    .output-emphasis {
+      font-weight: 900;
+      color: var(--accent);
+    }
+    .output-focus {
+      font-weight: 800;
+      color: #fff;
+    }
+    .output-main-copy em {
+      font-style: italic;
+      color: rgba(167,139,250,0.96);
+    }
+    .output-pill-row {
+      margin-top: 0.95rem;
+      margin-bottom: 0.2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .output-pill {
+      padding: 0.26rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(34,211,238,0.3);
+      background: rgba(34,211,238,0.12);
+      color: rgba(238,243,255,0.95);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+    .output-quote-attribution {
+      margin: 0.48rem 0 0;
+      font-size: 0.89rem;
+      line-height: 1.35;
+      color: rgba(167,139,250,0.96);
+      letter-spacing: 0.015em;
+      font-style: italic;
+      opacity: 0.96;
+    }
+    .output-bridge h3 {
+      margin: 0 0 0.7rem;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+    .output-bridge p {
+      margin: 0;
+      line-height: 1.7;
+      color: rgba(238,243,255,0.9);
+      font-size: 0.96rem;
+    }
+    .output-citations {
+      margin-top: 0.9rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed rgba(255,255,255,0.2);
+      font-size: 0.78rem;
+      color: rgba(238,243,255,0.78);
+      line-height: 1.45;
+    }
+    .output-citations p {
+      margin: 0 0 0.4rem;
+    }
+    .output-citations p:last-child {
+      margin-bottom: 0;
+    }
+    .output-citation-index {
+      color: var(--accent);
+      font-weight: 700;
+      margin-right: 0.25rem;
+    }
+
+    /* ---------- Trust Marquee ---------- */
+    .trust-marquee {
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+    }
+    .trust-marquee .section-sub {
+      margin-bottom: 1.35rem;
+    }
+    .logo-marquee-wrap {
+      position: relative;
+      border-radius: 18px;
+      border: 1px solid rgba(139,92,246,0.28);
+      background: linear-gradient(180deg, rgba(15,22,46,0.88), rgba(5,8,20,0.95));
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .logo-marquee-wrap::before,
+    .logo-marquee-wrap::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: 84px;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .logo-marquee-wrap::before {
+      left: 0;
+      background: linear-gradient(90deg, rgba(5,8,20,0.97), rgba(5,8,20,0));
+    }
+    .logo-marquee-wrap::after {
+      right: 0;
+      background: linear-gradient(270deg, rgba(5,8,20,0.97), rgba(5,8,20,0));
+    }
+    .logo-marquee-track {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      width: max-content;
+      padding: 0.95rem 0;
+      animation: logoMarquee 62s linear infinite;
+      will-change: transform;
+    }
+    .logo-marquee-wrap:hover .logo-marquee-track {
+      animation-play-state: paused;
+    }
+    .uni-logo-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 250px;
+      padding: 0.62rem 0.86rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(11,16,36,0.6);
+      color: rgba(238,243,255,0.85);
+      text-decoration: none;
+      transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    }
+    .uni-logo-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(34,211,238,0.5);
+      background: rgba(15,22,46,0.95);
+    }
+    .uni-logo-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.96);
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid rgba(11,16,36,0.2);
+    }
+    .uni-logo-mark img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: none;
+      transition: transform 0.25s ease;
+    }
+    .uni-logo-item:hover .uni-logo-mark img {
+      transform: scale(1.04);
+    }
+    .uni-logo-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      line-height: 1.25;
+      white-space: nowrap;
+    }
+    @keyframes logoMarquee {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-50%, 0, 0); }
+    }
+
+    /* ---------- Logged-in Hero ---------- */
+    #homeMain {
+      display: flex;
+      flex-direction: column;
+    }
+    .member-hero {
+      position: relative;
+      margin-bottom: 1.5rem;
+      padding: 2rem 2.2rem;
+      border-radius: 24px;
+      border: 1px solid rgba(34,211,238,0.34);
+      background:
+        radial-gradient(100% 90% at 15% 0%, rgba(34,211,238,0.16), transparent 70%),
+        radial-gradient(80% 100% at 90% 100%, rgba(139,92,246,0.2), transparent 68%),
+        linear-gradient(135deg, rgba(15,22,46,0.98), rgba(11,16,36,0.95));
+      overflow: hidden;
+      box-shadow: 0 24px 44px rgba(5,8,20,0.45);
+    }
+    .member-hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255,255,255,0.08);
+      pointer-events: none;
+    }
+    .member-hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(34,211,238,0.45);
+      background: rgba(34,211,238,0.14);
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.85rem;
+    }
+    .member-hero h2 {
+      margin: 0 0 0.65rem;
+      font-size: clamp(1.55rem, 3.6vw, 2.25rem);
+      line-height: 1.16;
+      letter-spacing: -0.02em;
+    }
+    .member-hero p {
+      margin: 0 0 1.15rem;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.6;
+    }
+    .member-hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .member-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.72rem 1.02rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(11,16,36,0.72);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .member-action:hover {
+      transform: translateY(-1px);
+      border-color: rgba(139,92,246,0.56);
+      box-shadow: 0 8px 18px rgba(139,92,246,0.22);
+    }
+    .member-action.primary {
+      background: linear-gradient(135deg, var(--primary), rgba(6,182,212,0.9));
+      border: none;
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(139,92,246,0.3);
+    }
+    .member-action.primary:hover {
+      box-shadow: 0 10px 26px rgba(139,92,246,0.4);
+    }
+    body.logged-in-home #dashboardView { order: 0; }
+    body.logged-in-home #landingView { order: 1; }
+
     /* ---------- How It Works ---------- */
     .section { max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem; }
     .section-title {
@@ -537,6 +933,152 @@
       margin: 0;
     }
 
+    /* ---------- Cursor FX ---------- */
+    .cursor-ring {
+      position: fixed;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      transform: translate3d(-9999px, -9999px, 0) translate(-50%, -50%) scale(1);
+      opacity: 0;
+    }
+    .cursor-ring {
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      border: 1.4px solid rgba(139,92,246,0.7);
+      background: rgba(139,92,246,0.04);
+      z-index: 1101;
+      transition: opacity 0.12s ease, transform 0.1s ease, border-color 0.2s ease;
+      will-change: transform, opacity;
+    }
+    body.cursor-active .cursor-ring {
+      opacity: 1;
+    }
+    body.cursor-pressing .cursor-ring {
+      transform: translate3d(var(--cursor-x, -9999px), var(--cursor-y, -9999px), 0) translate(-50%, -50%) scale(0.86);
+    }
+    body.cursor-enabled {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Ccircle cx='5' cy='5' r='2.4' fill='%2322d3ee'/%3E%3C/svg%3E") 5 5, auto;
+    }
+    body.cursor-enabled * {
+      cursor: inherit !important;
+    }
+
+    /* ---------- Theme Overrides ---------- */
+    html[data-theme="light"] .output-shell {
+      border-color: rgba(109,40,217,0.22);
+      background:
+        radial-gradient(100% 120% at 0% 0%, rgba(14,165,183,0.14), transparent 62%),
+        radial-gradient(90% 110% at 100% 100%, rgba(109,40,217,0.14), transparent 70%),
+        linear-gradient(150deg, rgba(255,255,255,0.96), rgba(246,248,255,0.95));
+      box-shadow: 0 18px 34px rgba(15,23,42,0.12);
+    }
+    html[data-theme="light"] .output-shell::before {
+      background: radial-gradient(circle, rgba(14,165,183,0.18), transparent 70%);
+    }
+    html[data-theme="light"] .output-shell::after {
+      background: radial-gradient(circle, rgba(109,40,217,0.16), transparent 72%);
+    }
+    html[data-theme="light"] .output-card {
+      border-color: rgba(15,23,42,0.12);
+      background: linear-gradient(165deg, rgba(255,255,255,0.96), rgba(246,248,255,0.88));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95);
+    }
+    html[data-theme="light"] .output-quote p,
+    html[data-theme="light"] .output-bridge p {
+      color: rgba(15,23,42,0.86);
+    }
+    html[data-theme="light"] .output-headline {
+      background: linear-gradient(90deg, #0284c7 0%, #0ea5b7 38%, #2563eb 65%, #6d28d9 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      filter: drop-shadow(0 0 8px rgba(14,165,183,0.14)) drop-shadow(0 0 14px rgba(109,40,217,0.12));
+    }
+    html[data-theme="light"] .output-emphasis {
+      color: #0b7f8d;
+    }
+    html[data-theme="light"] .output-focus {
+      color: #111827;
+    }
+    html[data-theme="light"] .output-main-copy em {
+      color: #6d28d9;
+    }
+    html[data-theme="light"] .output-pill {
+      border-color: rgba(14,165,183,0.26);
+      background: rgba(14,165,183,0.1);
+      color: rgba(15,23,42,0.86);
+    }
+    html[data-theme="light"] .output-quote-attribution {
+      color: #6d28d9;
+      opacity: 0.88;
+    }
+    html[data-theme="light"] .output-citations {
+      color: rgba(15,23,42,0.72);
+      border-top-color: rgba(15,23,42,0.16);
+    }
+    html[data-theme="light"] .output-kicker {
+      background: rgba(14,165,183,0.12);
+      border-color: rgba(14,165,183,0.28);
+      color: #0f6d79;
+    }
+    html[data-theme="light"] .output-quote-icon {
+      box-shadow: 0 8px 16px rgba(109,40,217,0.2);
+    }
+    html[data-theme="light"] .logo-marquee-wrap {
+      border-color: rgba(109,40,217,0.2);
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,247,255,0.95));
+      box-shadow: 0 12px 24px rgba(15,23,42,0.08);
+    }
+    html[data-theme="light"] .logo-marquee-wrap::before {
+      background: linear-gradient(90deg, rgba(246,248,251,0.98), rgba(246,248,251,0));
+    }
+    html[data-theme="light"] .logo-marquee-wrap::after {
+      background: linear-gradient(270deg, rgba(246,248,251,0.98), rgba(246,248,251,0));
+    }
+    html[data-theme="light"] .uni-logo-item {
+      border-color: rgba(15,23,42,0.1);
+      background: rgba(255,255,255,0.9);
+      color: rgba(15,23,42,0.86);
+    }
+    html[data-theme="light"] .uni-logo-item:hover {
+      background: rgba(255,255,255,0.98);
+      border-color: rgba(14,165,183,0.42);
+    }
+    html[data-theme="light"] .uni-logo-mark {
+      background: rgba(255,255,255,0.98);
+      border-color: rgba(109,40,217,0.18);
+    }
+    html[data-theme="light"] .member-hero {
+      border-color: rgba(109,40,217,0.24);
+      background:
+        radial-gradient(95% 100% at 12% 0%, rgba(14,165,183,0.16), transparent 68%),
+        radial-gradient(85% 100% at 90% 100%, rgba(109,40,217,0.14), transparent 70%),
+        linear-gradient(142deg, rgba(255,255,255,0.98), rgba(244,247,255,0.95));
+      box-shadow: 0 18px 34px rgba(15,23,42,0.1);
+    }
+    html[data-theme="light"] .member-hero::after {
+      border-color: rgba(15,23,42,0.08);
+    }
+    html[data-theme="light"] .member-hero-kicker {
+      border-color: rgba(14,165,183,0.35);
+      background: rgba(14,165,183,0.12);
+      color: #0f6d79;
+    }
+    html[data-theme="light"] .member-action {
+      border-color: rgba(15,23,42,0.14);
+      background: rgba(255,255,255,0.86);
+      color: rgba(15,23,42,0.9);
+    }
+    html[data-theme="light"] .member-action:hover {
+      border-color: rgba(109,40,217,0.38);
+      box-shadow: 0 8px 18px rgba(109,40,217,0.14);
+    }
+    html[data-theme="light"] .cursor-ring {
+      border-color: rgba(14,165,183,0.62);
+      background: rgba(14,165,183,0.05);
+    }
+
     /* ---------- Responsive ---------- */
     @media (max-width: 640px) {
       .hero { padding: 3rem 1rem 2rem; }
@@ -545,6 +1087,46 @@
       .welcome-banner { padding: 1.5rem; }
       .welcome-name { font-size: 1.35rem; }
       .auth-section { padding: 0 1rem 3rem; }
+      .output-shell { padding: 1.35rem 1.1rem; }
+      .output-grid { grid-template-columns: 1fr; }
+      .output-quote { padding-left: 1.2rem; padding-top: 3rem; }
+      .output-quote-icon { left: 1rem; top: 0.9rem; }
+      .logo-marquee-wrap::before,
+      .logo-marquee-wrap::after { width: 48px; }
+      .uni-logo-item { min-width: 220px; }
+      .uni-logo-name { font-size: 0.84rem; }
+      .member-hero { padding: 1.45rem 1.15rem; }
+      .member-hero-actions { flex-direction: column; align-items: stretch; }
+      .member-action { justify-content: center; }
+    }
+    @media (max-width: 900px) {
+      .output-grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .logo-marquee-track,
+      .uni-logo-item,
+      .member-action,
+      .btn-hero,
+      .output-headline {
+        animation: none !important;
+        transition: none !important;
+      }
+      .cursor-ring {
+        display: none !important;
+      }
+      body.cursor-enabled,
+      body.cursor-enabled * {
+        cursor: auto !important;
+      }
+    }
+    @media (hover: none), (pointer: coarse) {
+      .cursor-ring {
+        display: none !important;
+      }
+      body.cursor-enabled,
+      body.cursor-enabled * {
+        cursor: auto !important;
+      }
     }
   </style>
 </head>
@@ -568,116 +1150,166 @@
     </nav>
   </header>
 
-  <!-- ╔══════════════════════════════════════════╗
-       ║  LOGGED-OUT: Landing Page                 ║
-       ╚══════════════════════════════════════════╝ -->
-  <div id="landingView" class="idx-hidden">
+  <main id="homeMain">
+    <!-- ╔══════════════════════════════════════════╗
+         ║  LOGGED-OUT: Landing Page                 ║
+         ╚══════════════════════════════════════════╝ -->
+    <div id="landingView" class="idx-hidden">
 
-    <!-- Hero -->
-    <section class="hero">
-      <h1 class="hero-title gradient-animated">Turn anything into a quiz</h1>
-      <p class="hero-sub">Upload your study materials, and our AI creates interactive quizzes with detailed explanations — instantly.</p>
-      <div class="hero-actions">
-        <a href="#authSection" class="btn-hero btn-hero-primary">Get Started Free</a>
-        <a href="#howItWorks" class="btn-hero btn-hero-secondary">Learn More ↓</a>
-      </div>
-    </section>
+      <!-- Hero -->
+      <section class="hero">
+        <h1 class="hero-title gradient-animated">Turn anything into a quiz</h1>
+        <p class="hero-sub">Upload your study materials, and our AI creates interactive quizzes with detailed explanations — instantly.</p>
+        <div class="hero-actions">
+          <a href="#authSection" class="btn-hero btn-hero-primary">Get Started Free</a>
+          <a href="#howItWorks" class="btn-hero btn-hero-secondary">Learn More ↓</a>
+        </div>
+      </section>
 
-    <!-- How It Works -->
-    <section class="section" id="howItWorks">
-      <h2 class="section-title">How It Works</h2>
-      <p class="section-sub">Four simple steps from material to mastery</p>
-      <div class="grid grid-4">
-        <div class="step-card">
-          <div class="step-num">1</div>
-          <div class="step-icon">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <!-- Why Output Matters -->
+      <section class="section output-matters" id="whyOutputMatters">
+        <div class="output-shell">
+          <div class="output-header">
+            <span class="output-kicker">Brand Philosophy</span>
+            <h2 class="output-headline">Output &gt; Input. Always</h2>
           </div>
-          <h3>Upload</h3>
-          <p>Upload your study materials — PDF, DOCX, TXT, or paste text directly</p>
-        </div>
-        <div class="step-card">
-          <div class="step-num">2</div>
-          <div class="step-icon">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2a9 9 0 019 9c0 3.87-3.13 7-7 7h-2v4l-4-4a9 9 0 01-5-8 9 9 0 019-9z"/><circle cx="12" cy="11" r="1"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/></svg>
+          <div class="output-grid">
+            <article class="output-card output-quote">
+              <span class="output-quote-icon" aria-hidden="true">❝</span>
+              <p class="output-main-copy">
+                Psychological research shows: <span class="output-emphasis">Output &gt; Input. Always.</span>
+                <em>Passively consuming information</em> (lectures, books, videos) does not update your mental weights.
+                Real learning requires <span class="output-focus">loss calculation</span> — solving problems, teaching others,
+                writing summaries, and being tested. Every time you feel <em>"I think I get it"</em>, immediately test yourself
+                through output — you'll discover exactly where you don't.<sup>[1][2]</sup>
+              </p>
+              <div class="output-pill-row" aria-label="Active output examples">
+                <span class="output-pill">Solve Problems</span>
+                <span class="output-pill">Teach Others</span>
+                <span class="output-pill">Write Summaries</span>
+                <span class="output-pill">Get Tested</span>
+              </div>
+              <p class="output-quote-attribution">---- Roediger &amp; Karpicke, retrieval-practice researchers</p>
+            </article>
+            <article class="output-card output-bridge">
+              <h3>Product Thesis</h3>
+              <p>
+                This is exactly why QuizAll exists — <strong>turning passive input into active output</strong>,
+                helping you pinpoint what you truly don't understand.
+              </p>
+              <div class="output-citations" aria-label="Research citations">
+                <p><span class="output-citation-index">[1]</span>Roediger, H. L., &amp; Karpicke, J. D. (2006). <em>Psychological Science, 17</em>(3), 249–255.</p>
+                <p><span class="output-citation-index">[2]</span>Karpicke, J. D., &amp; Blunt, J. R. (2011). <em>Science, 331</em>(6018), 772–775.</p>
+              </div>
+            </article>
           </div>
-          <h3>Analyze</h3>
-          <p>AI analyzes content, extracts key concepts and topics automatically</p>
         </div>
-        <div class="step-card">
-          <div class="step-num">3</div>
-          <div class="step-icon">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </section>
+
+      <!-- Trust Marquee -->
+      <section class="section trust-marquee" id="trustMarquee">
+        <h2 class="section-title">Used by students &amp; educators from</h2>
+        <p class="section-sub">US News Top 40 universities</p>
+        <div class="logo-marquee-wrap" aria-label="Universities">
+          <div class="logo-marquee-track" id="logoMarqueeTrack" role="list" aria-live="off"></div>
+        </div>
+      </section>
+
+      <!-- How It Works -->
+      <section class="section" id="howItWorks">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-sub">Four simple steps from material to mastery</p>
+        <div class="grid grid-4">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <div class="step-icon">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <h3>Upload</h3>
+            <p>Upload your study materials — PDF, DOCX, TXT, or paste text directly</p>
           </div>
-          <h3>Quiz</h3>
-          <p>Take interactive quizzes with multiple question types and formats</p>
-        </div>
-        <div class="step-card">
-          <div class="step-num">4</div>
-          <div class="step-icon">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <div class="step-icon">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2a9 9 0 019 9c0 3.87-3.13 7-7 7h-2v4l-4-4a9 9 0 01-5-8 9 9 0 019-9z"/><circle cx="12" cy="11" r="1"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/></svg>
+            </div>
+            <h3>Analyze</h3>
+            <p>AI analyzes content, extracts key concepts and topics automatically</p>
           </div>
-          <h3>Review</h3>
-          <p>Review results with detailed explanations and track your progress</p>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <div class="step-icon">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            </div>
+            <h3>Quiz</h3>
+            <p>Take interactive quizzes with multiple question types and formats</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <div class="step-icon">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <h3>Review</h3>
+            <p>Review results with detailed explanations and track your progress</p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Features -->
-    <section class="section">
-      <h2 class="section-title">Why QuizAll?</h2>
-      <p class="section-sub">Built for learners who want to study smarter</p>
-      <div class="grid grid-2">
-        <div class="feat-card">
-          <div class="feat-icon">⚡</div>
-          <h3>Instant Generation</h3>
-          <p>Upload any document and get a complete quiz in seconds — no manual question writing needed.</p>
+      <!-- Features -->
+      <section class="section">
+        <h2 class="section-title">Why QuizAll?</h2>
+        <p class="section-sub">Built for learners who want to study smarter</p>
+        <div class="grid grid-2">
+          <div class="feat-card">
+            <div class="feat-icon">⚡</div>
+            <h3>Instant Generation</h3>
+            <p>Upload any document and get a complete quiz in seconds — no manual question writing needed.</p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">🧠</div>
+            <h3>AI-Powered Explanations</h3>
+            <p>Every answer comes with a detailed explanation so you truly understand the material.</p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">📊</div>
+            <h3>Progress Tracking</h3>
+            <p>Monitor your scores over time, identify weak areas, and focus your study sessions.</p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">📄</div>
+            <h3>Multiple Formats</h3>
+            <p>Supports PDF, DOCX, TXT files and direct text paste — works with any study material.</p>
+          </div>
         </div>
-        <div class="feat-card">
-          <div class="feat-icon">🧠</div>
-          <h3>AI-Powered Explanations</h3>
-          <p>Every answer comes with a detailed explanation so you truly understand the material.</p>
-        </div>
-        <div class="feat-card">
-          <div class="feat-icon">📊</div>
-          <h3>Progress Tracking</h3>
-          <p>Monitor your scores over time, identify weak areas, and focus your study sessions.</p>
-        </div>
-        <div class="feat-card">
-          <div class="feat-icon">📄</div>
-          <h3>Multiple Formats</h3>
-          <p>Supports PDF, DOCX, TXT files and direct text paste — works with any study material.</p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Auth Forms -->
-    <section class="auth-section" id="authSection">
-      <div class="auth-card">
-        <div id="authMessage" class="auth-message"></div>
+      <!-- Auth Forms -->
+      <section class="auth-section" id="authSection">
+        <div class="auth-card">
+          <div id="authMessage" class="auth-message"></div>
 
-        <div class="oauth-buttons-idx">
-          <button type="button" class="btn-oauth-idx" id="googleLoginBtn">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.20454Z" fill="#4285F4"/>
-              <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
-              <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40681 3.78409 7.83 3.96409 7.29V4.95818H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
-              <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95818L3.96409 7.29C4.67182 5.16273 6.65454 3.57955 9 3.57955Z" fill="#EA4335"/>
-            </svg>
-            <span>Continue with Google</span>
-          </button>
-          <button type="button" class="btn-oauth-idx" id="githubLoginBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
-            <span>Continue with GitHub</span>
-          </button>
-        </div>
+          <div class="oauth-buttons-idx">
+            <button type="button" class="btn-oauth-idx" id="googleLoginBtn">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.20454Z" fill="#4285F4"/>
+                <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
+                <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40681 3.78409 7.83 3.96409 7.29V4.95818H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
+                <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95818L3.96409 7.29C4.67182 5.16273 6.65454 3.57955 9 3.57955Z" fill="#EA4335"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+            <button type="button" class="btn-oauth-idx" id="githubLoginBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              <span>Continue with GitHub</span>
+            </button>
+          </div>
 
-        <div class="oauth-divider-idx"><span>or</span></div>
+          <div class="oauth-divider-idx"><span>or</span></div>
 
-        <!-- Login Form -->
-        <form id="loginForm" class="auth-form">
+          <!-- Login Form -->
+          <form id="loginForm" class="auth-form">
           <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Sign in</h3>
           <label>
             Email
@@ -690,8 +1322,8 @@
           <button type="submit" class="btn-submit">Login</button>
         </form>
 
-        <!-- Register Form (hidden by default) -->
-        <form id="registerForm" class="auth-form idx-hidden">
+          <!-- Register Form (hidden by default) -->
+          <form id="registerForm" class="auth-form idx-hidden">
           <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Create account</h3>
           <label>
             Email
@@ -704,60 +1336,71 @@
           <button type="submit" class="btn-submit">Register</button>
         </form>
 
-        <div class="auth-toggle" id="authToggle">
-          Don't have an account? <a id="toggleToRegister">Sign up</a>
+          <div class="auth-toggle" id="authToggle">
+            Don't have an account? <a id="toggleToRegister">Sign up</a>
+          </div>
         </div>
-      </div>
-    </section>
-  </div>
+      </section>
+    </div>
 
-  <!-- ╔══════════════════════════════════════════╗
-       ║  LOGGED-IN: Dashboard                     ║
-       ╚══════════════════════════════════════════╝ -->
-  <div id="dashboardView" class="idx-hidden">
-    <div class="dash">
+    <!-- ╔══════════════════════════════════════════╗
+         ║  LOGGED-IN: Dashboard                     ║
+         ╚══════════════════════════════════════════╝ -->
+    <div id="dashboardView" class="idx-hidden">
+      <div class="dash">
+        <section class="member-hero">
+          <span class="member-hero-kicker">Focus Mode</span>
+          <h2>Start output-first learning right now.</h2>
+          <p>Your core actions are pinned here so you can create a quiz, review recent work, and jump into analytics without any scrolling.</p>
+          <div class="member-hero-actions">
+            <a href="create.html" class="member-action primary">Start New Quiz</a>
+            <a href="history.html" class="member-action">Review History</a>
+            <a href="analytics-dashboard.html" class="member-action">Open Dashboard</a>
+          </div>
+        </section>
 
-      <!-- Welcome Banner -->
-      <div class="welcome-banner">
-        <h1 class="welcome-name" id="welcomeName">Welcome back!</h1>
-        <p class="welcome-email" id="welcomeEmail"></p>
-      </div>
-
-      <!-- Stats -->
-      <div class="grid grid-4" id="statsGrid">
-        <div class="stat-card">
-          <span class="stat-label">Total Quizzes</span>
-          <span class="stat-value" id="statQuizzes">–</span>
+        <!-- Welcome Banner -->
+        <div class="welcome-banner">
+          <h1 class="welcome-name" id="welcomeName">Welcome back!</h1>
+          <p class="welcome-email" id="welcomeEmail"></p>
         </div>
-        <div class="stat-card">
-          <span class="stat-label">Average Score</span>
-          <span class="stat-value" id="statAvg">–</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Questions Answered</span>
-          <span class="stat-value" id="statQuestions">–</span>
-        </div>
-        <a href="create.html" class="cta-card">
-          <span class="cta-card-icon">✨</span>
-          <span class="cta-card-text">Create New Quiz</span>
-        </a>
-      </div>
 
-      <!-- Recent History -->
-      <div class="history-section" id="historySection">
-        <h2>Recent Quizzes</h2>
-        <div id="historyContent"></div>
-      </div>
+        <!-- Stats -->
+        <div class="grid grid-4" id="statsGrid">
+          <div class="stat-card">
+            <span class="stat-label">Total Quizzes</span>
+            <span class="stat-value" id="statQuizzes">–</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Average Score</span>
+            <span class="stat-value" id="statAvg">–</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Questions Answered</span>
+            <span class="stat-value" id="statQuestions">–</span>
+          </div>
+          <a href="create.html" class="cta-card">
+            <span class="cta-card-icon">✨</span>
+            <span class="cta-card-text">Create New Quiz</span>
+          </a>
+        </div>
 
-      <!-- Empty State -->
-      <div class="empty-state idx-hidden" id="emptyState">
-        <div class="empty-icon">📝</div>
-        <h3>No quizzes yet</h3>
-        <p>Create your first quiz and start learning smarter!</p>
-        <a href="create.html" class="btn-hero btn-hero-primary" style="display:inline-flex;">Create Your First Quiz</a>
+        <!-- Recent History -->
+        <div class="history-section" id="historySection">
+          <h2>Recent Quizzes</h2>
+          <div id="historyContent"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state idx-hidden" id="emptyState">
+          <div class="empty-icon">📝</div>
+          <h3>No quizzes yet</h3>
+          <p>Create your first quiz and start learning smarter!</p>
+          <a href="create.html" class="btn-hero btn-hero-primary" style="display:inline-flex;">Create Your First Quiz</a>
+        </div>
       </div>
     </div>
-  </div>
+  </main>
 
   <!-- Footer -->
   <footer class="idx-footer">
@@ -771,6 +1414,7 @@
 
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container"></div>
+  <div id="cursorRing" class="cursor-ring" aria-hidden="true"></div>
 
   <script src="lib/navUserBar.js"></script>
   <script src="core.js"></script>
@@ -786,6 +1430,164 @@
     const $authMsg    = document.getElementById("authMessage");
     const $toggle     = document.getElementById("authToggle");
     const $toRegister = document.getElementById("toggleToRegister");
+    const $logoTrack  = document.getElementById("logoMarqueeTrack");
+
+    const TOP_UNIVERSITIES = [
+      { name: "Princeton University", domain: "princeton.edu", logo: "assets/university-logos/princeton-university.svg" },
+      { name: "MIT", domain: "mit.edu", logo: "assets/university-logos/mit.svg" },
+      { name: "Harvard University", domain: "harvard.edu", logo: "assets/university-logos/harvard-university.svg" },
+      { name: "Stanford University", domain: "stanford.edu", logo: "assets/university-logos/stanford-university.svg" },
+      { name: "Yale University", domain: "yale.edu", logo: "assets/university-logos/yale-university.png" },
+      { name: "University of Chicago", domain: "uchicago.edu", logo: "assets/university-logos/university-of-chicago.png" },
+      { name: "Duke University", domain: "duke.edu", logo: "assets/university-logos/duke-university.png" },
+      { name: "Johns Hopkins University", domain: "jhu.edu", logo: "assets/university-logos/johns-hopkins-university.png" },
+      { name: "Northwestern University", domain: "northwestern.edu", logo: "assets/university-logos/northwestern-university.png" },
+      { name: "University of Pennsylvania", domain: "upenn.edu", logo: "assets/university-logos/university-of-pennsylvania.png" },
+      { name: "California Institute of Technology", domain: "caltech.edu", logo: "assets/university-logos/california-institute-of-technology.png" },
+      { name: "Cornell University", domain: "cornell.edu", logo: "assets/university-logos/cornell-university.svg" },
+      { name: "Brown University", domain: "brown.edu", logo: "assets/university-logos/brown-university.svg" },
+      { name: "Dartmouth College", domain: "dartmouth.edu", logo: "assets/university-logos/dartmouth-college.png" },
+      { name: "Columbia University", domain: "columbia.edu", logo: "assets/university-logos/columbia-university.svg" },
+      { name: "UC Berkeley", domain: "berkeley.edu", logo: "assets/university-logos/uc-berkeley.png" },
+      { name: "Rice University", domain: "rice.edu", logo: "assets/university-logos/rice-university.png" },
+      { name: "UCLA", domain: "ucla.edu", logo: "assets/university-logos/ucla.png" },
+      { name: "Vanderbilt University", domain: "vanderbilt.edu", logo: "assets/university-logos/vanderbilt-university.png" },
+      { name: "Carnegie Mellon University", domain: "cmu.edu", logo: "assets/university-logos/carnegie-mellon-university.png" },
+      { name: "University of Michigan", domain: "umich.edu", logo: "assets/university-logos/university-of-michigan.svg" },
+      { name: "University of Notre Dame", domain: "nd.edu", logo: "assets/university-logos/university-of-notre-dame.png" },
+      { name: "Washington University in St. Louis", domain: "wustl.edu", logo: "assets/university-logos/washington-university-in-st-louis.png" },
+      { name: "Emory University", domain: "emory.edu", logo: "assets/university-logos/emory-university.png" },
+      { name: "Georgetown University", domain: "georgetown.edu", logo: "assets/university-logos/georgetown-university.png" },
+      { name: "UNC Chapel Hill", domain: "unc.edu", logo: "assets/university-logos/unc-chapel-hill.jpg" },
+      { name: "University of Virginia", domain: "virginia.edu", logo: "assets/university-logos/university-of-virginia.png" },
+      { name: "University of Southern California", domain: "usc.edu", logo: "assets/university-logos/university-of-southern-california.png" },
+      { name: "UC San Diego", domain: "ucsd.edu", logo: "assets/university-logos/uc-san-diego.jpg" },
+      { name: "University of Florida", domain: "ufl.edu", logo: "assets/university-logos/university-of-florida.png" },
+      { name: "University of Texas at Austin", domain: "utexas.edu", logo: "assets/university-logos/university-of-texas-at-austin.svg" },
+      { name: "Georgia Institute of Technology", domain: "gatech.edu", logo: "assets/university-logos/georgia-institute-of-technology.png" },
+      { name: "New York University", domain: "nyu.edu", logo: "assets/university-logos/new-york-university.png" },
+      { name: "UC Davis", domain: "ucdavis.edu", logo: "assets/university-logos/uc-davis.png" },
+      { name: "UC Irvine", domain: "uci.edu", logo: "assets/university-logos/uc-irvine.ico" },
+      { name: "Boston College", domain: "bc.edu", logo: "assets/university-logos/boston-college.png" },
+      { name: "Tufts University", domain: "tufts.edu", logo: "assets/university-logos/tufts-university.png" },
+      { name: "UIUC", domain: "illinois.edu", logo: "assets/university-logos/uiuc.png" },
+      { name: "University of Wisconsin-Madison", domain: "wisc.edu", logo: "assets/university-logos/university-of-wisconsin-madison.png" },
+      { name: "UC Santa Barbara", domain: "ucsb.edu", logo: "assets/university-logos/uc-santa-barbara.png" }
+    ];
+
+    function buildUniversityNode(school) {
+      var item = document.createElement("a");
+      item.className = "uni-logo-item";
+      item.href = "https://" + school.domain;
+      item.target = "_blank";
+      item.rel = "noopener noreferrer";
+      item.setAttribute("role", "listitem");
+      item.setAttribute("aria-label", school.name);
+
+      var mark = document.createElement("span");
+      mark.className = "uni-logo-mark";
+
+      var img = document.createElement("img");
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.referrerPolicy = "no-referrer";
+      img.alt = school.name + " logo";
+      img.src = school.logo || ("https://www.google.com/s2/favicons?domain=" + encodeURIComponent(school.domain) + "&sz=256");
+      img.addEventListener("error", function () {
+        if (img.dataset.fallback === "1") {
+          img.dataset.fallback = "2";
+          img.src = "https://icons.duckduckgo.com/ip3/" + encodeURIComponent(school.domain) + ".ico";
+          return;
+        }
+        if (img.dataset.fallback === "2") return;
+        img.dataset.fallback = "1";
+        img.src = "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(school.domain) + "&sz=256";
+      });
+
+      var name = document.createElement("span");
+      name.className = "uni-logo-name";
+      name.textContent = school.name;
+
+      mark.appendChild(img);
+      item.appendChild(mark);
+      item.appendChild(name);
+      return item;
+    }
+
+    function renderTrustMarquee() {
+      if (!$logoTrack) return;
+      var fragment = document.createDocumentFragment();
+      for (var loop = 0; loop < 2; loop++) {
+        TOP_UNIVERSITIES.forEach(function (school) {
+          fragment.appendChild(buildUniversityNode(school));
+        });
+      }
+      $logoTrack.innerHTML = "";
+      $logoTrack.appendChild(fragment);
+    }
+
+    function initCustomCursor() {
+      var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+      var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      if (!finePointer.matches || reducedMotion.matches) return;
+
+      var ring = document.getElementById("cursorRing");
+      if (!ring) return;
+
+      document.body.classList.add("cursor-enabled");
+      var rafId = 0;
+      var x = -9999;
+      var y = -9999;
+
+      function renderRing() {
+        rafId = 0;
+        document.body.style.setProperty("--cursor-x", x + "px");
+        document.body.style.setProperty("--cursor-y", y + "px");
+        if (!document.body.classList.contains("cursor-pressing")) {
+          ring.style.transform = "translate3d(" + x + "px, " + y + "px, 0) translate(-50%, -50%)";
+        }
+      }
+      function scheduleRender() {
+        if (rafId) return;
+        rafId = window.requestAnimationFrame(renderRing);
+      }
+
+      window.addEventListener("pointermove", function (event) {
+        if (event.pointerType && event.pointerType !== "mouse") return;
+        x = event.clientX;
+        y = event.clientY;
+        document.body.classList.add("cursor-active");
+        scheduleRender();
+      }, { passive: true });
+      window.addEventListener("pointerdown", function (event) {
+        if (event.pointerType && event.pointerType !== "mouse") return;
+        x = event.clientX;
+        y = event.clientY;
+        document.body.classList.add("cursor-pressing");
+        scheduleRender();
+      });
+      window.addEventListener("pointerup", function () {
+        document.body.classList.remove("cursor-pressing");
+        scheduleRender();
+      });
+      window.addEventListener("blur", function () {
+        document.body.classList.remove("cursor-pressing");
+        document.body.classList.remove("cursor-active");
+        x = -9999;
+        y = -9999;
+        scheduleRender();
+      });
+      window.addEventListener("focus", function () {
+        document.body.classList.remove("cursor-pressing");
+      });
+      document.addEventListener("mouseleave", function () {
+        document.body.classList.remove("cursor-active");
+        document.body.classList.remove("cursor-pressing");
+        x = -9999;
+        y = -9999;
+        scheduleRender();
+      });
+    }
 
     // ─── View Toggle ───────────────────────────
     function isLoggedIn() {
@@ -797,10 +1599,12 @@
       $landing.classList.remove("idx-hidden");
       var authSection = document.getElementById("authSection");
       if (isLoggedIn()) {
+        document.body.classList.add("logged-in-home");
         $dashboard.classList.remove("idx-hidden");
         if (authSection) authSection.classList.add("idx-hidden");
         loadDashboard();
       } else {
+        document.body.classList.remove("logged-in-home");
         $dashboard.classList.add("idx-hidden");
         if (authSection) authSection.classList.remove("idx-hidden");
       }
@@ -1071,6 +1875,8 @@
     });
 
     // ─── Init ──────────────────────────────────
+    renderTrustMarquee();
+    initCustomCursor();
     showView();
   })();
   </script>
