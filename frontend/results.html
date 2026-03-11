@@ -164,6 +164,7 @@
       <div class="navlinks">
         <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
         <a href="create.html" data-i18n="nav.create">Exam Prep Workspace</a>
+        <a href="/science">Science</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
       </div>
@@ -189,6 +190,7 @@
     <section class="actions">
       <a href="create.html" class="btn btn-primary">Back to Workspace</a>
       <a href="history.html" class="btn">Open History</a>
+      <a href="/science#step03" class="btn">Why this worked</a>
       <a href="index.html" class="btn">Home</a>
     </section>
 
@@ -199,6 +201,8 @@
   </main>
 
   <script src="lib/navUserBar.js"></script>
+  <script src="lib/scienceData.js"></script>
+  <script src="lib/scienceCommon.js"></script>
   <script>
   (function () {
     const raw = sessionStorage.getItem('quizall.lastResult');
@@ -227,6 +231,18 @@
       correct + ' / ' + total + ' correct' +
       (data.projectName || data.projectId ? (' · Project: ' + (data.projectName || data.projectId)) : '') +
       ' · Time: ' + timeText;
+
+    if (window.quizallScience) {
+      const pendingBadge = window.quizallScience.consumePendingBadge();
+      if (pendingBadge && pendingBadge.badgeId) {
+        if (pendingBadge.projectId) {
+          window.quizallScience.markProjectFlags(pendingBadge.projectId, { quizCompleted: true });
+        }
+        window.quizallScience.showBadge(pendingBadge.badgeId, {
+          stepId: pendingBadge.stepId || 'step03'
+        });
+      }
+    }
 
     const reviewList = document.getElementById('reviewList');
     const questions = Array.isArray(data.questions) ? data.questions : [];

@@ -959,6 +959,61 @@
       color: var(--err);
     }
 
+    /* ---------- Science Widget ---------- */
+    .science-widget {
+      margin-top: 1.4rem;
+      border: 1px solid rgba(148,163,184,0.28);
+      border-radius: 18px;
+      padding: 14px;
+      background:
+        radial-gradient(100% 140% at 0% 0%, rgba(34,211,238,0.12), transparent 60%),
+        linear-gradient(160deg, rgba(10,15,34,0.94), rgba(8,12,28,0.94));
+      box-shadow: 0 12px 26px rgba(2, 6, 23, 0.35);
+    }
+    .science-widget-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .science-widget-head h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+    .science-widget-head p {
+      margin: 2px 0 0;
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+    .science-widget-link {
+      text-decoration: none;
+      border: 1px solid rgba(148,163,184,0.36);
+      color: #c7d2fe;
+      border-radius: 9px;
+      font-size: 0.84rem;
+      padding: 7px 10px;
+      font-weight: 700;
+      background: rgba(15,23,42,0.72);
+    }
+    .science-widget-link:hover {
+      border-color: rgba(34,211,238,0.6);
+      color: #a5f3fc;
+    }
+    #scienceWidgetGrid .qa-science-step-btn {
+      min-height: 70px;
+      padding: 8px 7px;
+    }
+    #scienceWidgetGrid .qa-science-step-btn .txt {
+      font-size: 0.74rem;
+      line-height: 1.25;
+    }
+    #scienceWidgetGrid .qa-science-step-btn .state {
+      font-size: 0.68rem;
+    }
+
     /* ---------- Empty State ---------- */
     .empty-state {
       text-align: center;
@@ -1068,6 +1123,21 @@
     html[data-theme="light"] .output-quote-icon {
       box-shadow: 0 8px 16px rgba(109,40,217,0.2);
     }
+    html[data-theme="light"] .science-widget {
+      border-color: rgba(148,163,184,0.34);
+      background:
+        radial-gradient(120% 130% at 0% 0%, rgba(56,189,248,0.11), transparent 58%),
+        linear-gradient(155deg, rgba(255,255,255,0.98), rgba(246,249,255,0.95));
+      box-shadow: 0 12px 24px rgba(15,23,42,0.11);
+    }
+    html[data-theme="light"] .science-widget-head p {
+      color: #475569;
+    }
+    html[data-theme="light"] .science-widget-link {
+      border-color: rgba(148,163,184,0.45);
+      color: #1e293b;
+      background: rgba(255,255,255,0.9);
+    }
     html[data-theme="light"] .logo-marquee-wrap {
       border-color: rgba(109,40,217,0.2);
       background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,247,255,0.95));
@@ -1137,6 +1207,7 @@
       .member-hero { padding: 1.45rem 1.15rem; }
       .member-hero-actions { flex-direction: column; align-items: stretch; }
       .member-action { justify-content: center; }
+      #scienceWidgetGrid .qa-science-step-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 900px) {
       .output-grid { grid-template-columns: 1fr; }
@@ -1160,6 +1231,7 @@
       <div class="navlinks">
         <a href="index.html" class="active" data-i18n="nav.dashboard">Dashboard</a>
         <a href="create.html" data-i18n="nav.create">Exam Prep Workspace</a>
+        <a href="/science">Science</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
       </div>
@@ -1408,6 +1480,17 @@
           </a>
         </div>
 
+        <section class="science-widget" id="scienceWidget">
+          <div class="science-widget-head">
+            <div>
+              <h2>Science of Learning</h2>
+              <p>Open any step to see the mechanism, evidence, and top citations.</p>
+            </div>
+            <a class="science-widget-link" href="/science">Explore all -&gt;</a>
+          </div>
+          <div id="scienceWidgetGrid"></div>
+        </section>
+
         <section class="heatmap-section" id="heatmapSection">
           <div class="heatmap-head">
             <div>
@@ -1457,6 +1540,8 @@
 
   <script src="lib/navUserBar.js"></script>
   <script src="core.js"></script>
+  <script src="lib/scienceData.js"></script>
+  <script src="lib/scienceCommon.js"></script>
   <script>
   (function () {
     const API_BASE = window.authGuard ? window.authGuard.API_BASE : (window.QUIZALL_API_BASE || "http://localhost:8080");
@@ -1565,6 +1650,22 @@
       $logoTrack.appendChild(fragment);
     }
 
+    function renderScienceWidget() {
+      var grid = document.getElementById("scienceWidgetGrid");
+      if (!grid) return;
+      if (!window.quizallScience || !window.quizallScienceData) {
+        grid.innerHTML = "";
+        return;
+      }
+
+      window.quizallScience.renderStepGrid(grid, {
+        activeLabel: "View details",
+        onStepClick: function (step) {
+          window.quizallScience.openStepModal(step.id);
+        }
+      });
+    }
+
     // ─── View Toggle ───────────────────────────
     function isLoggedIn() {
       return !!localStorage.getItem(TOKEN_KEY);
@@ -1578,6 +1679,7 @@
         document.body.classList.add("logged-in-home");
         $dashboard.classList.remove("idx-hidden");
         if (authSection) authSection.classList.add("idx-hidden");
+        renderScienceWidget();
         loadDashboard();
       } else {
         document.body.classList.remove("logged-in-home");

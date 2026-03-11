@@ -612,6 +612,103 @@
       align-items: start;
     }
 
+    .project-detail-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+
+    .project-tab-btn {
+      border: 1px solid rgba(148,163,184,0.26);
+      background: rgba(10,15,34,0.8);
+      color: #dbeafe;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .project-tab-btn:hover {
+      border-color: rgba(34,211,238,0.46);
+      transform: translateY(-1px);
+    }
+
+    .project-tab-btn.active {
+      border-color: rgba(34,211,238,0.55);
+      background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(139,92,246,0.2));
+      color: #f0f9ff;
+      box-shadow: 0 10px 18px rgba(34,211,238,0.14);
+    }
+
+    .project-tab-panel {
+      display: none;
+    }
+
+    .project-tab-panel.active {
+      display: block;
+    }
+
+    .science-journey {
+      display: grid;
+      gap: 12px;
+    }
+
+    .science-journey-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .science-journey-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+    .science-journey-link {
+      text-decoration: none;
+      border: 1px solid rgba(148,163,184,0.34);
+      border-radius: 10px;
+      padding: 8px 11px;
+      color: #bae6fd;
+      font-size: 0.84rem;
+      font-weight: 700;
+      background: rgba(10,15,34,0.8);
+    }
+
+    .science-journey-link:hover {
+      border-color: rgba(34,211,238,0.58);
+    }
+
+    .science-journey-notes {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .science-note {
+      border: 1px solid rgba(148,163,184,0.22);
+      border-radius: 11px;
+      padding: 10px;
+      background: rgba(8,12,30,0.5);
+      font-size: 0.83rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .science-note strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #e2e8f0;
+    }
+
     .card-session .types,
     .card-session .nums {
       margin-top: 4px;
@@ -845,6 +942,35 @@
       background: linear-gradient(90deg, rgba(79,70,229,0.34), rgba(30,64,175,0.16), rgba(14,165,183,0.26));
     }
 
+    html[data-theme="light"] .project-tab-btn {
+      border-color: rgba(148,163,184,0.4);
+      background: rgba(255,255,255,0.9);
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .project-tab-btn.active {
+      border-color: rgba(14,165,183,0.48);
+      background: linear-gradient(135deg, rgba(56,189,248,0.18), rgba(129,140,248,0.2));
+      color: #0f172a;
+      box-shadow: 0 10px 18px rgba(15,23,42,0.12);
+    }
+
+    html[data-theme="light"] .science-note {
+      border-color: rgba(148,163,184,0.32);
+      background: rgba(255,255,255,0.8);
+      color: #334155;
+    }
+
+    html[data-theme="light"] .science-note strong {
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .science-journey-link {
+      border-color: rgba(148,163,184,0.44);
+      background: rgba(255,255,255,0.92);
+      color: #0f172a;
+    }
+
     html[data-theme="light"] .card-step {
       border-color: rgba(79,70,229,0.3);
       background: rgba(99,102,241,0.1);
@@ -863,6 +989,7 @@
       .prep-grid { grid-template-columns: 1fr; }
       .asset-lists { grid-template-columns: 1fr; }
       .workspace-bottom-grid { grid-template-columns: 1fr; }
+      .science-journey-notes { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -873,6 +1000,7 @@
       <div class="navlinks">
         <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
         <a href="create.html" class="active" data-i18n="nav.create">Exam Prep Workspace</a>
+        <a href="/science">Science</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
       </div>
@@ -1016,7 +1144,22 @@
       </div>
     </section>
 
-    <div class="workspace-bottom-grid">
+    <section class="card card-elevated">
+      <div class="card-head">
+        <span class="card-step">Step 4-6</span>
+        <div class="card-head-copy">
+          <h2>Project Tabs</h2>
+          <p class="card-sub">Switch between quiz, analytics, and your contextual science journey for this project.</p>
+        </div>
+      </div>
+      <div id="projectDetailTabs" class="project-detail-tabs">
+        <button type="button" class="project-tab-btn active" data-project-tab="quiz">Quiz Session</button>
+        <button type="button" class="project-tab-btn" data-project-tab="analytics">Analytics</button>
+        <button type="button" class="project-tab-btn" data-project-tab="science">Science</button>
+      </div>
+    </section>
+
+    <div class="project-tab-panel active" data-project-panel="quiz">
       <section class="card card-elevated card-session">
         <div class="card-head">
           <span class="card-step">Step 4</span>
@@ -1050,7 +1193,9 @@
           <button class="btn btn-primary" id="generateQuizBtn" type="button">Generate Quiz from Project</button>
         </div>
       </section>
+    </div>
 
+    <div class="project-tab-panel" data-project-panel="analytics">
       <section class="card card-elevated card-analytics">
         <div class="card-head">
           <span class="card-step">Step 5</span>
@@ -1063,6 +1208,29 @@
           <canvas id="analyticsCanvas" class="analytics-canvas"></canvas>
         </div>
         <p id="analyticsEmpty" class="empty-text" style="margin-top:10px;">No quiz sessions yet for this project.</p>
+      </section>
+    </div>
+
+    <div class="project-tab-panel" data-project-panel="science">
+      <section class="card card-elevated card-science">
+        <div class="card-head">
+          <span class="card-step">Step 6</span>
+          <div class="card-head-copy">
+            <h2>Science Journey (This Project)</h2>
+            <p class="card-sub">See which learning-science steps your actions have activated in this project.</p>
+          </div>
+        </div>
+        <div class="science-journey">
+          <div class="science-journey-head">
+            <div>
+              <h3 style="margin:0; font-size:1rem;">6-Step Activation Map</h3>
+              <p>Unlocked steps are based on your own activity here. Locked steps show the exact action needed to unlock.</p>
+            </div>
+            <a class="science-journey-link" href="/science">Explore all -&gt;</a>
+          </div>
+          <div id="projectScienceGrid"></div>
+          <div id="projectScienceNotes" class="science-journey-notes"></div>
+        </div>
       </section>
     </div>
 
@@ -1087,6 +1255,8 @@
   </div>
 
   <script src="lib/navUserBar.js"></script>
+  <script src="lib/scienceData.js"></script>
+  <script src="lib/scienceCommon.js"></script>
   <script>
   (function () {
     if (!window.authGuard || !window.authGuard.getToken()) {
@@ -1106,6 +1276,7 @@
       mindmap: null,
       selectedTypes: new Set(['free_response', 'multiple_choice', 'true_false']),
       numQuestions: 10,
+      currentProjectTab: 'quiz',
       busy: false,
     };
 
@@ -1144,6 +1315,10 @@
 
       analyticsCanvas: document.getElementById('analyticsCanvas'),
       analyticsEmpty: document.getElementById('analyticsEmpty'),
+      projectDetailTabs: document.getElementById('projectDetailTabs'),
+      projectPanels: document.querySelectorAll('[data-project-panel]'),
+      projectScienceGrid: document.getElementById('projectScienceGrid'),
+      projectScienceNotes: document.getElementById('projectScienceNotes'),
       statusMessage: document.getElementById('statusMessage'),
 
       newProjectModal: document.getElementById('newProjectModal'),
@@ -1370,6 +1545,114 @@
       });
     }
 
+    function getScienceLockedHints() {
+      return {
+        step01: 'Upload materials to unlock.',
+        step02: 'Upload materials to unlock.',
+        step03: 'Complete one quiz session in this project.',
+        step04: 'Complete one quiz session in this project.',
+        step05: 'Generate an ExamTopics mindmap.',
+        step06: 'Open the Analytics tab in this project.'
+      };
+    }
+
+    function syncProjectScienceFlagsFromDetail() {
+      if (!window.quizallScience || !state.selectedProjectId || !state.projectDetail) return;
+      const files = Array.isArray(state.projectDetail.files) ? state.projectDetail.files : [];
+      const trend = Array.isArray(state.projectDetail.analytics && state.projectDetail.analytics.trend)
+        ? state.projectDetail.analytics.trend
+        : [];
+
+      const flagPatch = {};
+      if (files.length) flagPatch.filesUploaded = true;
+      if (trend.length) flagPatch.quizCompleted = true;
+      if (state.mindmap || (state.projectDetail.examPrep && state.projectDetail.examPrep.mindmap)) {
+        flagPatch.mindmapGenerated = true;
+      }
+      if (Object.keys(flagPatch).length) {
+        window.quizallScience.markProjectFlags(state.selectedProjectId, flagPatch);
+      }
+    }
+
+    function renderProjectScience() {
+      if (!els.projectScienceGrid || !els.projectScienceNotes) return;
+      if (!state.selectedProjectId) {
+        els.projectScienceGrid.innerHTML = '<p class=\"empty-text\">Select a project to view science activation.</p>';
+        els.projectScienceNotes.innerHTML = '';
+        return;
+      }
+      if (!window.quizallScience || !window.quizallScienceData) {
+        els.projectScienceGrid.innerHTML = '<p class=\"empty-text\">Science module unavailable.</p>';
+        els.projectScienceNotes.innerHTML = '';
+        return;
+      }
+
+      const activations = window.quizallScience.deriveProjectActivations(state.selectedProjectId, state.projectDetail || {});
+      window.quizallScience.renderStepGrid(els.projectScienceGrid, {
+        activations: activations,
+        activeLabel: 'Activated',
+        lockedHints: getScienceLockedHints(),
+        onStepClick: function (step) {
+          window.quizallScience.openStepModal(step.id);
+        }
+      });
+
+      const notes = [
+        {
+          title: 'Files -> Step 01 + 02',
+          text: activations.step01 ? 'Unlocked by uploaded project materials.' : 'Upload at least one file to activate schema activation and broad exposure.'
+        },
+        {
+          title: 'Quiz Session -> Step 03 + 04',
+          text: activations.step03 ? 'Unlocked by completed quiz sessions in this project.' : 'Finish one quiz session to activate retrieval practice and boundary iteration.'
+        },
+        {
+          title: 'Mindmap -> Step 05',
+          text: activations.step05 ? 'Unlocked by generated ExamTopics mindmap.' : 'Generate a mindmap to activate variability training.'
+        },
+        {
+          title: 'Analytics Tab -> Step 06',
+          text: activations.step06 ? 'Unlocked when you opened analytics for this project.' : 'Open the Analytics tab to activate spaced repetition tracking.'
+        }
+      ];
+
+      els.projectScienceNotes.innerHTML = notes.map(function (item) {
+        return '<div class=\"science-note\"><strong>' + escapeHtml(item.title) + '</strong>' + escapeHtml(item.text) + '</div>';
+      }).join('');
+    }
+
+    function setProjectTab(tab, options) {
+      state.currentProjectTab = tab;
+      const opts = options || {};
+
+      if (els.projectDetailTabs) {
+        els.projectDetailTabs.querySelectorAll('[data-project-tab]').forEach(function (button) {
+          button.classList.toggle('active', button.getAttribute('data-project-tab') === tab);
+        });
+      }
+
+      if (els.projectPanels && els.projectPanels.length) {
+        els.projectPanels.forEach(function (panel) {
+          panel.classList.toggle('active', panel.getAttribute('data-project-panel') === tab);
+        });
+      }
+
+      if (tab === 'analytics' && state.selectedProjectId && window.quizallScience) {
+        window.quizallScience.markProjectFlags(state.selectedProjectId, { analyticsViewed: true });
+        if (!opts.silentBadge) {
+          window.quizallScience.showBadge('analytics_opened');
+        }
+      }
+
+      if (tab === 'science') {
+        renderProjectScience();
+      }
+
+      if (tab === 'analytics') {
+        drawAnalytics();
+      }
+    }
+
     function findNode(id, nodes, parentInfo) {
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
@@ -1460,6 +1743,8 @@
         drawAnalytics();
         renderOutlineCandidates([]);
         renderMindmap();
+        if (els.projectScienceGrid) els.projectScienceGrid.innerHTML = '<p class="empty-text">Select a project to view science activation.</p>';
+        if (els.projectScienceNotes) els.projectScienceNotes.innerHTML = '';
         setStatus('No project yet. Create your first project.', 'success');
       }
     }
@@ -1484,6 +1769,9 @@
       drawAnalytics();
       renderMindmap();
       renderOutlineCandidates([]);
+      syncProjectScienceFlagsFromDetail();
+      renderProjectScience();
+      setProjectTab(state.currentProjectTab || 'quiz', { silentBadge: true });
       setStatus('Project ready. Continue with exam prep.', 'success');
     }
 
@@ -1609,6 +1897,10 @@
       state.pendingFiles = [];
       renderPendingFiles();
       await loadProjectDetail(state.selectedProjectId);
+      if (result.files.length && window.quizallScience && state.selectedProjectId) {
+        window.quizallScience.markProjectFlags(state.selectedProjectId, { filesUploaded: true });
+        window.quizallScience.showBadge('files_uploaded');
+      }
       setStatus('Saved ' + result.files.length + ' files to project.', 'success');
       return result;
     }
@@ -1657,6 +1949,11 @@
         els.emailTemplate.value = data.emailTemplate;
       }
       renderMindmap();
+      if (window.quizallScience && state.selectedProjectId) {
+        window.quizallScience.markProjectFlags(state.selectedProjectId, { mindmapGenerated: true });
+        window.quizallScience.showBadge('mindmap_generated');
+      }
+      renderProjectScience();
       setStatus('ExamTopics mindmap generated. You can now edit nodes.', 'success');
     }
 
@@ -1997,11 +2294,25 @@
       }
     });
 
+    if (els.projectDetailTabs) {
+      els.projectDetailTabs.addEventListener('click', function (event) {
+        const button = event.target.closest('[data-project-tab]');
+        if (!button) return;
+        const tab = button.getAttribute('data-project-tab');
+        if (!tab) return;
+        setProjectTab(tab);
+      });
+    }
+
     window.addEventListener('resize', drawAnalytics);
 
     renderPendingFiles();
     renderSavedFiles();
     drawAnalytics();
+    setProjectTab('quiz', { silentBadge: true });
+    if (els.projectScienceGrid) {
+      els.projectScienceGrid.innerHTML = '<p class="empty-text">Select a project to view science activation.</p>';
+    }
 
     (async function init() {
       setBusy(true);
