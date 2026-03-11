@@ -10,9 +10,13 @@
  */
 
 // Get API base from global config
-const API_BASE = (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim())
-  ? window.QUIZALL_API_BASE.trim().replace(/\/$/, '')
-  : '';
+const TOKEN_KEY = 'quizall.token';
+const API_BASE = (
+  (window.authGuard && window.authGuard.API_BASE) ||
+  (window.QUIZALL_API_BASE && window.QUIZALL_API_BASE.trim()) ||
+  window.location.origin
+).replace(/\/$/, '');
+let accessDeniedTriggered = false;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Configuration
@@ -27,6 +31,76 @@ const CONFIG = {
   particleCount: 40,
   apiBase: API_BASE
 };
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function authHeaders(extra = {}) {
+  const headers = Object.assign({}, extra);
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+function showAccessDenied(message) {
+  if (accessDeniedTriggered) return;
+  accessDeniedTriggered = true;
+  const main = document.querySelector('.analytics-main');
+  if (main) {
+    main.innerHTML = `
+      <div style="max-width:640px;margin:72px auto;padding:28px;border-radius:16px;border:1px solid rgba(239,68,68,0.35);background:rgba(127,29,29,0.16);box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+        <h2 style="margin:0 0 10px;">Restricted</h2>
+        <p style="margin:0;color:var(--text-secondary);line-height:1.6;">${message}</p>
+        <p style="margin:14px 0 0;color:var(--muted);font-size:0.9rem;">Redirecting to dashboard...</p>
+      </div>
+    `;
+  }
+  setTimeout(() => {
+    window.location.href = 'index.html';
+  }, 1300);
+}
+
+async function fetchWithAdminAuth(path) {
+  const res = await fetch(`${CONFIG.apiBase}${path}`, {
+    headers: authHeaders()
+  });
+  if (res.status === 401 || res.status === 403) {
+    if (res.status === 401) localStorage.removeItem(TOKEN_KEY);
+    showAccessDenied('This page is for administrators only.');
+    throw new Error('Admin access required');
+  }
+  return res;
+}
+
+async function ensureAdminAccess() {
+  const token = getToken();
+  if (!token) {
+    showAccessDenied('Please sign in with an administrator account.');
+    return false;
+  }
+
+  try {
+    const res = await fetch(`${CONFIG.apiBase}/api/auth/me`, {
+      headers: authHeaders()
+    });
+    if (!res.ok) {
+      if (res.status === 401) localStorage.removeItem(TOKEN_KEY);
+      showAccessDenied('Administrator authentication is required.');
+      return false;
+    }
+    const data = await res.json().catch(() => ({}));
+    const tier = String(data?.user?.subscription?.tier || '').toLowerCase();
+    if (tier !== 'admin') {
+      showAccessDenied('Your account does not have admin privileges.');
+      return false;
+    }
+    return true;
+  } catch {
+    showAccessDenied('Unable to verify administrator access right now.');
+    return false;
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // State
@@ -51,7 +125,7 @@ let state = {
 
 async function fetchSummary() {
   try {
-    const res = await fetch(`${CONFIG.apiBase}/api/analytics/dashboard/summary`);
+    const res = await fetchWithAdminAuth('/api/analytics/dashboard/summary');
     if (!res.ok) throw new Error('Failed to fetch summary');
     const data = await res.json();
     if (data.ok) {
@@ -71,7 +145,7 @@ async function fetchSummary() {
 async function fetchTimeseries() {
   try {
     // 始终获取全部历史数据，前端根据选择的时间范围过滤
-    const res = await fetch(`${CONFIG.apiBase}/api/analytics/dashboard/timeseries?period=all`);
+    const res = await fetchWithAdminAuth('/api/analytics/dashboard/timeseries?period=all');
     if (!res.ok) throw new Error('Failed to fetch timeseries');
     const data = await res.json();
     if (data.ok) {
@@ -88,7 +162,11 @@ async function refreshData() {
   state.loading = true;
   updateLoadingState(true);
   
-  await Promise.all([fetchSummary(), fetchTimeseries()]);
+  try {
+    await Promise.all([fetchSummary(), fetchTimeseries()]);
+  } catch (err) {
+    console.error('[analytics] Refresh aborted:', err);
+  }
   
   state.loading = false;
   updateLoadingState(false);
@@ -461,6 +539,9 @@ function setupEventHandlers() {
 
 async function init() {
   console.log('[analytics-dashboard] Initializing...');
+
+  const isAdmin = await ensureAdminAccess();
+  if (!isAdmin) return;
   
   // Initialize theme
   const savedTheme = localStorage.getItem('theme') || 'dark';

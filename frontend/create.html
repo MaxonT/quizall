@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Create Quiz — QuizAll</title>
+  <title>Exam Prep Workspace — QuizAll</title>
   <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
   <script src="lib/themeManager.js"></script>
   <link rel="stylesheet" href="theme.css" />
@@ -13,135 +13,625 @@
   <script src="lib/i18next.min.js"></script>
   <script type="module" src="i18n/index.js"></script>
   <style>
-    .create-header { text-align:center; margin:36px 0 32px; }
-    .create-title {
-      font-size:2.2rem; font-weight:800; letter-spacing:-0.03em; margin:0 0 8px;
-      background:linear-gradient(135deg, var(--primary), var(--accent));
-      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-    }
-    .create-subtitle { color:var(--muted); font-size:1rem; margin:0; line-height:1.5; }
-
-    .create-section-label {
-      font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
-      color:var(--muted); margin:0 0 10px;
+    .workspace {
+      max-width: 1240px;
+      margin: 28px auto 64px;
+      padding: 0 16px;
+      display: grid;
+      gap: 16px;
     }
 
-    .quiz-dropzone {
-      border:2px dashed var(--border); border-radius:16px; padding:48px 28px;
-      text-align:center; cursor:pointer; transition:all 0.25s ease;
-      background:var(--card);
-    }
-    .quiz-dropzone:hover, .quiz-dropzone.drag-over {
-      border-color:var(--accent); background:rgba(34,211,238,0.06);
-    }
-    .quiz-dropzone.drag-over { border-width:2.5px; }
-    .quiz-dropzone.has-files {
-      padding:26px 24px; border-bottom-left-radius:0; border-bottom-right-radius:0;
-    }
-    .dropzone-icon {
-      color:var(--accent); margin-bottom:10px; display:flex; justify-content:center;
-      transition:transform 0.2s ease;
-    }
-    .quiz-dropzone.drag-over .dropzone-icon { transform:translateY(-4px) scale(1.1); }
-    .dropzone-title { font-size:1rem; font-weight:600; color:var(--text); margin-bottom:4px; }
-    .dropzone-hint { font-size:0.82rem; color:var(--muted); }
-
-    .file-list-area {
-      background:var(--card); border:1px solid var(--border); border-top:none;
-      border-bottom-left-radius:16px; border-bottom-right-radius:16px;
-      padding:14px 18px; margin-bottom:20px;
-    }
-    .file-list-header {
-      display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
-    }
-    .file-count {
-      font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;
-    }
-    .file-clear-btn {
-      background:none; border:none; color:var(--muted); cursor:pointer; font:inherit;
-      font-size:0.75rem; text-decoration:underline; text-underline-offset:3px;
-    }
-    .file-clear-btn:hover { color:var(--text); }
-    .file-chips { display:flex; flex-wrap:wrap; gap:8px; }
-    .file-chip {
-      display:inline-flex; align-items:center; gap:6px;
-      background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2);
-      border-radius:9px; padding:6px 10px 6px 12px; font-size:0.82rem;
-      color:var(--accent); font-weight:500; max-width:260px;
-    }
-    .file-chip-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
-    .file-chip-size { font-size:0.7rem; color:var(--muted); flex-shrink:0; }
-    .file-chip-remove {
-      background:none; border:none; color:var(--muted); cursor:pointer; padding:2px;
-      display:flex; border-radius:4px; flex-shrink:0; line-height:1;
-    }
-    .file-chip-remove:hover { color:var(--err); }
-
-    .paste-area {
-      width:100%; min-height:140px; background:var(--card); border:1px solid var(--border);
-      border-radius:12px; padding:16px; color:var(--text); font:inherit; font-size:0.9rem;
-      resize:vertical; box-sizing:border-box; line-height:1.6; transition:border-color 0.2s;
-    }
-    .paste-area:focus { border-color:var(--primary); outline:none; }
-
-    .type-buttons { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
-    .type-btn {
-      display:inline-flex; align-items:center; gap:8px; padding:10px 18px;
-      border-radius:10px; border:1px solid var(--border); background:var(--card);
-      color:var(--muted); font:inherit; font-size:0.88rem; font-weight:500;
-      cursor:pointer; transition:all 0.2s;
-    }
-    .type-btn:hover { border-color:var(--accent); color:var(--text); }
-    .type-btn.active {
-      border-color:var(--accent); background:rgba(34,211,238,0.1); color:var(--accent);
-    }
-    .type-btn .type-icon { font-size:1.05rem; }
-
-    .num-buttons { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
-    .num-btn {
-      min-width:52px; padding:10px 16px; border-radius:10px;
-      border:1px solid var(--border); background:var(--card);
-      color:var(--muted); font:inherit; font-size:0.95rem; font-weight:600;
-      cursor:pointer; transition:all 0.2s; text-align:center;
-    }
-    .num-btn:hover { border-color:var(--accent); color:var(--text); }
-    .num-btn.active {
-      border-color:var(--accent); background:rgba(34,211,238,0.1); color:var(--accent);
+    .hero {
+      border-radius: 22px;
+      border: 1px solid rgba(34,211,238,0.22);
+      background:
+        radial-gradient(90% 120% at 0% 0%, rgba(34,211,238,0.14), transparent 56%),
+        radial-gradient(90% 120% at 100% 100%, rgba(139,92,246,0.2), transparent 62%),
+        linear-gradient(140deg, rgba(13,18,40,0.95), rgba(9,14,35,0.9));
+      padding: 24px;
+      box-shadow: 0 24px 44px rgba(4, 8, 23, 0.45);
     }
 
-    .generate-btn {
-      width:100%; padding:16px 24px; border-radius:14px; border:none;
-      background:linear-gradient(135deg, var(--primary), var(--accent));
-      color:#fff; font:inherit; font-size:1.05rem; font-weight:700;
-      cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;
-      transition:all 0.3s; box-shadow:0 4px 24px rgba(34,211,238,0.2);
-    }
-    .generate-btn:hover:not(:disabled) {
-      box-shadow:0 6px 32px rgba(34,211,238,0.35); transform:translateY(-1px);
-    }
-    .generate-btn:disabled {
-      opacity:0.5; cursor:not-allowed; box-shadow:none; transform:none;
-    }
-    .generate-btn .spinner {
-      width:18px; height:18px; border:2.5px solid rgba(255,255,255,0.3);
-      border-top-color:#fff; border-radius:50%; display:inline-block;
-      animation:spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform:rotate(360deg); } }
-
-    .error-card {
-      padding:14px 18px; border-radius:12px; margin-bottom:16px;
-      background:var(--error-bg, rgba(248,113,113,0.12)); border:1px solid rgba(248,113,113,0.3);
-      color:var(--err); font-size:0.9rem; line-height:1.5;
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 3.6vw, 2.4rem);
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      background: linear-gradient(125deg, #95f2ff, #8b5cf6 52%, #34d399);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
 
-    .create-form-spacer { margin-bottom:24px; }
+    .hero p {
+      margin: 10px 0 0;
+      color: rgba(229, 237, 255, 0.85);
+      line-height: 1.6;
+    }
 
-    @media (max-width:640px) {
-      .create-title { font-size:1.6rem; }
-      .type-buttons, .num-buttons { gap:8px; }
-      .type-btn { padding:8px 14px; font-size:0.82rem; }
-      .num-btn { padding:8px 12px; min-width:44px; }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(15,22,46,0.92), rgba(10,14,32,0.92));
+      box-shadow: 0 12px 26px rgba(0,0,0,0.26);
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .card-sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .project-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 14px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .field-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    .select,
+    .input,
+    .textarea {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(6,10,25,0.62);
+      color: var(--text);
+      padding: 11px 12px;
+      font: inherit;
+      font-size: 0.93rem;
+    }
+
+    .textarea {
+      min-height: 138px;
+      line-height: 1.55;
+      resize: vertical;
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 11px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+      color: var(--text);
+      background: rgba(11,18,40,0.95);
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0ea5b7, #8b5cf6 58%, #16a34a);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(34, 211, 238, 0.2);
+      border-color: rgba(255,255,255,0.14);
+    }
+
+    .btn-soft {
+      border-color: rgba(148,163,184,0.28);
+      background: rgba(15,24,52,0.84);
+    }
+
+    .muted-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,211,238,0.3);
+      background: rgba(34,211,238,0.12);
+      color: rgba(206, 250, 255, 0.96);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(10, 14, 31, 0.78);
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }
+
+    .stat .value {
+      margin-top: 8px;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #c7fafe;
+    }
+
+    .dropzone {
+      border: 1.5px dashed rgba(45,212,191,0.45);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      background: rgba(11, 20, 42, 0.72);
+      cursor: pointer;
+      transition: background .2s ease, border-color .2s ease;
+    }
+
+    .dropzone.drag {
+      border-color: #22d3ee;
+      background: rgba(34,211,238,0.15);
+    }
+
+    .dropzone strong {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    .dropzone small {
+      color: var(--muted);
+    }
+
+    .pending-list,
+    .saved-list,
+    .candidate-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .list-item {
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(10, 14, 31, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .list-main {
+      min-width: 0;
+    }
+
+    .list-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .list-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .nudge {
+      border: 1px solid rgba(251,191,36,0.35);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(120, 75, 0, 0.16);
+    }
+
+    .nudge strong {
+      display: block;
+      color: #fde68a;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+
+    .nudge p {
+      margin: 0;
+      color: rgba(255,245,211,0.92);
+      font-size: 0.86rem;
+      line-height: 1.5;
+    }
+
+    .mindmap-shell {
+      border: 1px solid rgba(34,211,238,0.22);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(7, 14, 31, 0.62);
+    }
+
+    .mindmap-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .mindmap-head h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: #cffafe;
+    }
+
+    .mindmap-meta {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .mindmap-tree {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mind-node {
+      border: 1px solid rgba(148,163,184,0.18);
+      border-left-width: 4px;
+      border-radius: 12px;
+      padding: 8px;
+      background: rgba(12, 18, 40, 0.8);
+    }
+
+    .mind-node.status-green { border-left-color: #22c55e; }
+    .mind-node.status-yellow { border-left-color: #f59e0b; }
+    .mind-node.status-red { border-left-color: #ef4444; }
+    .mind-node.status-gray { border-left-color: #94a3b8; }
+
+    .mind-node-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .mind-label {
+      flex: 1;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 6px 8px;
+      min-height: 32px;
+      outline: none;
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .mind-label:focus {
+      border-color: rgba(34,211,238,0.45);
+      background: rgba(8, 14, 31, 0.82);
+    }
+
+    .node-actions {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    .node-btn {
+      border: 1px solid rgba(148,163,184,0.34);
+      background: rgba(7, 12, 28, 0.82);
+      color: var(--text);
+      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .mind-children {
+      margin-left: 18px;
+      margin-top: 8px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .types,
+    .nums {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .toggle {
+      border: 1px solid rgba(148,163,184,0.24);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(8, 12, 28, 0.76);
+      color: var(--muted);
+    }
+
+    .toggle.active {
+      border-color: rgba(34,211,238,0.55);
+      color: #ccfbf1;
+      background: rgba(16, 119, 130, 0.24);
+    }
+
+    .status {
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,0.24);
+      padding: 10px 12px;
+      font-size: 0.87rem;
+      background: rgba(10, 16, 35, 0.78);
+      color: #dbeafe;
+    }
+
+    .status.error {
+      border-color: rgba(248,113,113,0.45);
+      background: rgba(127, 29, 29, 0.22);
+      color: #fecaca;
+    }
+
+    .status.success {
+      border-color: rgba(45,212,191,0.45);
+      background: rgba(17, 94, 89, 0.2);
+      color: #99f6e4;
+    }
+
+    .analytics-wrap {
+      border: 1px solid rgba(148,163,184,0.2);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(8, 12, 30, 0.76);
+    }
+
+    .analytics-canvas {
+      width: 100%;
+      height: 210px;
+      display: block;
+    }
+
+    .empty-text {
+      color: var(--muted);
+      font-size: 0.87rem;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 8, 23, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+
+    .modal.open { display: flex; }
+
+    .modal-card {
+      width: min(540px, 100%);
+      border: 1px solid rgba(148,163,184,0.24);
+      border-radius: 16px;
+      padding: 16px;
+      background: linear-gradient(180deg, rgba(14,20,41,0.96), rgba(8,13,30,0.97));
+    }
+
+    .modal-card h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .modal-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.87rem;
+    }
+
+    html[data-theme="light"] body.app-shell {
+      background:
+        radial-gradient(110% 120% at 0% 0%, rgba(14,165,183,0.14), transparent 58%),
+        radial-gradient(120% 130% at 100% 100%, rgba(109,40,217,0.12), transparent 64%),
+        linear-gradient(180deg, #f7fbff 0%, #eef4fb 100%);
+    }
+
+    html[data-theme="light"] .hero {
+      border-color: rgba(14,165,183,0.26);
+      background:
+        radial-gradient(95% 115% at 0% 0%, rgba(14,165,183,0.14), transparent 58%),
+        radial-gradient(90% 110% at 100% 100%, rgba(109,40,217,0.1), transparent 64%),
+        linear-gradient(150deg, rgba(255,255,255,0.97), rgba(246,250,255,0.96));
+      box-shadow: 0 18px 36px rgba(15,23,42,0.1);
+    }
+
+    html[data-theme="light"] .hero p {
+      color: rgba(30,41,59,0.9);
+    }
+
+    html[data-theme="light"] .card {
+      border-color: rgba(148,163,184,0.36);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,251,255,0.95));
+      box-shadow: 0 12px 24px rgba(15,23,42,0.08);
+    }
+
+    html[data-theme="light"] .card h2 {
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .card-sub,
+    html[data-theme="light"] .field-label,
+    html[data-theme="light"] .list-meta,
+    html[data-theme="light"] .empty-text {
+      color: #475569;
+    }
+
+    html[data-theme="light"] .select,
+    html[data-theme="light"] .input,
+    html[data-theme="light"] .textarea {
+      background: rgba(255,255,255,0.96);
+      border-color: rgba(148,163,184,0.42);
+      color: #0f172a;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95);
+    }
+
+    html[data-theme="light"] .btn-soft {
+      border-color: rgba(148,163,184,0.45);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(241,245,252,0.92));
+      color: #1e293b;
+    }
+
+    html[data-theme="light"] .btn-soft:hover {
+      border-color: rgba(14,165,183,0.4);
+      box-shadow: 0 8px 16px rgba(14,165,183,0.12);
+    }
+
+    html[data-theme="light"] .muted-pill {
+      border-color: rgba(14,165,183,0.36);
+      background: rgba(14,165,183,0.12);
+      color: #0f6d79;
+    }
+
+    html[data-theme="light"] .stat,
+    html[data-theme="light"] .list-item,
+    html[data-theme="light"] .analytics-wrap {
+      border-color: rgba(148,163,184,0.34);
+      background: rgba(255,255,255,0.94);
+    }
+
+    html[data-theme="light"] .stat .value {
+      color: #0f6d79;
+    }
+
+    html[data-theme="light"] .dropzone {
+      border-color: rgba(14,165,183,0.42);
+      background: rgba(240,249,255,0.76);
+    }
+
+    html[data-theme="light"] .dropzone.drag {
+      border-color: rgba(14,165,183,0.68);
+      background: rgba(186,230,253,0.46);
+    }
+
+    html[data-theme="light"] .nudge {
+      border-color: rgba(217,119,6,0.42);
+      background: rgba(255,247,237,0.92);
+    }
+
+    html[data-theme="light"] .nudge strong {
+      color: #92400e;
+    }
+
+    html[data-theme="light"] .nudge p {
+      color: #7c2d12;
+    }
+
+    html[data-theme="light"] .toggle {
+      border-color: rgba(148,163,184,0.4);
+      background: rgba(255,255,255,0.94);
+      color: #334155;
+    }
+
+    html[data-theme="light"] .toggle.active {
+      border-color: rgba(14,165,183,0.52);
+      background: rgba(14,165,183,0.12);
+      color: #0f6d79;
+    }
+
+    html[data-theme="light"] .status {
+      border-color: rgba(148,163,184,0.34);
+      background: rgba(255,255,255,0.94);
+      color: #1e293b;
+    }
+
+    html[data-theme="light"] .mindmap-shell {
+      border-color: rgba(14,165,183,0.36);
+      background:
+        radial-gradient(110% 130% at 0% 0%, rgba(14,165,183,0.1), transparent 62%),
+        linear-gradient(180deg, rgba(248,252,255,0.98), rgba(241,246,253,0.95));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), 0 8px 20px rgba(15,23,42,0.08);
+    }
+
+    html[data-theme="light"] .mindmap-head h3 {
+      color: #0f6d79;
+    }
+
+    html[data-theme="light"] .mindmap-meta {
+      color: #475569;
+    }
+
+    html[data-theme="light"] .mind-node {
+      border-color: rgba(148,163,184,0.36);
+      background: rgba(255,255,255,0.94);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.84);
+    }
+
+    html[data-theme="light"] .mind-label {
+      color: #0f172a;
+      background: rgba(248,250,252,0.9);
+      border-color: rgba(148,163,184,0.24);
+    }
+
+    html[data-theme="light"] .mind-label:focus {
+      border-color: rgba(14,165,183,0.5);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(14,165,183,0.14);
+    }
+
+    html[data-theme="light"] .node-btn {
+      border-color: rgba(148,163,184,0.42);
+      background: rgba(255,255,255,0.96);
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .node-btn:hover {
+      border-color: rgba(14,165,183,0.48);
+      color: #0f6d79;
+    }
+
+    html[data-theme="light"] .modal {
+      background: rgba(226,232,240,0.74);
+    }
+
+    html[data-theme="light"] .modal-card {
+      border-color: rgba(148,163,184,0.35);
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,248,253,0.96));
+      box-shadow: 0 16px 36px rgba(15,23,42,0.14);
+    }
+
+    @media (max-width: 980px) {
+      .project-grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -151,7 +641,7 @@
     <nav class="controls">
       <div class="navlinks">
         <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="create.html" class="active" data-i18n="nav.create">Create Quiz</a>
+        <a href="create.html" class="active" data-i18n="nav.create">Exam Prep Workspace</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
       </div>
@@ -165,389 +655,1098 @@
     </nav>
   </header>
 
-  <main class="container">
-    <div class="create-header">
-      <h1 class="create-title">Create Quiz</h1>
-      <p class="create-subtitle">Upload study materials or paste text to generate an AI-powered quiz</p>
-    </div>
+  <main class="workspace">
+    <section class="hero">
+      <span class="muted-pill">Exam Prep v2</span>
+      <h1>Project-based exam prep, with editable ExamTopics mindmap.</h1>
+      <p>Create a project per course/exam, upload materials once, lock exam topics, then generate focused quizzes with source references.</p>
+    </section>
 
-    <!-- File Upload Zone -->
-    <div class="create-section-label">Upload Content</div>
-    <div id="dropzone" class="quiz-dropzone" role="button" tabindex="0" aria-label="Upload files">
-      <div class="dropzone-icon">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
+    <section class="card">
+      <h2>Project Workspace</h2>
+      <p class="card-sub">One project per course or exam. Everything below is scoped to the selected project.</p>
+      <div class="project-grid" style="margin-top:12px;">
+        <div class="stack">
+          <div>
+            <p class="field-label">Active Project</p>
+            <div class="row">
+              <select id="projectSelect" class="select" style="flex:1; min-width:220px;"></select>
+              <button class="btn btn-soft" id="refreshProjectsBtn" type="button">Refresh</button>
+              <button class="btn btn-primary" id="newProjectBtn" type="button">+ New Project</button>
+            </div>
+          </div>
+          <div id="projectSummary" class="status">Select or create a project to start.</div>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <div class="label">Saved Materials</div>
+            <div class="value" id="statFiles">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Quiz Sessions</div>
+            <div class="value" id="statQuizSessions">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Latest Accuracy</div>
+            <div class="value" id="statAccuracy">—</div>
+          </div>
+        </div>
       </div>
-      <div class="dropzone-title" id="dropzoneTitle">Drop your study materials here</div>
-      <div class="dropzone-hint">PDF, DOCX, TXT, MD, CSV — up to 10 MB</div>
-      <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt,.md,.csv,.json" hidden />
-    </div>
-    <div id="fileListArea" class="file-list-area" hidden>
-      <div class="file-list-header">
-        <span class="file-count" id="fileCount"></span>
-        <button type="button" class="file-clear-btn" id="clearAllBtn">Clear all</button>
+    </section>
+
+    <section class="card">
+      <h2>Upload Study Materials</h2>
+      <p class="card-sub">Upload PDFs/slides/notes once and keep them in this project for future sessions.</p>
+      <div id="dropzone" class="dropzone" role="button" tabindex="0" style="margin-top:10px;">
+        <strong>Drop files here or click to upload</strong>
+        <small>PDF, DOCX, TXT, MD, CSV, JSON</small>
+        <input id="fileInput" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json" hidden />
       </div>
-      <div class="file-chips" id="fileChips"></div>
-    </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn btn-soft" id="clearPendingBtn" type="button">Clear Pending</button>
+        <button class="btn btn-primary" id="saveFilesBtn" type="button">Save Pending Files to Project</button>
+      </div>
 
-    <!-- Text Paste -->
-    <div class="create-form-spacer">
-      <div class="create-section-label">Or paste text directly</div>
-      <textarea id="pasteArea" class="paste-area" placeholder="Paste your notes, textbook excerpts, lecture summaries..."></textarea>
-    </div>
+      <div style="margin-top:12px;">
+        <p class="field-label">Pending Upload</p>
+        <div id="pendingFiles" class="pending-list"></div>
+      </div>
 
-    <!-- Question Types -->
-    <div class="create-section-label">Question Types</div>
-    <div class="type-buttons" id="typeButtons">
-      <button type="button" class="type-btn active" data-type="multiple_choice">
-        <span class="type-icon">&#x25C9;</span> Multiple Choice
-      </button>
-      <button type="button" class="type-btn active" data-type="true_false">
-        <span class="type-icon">&#x2696;</span> True / False
-      </button>
-      <button type="button" class="type-btn active" data-type="fill_in_the_blank">
-        <span class="type-icon">&#x270E;</span> Fill in the Blank
-      </button>
-    </div>
+      <div style="margin-top:12px;">
+        <p class="field-label">Saved in Project</p>
+        <div id="savedFiles" class="saved-list"></div>
+      </div>
+    </section>
 
-    <!-- Number of Questions -->
-    <div class="create-section-label">Number of Questions</div>
-    <div class="num-buttons" id="numButtons">
-      <button type="button" class="num-btn" data-num="5">5</button>
-      <button type="button" class="num-btn" data-num="8">8</button>
-      <button type="button" class="num-btn active" data-num="10">10</button>
-      <button type="button" class="num-btn" data-num="15">15</button>
-    </div>
+    <section class="card">
+      <h2>Exam Prep: Collect Topics → Generate Mindmap</h2>
+      <p class="card-sub">Tier 1 auto-scan tries to find syllabus/outline/review/考纲 files. Or type your exam topics directly.</p>
 
-    <!-- Error Display -->
-    <div id="errorCard" class="error-card" hidden></div>
+      <div class="row" style="margin-top:10px; align-items:flex-start;">
+        <div style="flex:1; min-width:280px;">
+          <p class="field-label">Exam Topics (typed or pasted)</p>
+          <textarea id="topicsInput" class="textarea" placeholder="Example: Cellular respiration, ATP synthesis, glycolysis regulation, oxidative phosphorylation..."></textarea>
+        </div>
+        <div style="width:min(360px,100%);" class="stack">
+          <div class="nudge">
+            <strong>Question quality can improve up to 8x</strong>
+            <p>Tell us your exam topics. If you do not have them, email your professor with the template below, then paste the reply.</p>
+          </div>
+          <textarea id="emailTemplate" class="textarea" style="min-height:124px; font-size:0.82rem;" readonly></textarea>
+          <button class="btn btn-soft" id="copyEmailTemplateBtn" type="button">Copy Email Template</button>
+        </div>
+      </div>
 
-    <!-- Generate Button -->
-    <button type="button" id="generateBtn" class="generate-btn" disabled>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      <span id="generateLabel">Generate Quiz</span>
-    </button>
+      <div class="row" style="margin-top:12px;">
+        <button class="btn btn-soft" id="scanOutlineBtn" type="button">Tier 1 Auto-Scan Outline Files</button>
+        <button class="btn btn-primary" id="generateMindmapBtn" type="button">Generate ExamTopics Mindmap</button>
+      </div>
+
+      <div style="margin-top:12px;">
+        <p class="field-label">Auto-Scan Candidates</p>
+        <div id="outlineCandidates" class="candidate-list"></div>
+      </div>
+
+      <div id="mindmapShell" class="mindmap-shell" style="margin-top:14px; display:none;">
+        <div class="mindmap-head">
+          <div>
+            <h3 id="mindmapTitle">ExamTopics Mindmap</h3>
+            <div class="mindmap-meta" id="mindmapMeta"></div>
+          </div>
+          <div class="row">
+            <button class="btn btn-soft" id="addRootNodeBtn" type="button">+ Root Node</button>
+            <button class="btn btn-primary" id="saveMindmapBtn" type="button">Save Mindmap</button>
+          </div>
+        </div>
+        <div id="mindmapTree" class="mindmap-tree"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Start Quiz Session</h2>
+      <p class="card-sub">FRQ is prioritized by default for stronger retrieval practice. Results feed project analytics.</p>
+
+      <div>
+        <p class="field-label">Question Types</p>
+        <div id="typeToggles" class="types">
+          <button type="button" class="toggle active" data-type="free_response">FRQ (Priority)</button>
+          <button type="button" class="toggle active" data-type="multiple_choice">MCQ</button>
+          <button type="button" class="toggle active" data-type="true_false">True / False</button>
+          <button type="button" class="toggle" data-type="fill_in_the_blank">Fill in the Blank</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <p class="field-label">Number of Questions</p>
+        <div id="numToggles" class="nums">
+          <button type="button" class="toggle" data-num="5">5</button>
+          <button type="button" class="toggle" data-num="8">8</button>
+          <button type="button" class="toggle active" data-num="10">10</button>
+          <button type="button" class="toggle" data-num="15">15</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button class="btn btn-primary" id="generateQuizBtn" type="button">Generate Quiz from Project</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Project Analytics (Accuracy Trend)</h2>
+      <p class="card-sub">Project-scoped correctness trend over time.</p>
+      <div class="analytics-wrap" style="margin-top:10px;">
+        <canvas id="analyticsCanvas" class="analytics-canvas"></canvas>
+      </div>
+      <p id="analyticsEmpty" class="empty-text" style="margin-top:10px;">No quiz sessions yet for this project.</p>
+    </section>
+
+    <div id="statusMessage" class="status">Ready.</div>
   </main>
 
+  <div class="modal" id="newProjectModal">
+    <div class="modal-card">
+      <h3>Create New Project</h3>
+      <p>Use one project per course or exam. Example: "BIO 201 Midterm".</p>
+      <div class="stack" style="margin-top:12px;">
+        <input class="input" id="projectNameInput" placeholder="Project name" />
+        <input class="input" id="projectExamNameInput" placeholder="Exam name (optional)" />
+        <input class="input" id="projectExamDateInput" type="date" />
+        <textarea class="textarea" id="projectDescInput" placeholder="Description (optional)" style="min-height:90px;"></textarea>
+      </div>
+      <div class="row" style="margin-top:12px; justify-content:flex-end;">
+        <button type="button" class="btn btn-soft" id="cancelProjectBtn">Cancel</button>
+        <button type="button" class="btn btn-primary" id="createProjectConfirmBtn">Create Project</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="lib/navUserBar.js"></script>
   <script>
-  (function() {
+  (function () {
     if (!window.authGuard || !window.authGuard.getToken()) {
       window.location.href = 'index.html';
       return;
     }
 
-    var API_BASE = window.authGuard.API_BASE;
-    var files = [];
-    var selectedTypes = ['multiple_choice', 'true_false', 'fill_in_the_blank'];
-    var numQuestions = 10;
-    var isGenerating = false;
+    const API_BASE = window.authGuard.API_BASE;
+    const token = window.authGuard.getToken();
 
-    var dropzone      = document.getElementById('dropzone');
-    var fileInput      = document.getElementById('fileInput');
-    var fileListArea   = document.getElementById('fileListArea');
-    var fileChips      = document.getElementById('fileChips');
-    var fileCount      = document.getElementById('fileCount');
-    var clearAllBtn    = document.getElementById('clearAllBtn');
-    var pasteArea      = document.getElementById('pasteArea');
-    var typeButtons    = document.getElementById('typeButtons');
-    var numButtons     = document.getElementById('numButtons');
-    var generateBtn    = document.getElementById('generateBtn');
-    var generateLabel  = document.getElementById('generateLabel');
-    var errorCard      = document.getElementById('errorCard');
-    var dropzoneTitle  = document.getElementById('dropzoneTitle');
+    const state = {
+      projects: [],
+      selectedProjectId: null,
+      projectDetail: null,
+      pendingFiles: [],
+      selectedOutlineFileId: null,
+      mindmap: null,
+      selectedTypes: new Set(['free_response', 'multiple_choice', 'true_false']),
+      numQuestions: 10,
+      busy: false,
+    };
 
-    // ── Helpers ──
+    const els = {
+      projectSelect: document.getElementById('projectSelect'),
+      refreshProjectsBtn: document.getElementById('refreshProjectsBtn'),
+      newProjectBtn: document.getElementById('newProjectBtn'),
+      projectSummary: document.getElementById('projectSummary'),
+      statFiles: document.getElementById('statFiles'),
+      statQuizSessions: document.getElementById('statQuizSessions'),
+      statAccuracy: document.getElementById('statAccuracy'),
 
-    function formatSize(bytes) {
-      if (bytes < 1024) return bytes + ' B';
-      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
-      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      dropzone: document.getElementById('dropzone'),
+      fileInput: document.getElementById('fileInput'),
+      clearPendingBtn: document.getElementById('clearPendingBtn'),
+      saveFilesBtn: document.getElementById('saveFilesBtn'),
+      pendingFiles: document.getElementById('pendingFiles'),
+      savedFiles: document.getElementById('savedFiles'),
+
+      topicsInput: document.getElementById('topicsInput'),
+      emailTemplate: document.getElementById('emailTemplate'),
+      copyEmailTemplateBtn: document.getElementById('copyEmailTemplateBtn'),
+      scanOutlineBtn: document.getElementById('scanOutlineBtn'),
+      generateMindmapBtn: document.getElementById('generateMindmapBtn'),
+      outlineCandidates: document.getElementById('outlineCandidates'),
+      mindmapShell: document.getElementById('mindmapShell'),
+      mindmapTitle: document.getElementById('mindmapTitle'),
+      mindmapMeta: document.getElementById('mindmapMeta'),
+      mindmapTree: document.getElementById('mindmapTree'),
+      addRootNodeBtn: document.getElementById('addRootNodeBtn'),
+      saveMindmapBtn: document.getElementById('saveMindmapBtn'),
+
+      typeToggles: document.getElementById('typeToggles'),
+      numToggles: document.getElementById('numToggles'),
+      generateQuizBtn: document.getElementById('generateQuizBtn'),
+
+      analyticsCanvas: document.getElementById('analyticsCanvas'),
+      analyticsEmpty: document.getElementById('analyticsEmpty'),
+      statusMessage: document.getElementById('statusMessage'),
+
+      newProjectModal: document.getElementById('newProjectModal'),
+      projectNameInput: document.getElementById('projectNameInput'),
+      projectExamNameInput: document.getElementById('projectExamNameInput'),
+      projectExamDateInput: document.getElementById('projectExamDateInput'),
+      projectDescInput: document.getElementById('projectDescInput'),
+      cancelProjectBtn: document.getElementById('cancelProjectBtn'),
+      createProjectConfirmBtn: document.getElementById('createProjectConfirmBtn'),
+    };
+
+    const DEFAULT_EMAIL_TEMPLATE = [
+      'Subject: Quick question about exam focus topics',
+      '',
+      'Hi Professor [Last Name],',
+      'I am preparing for the upcoming exam and want to make sure I focus on the most important topics.',
+      'Could you share the key chapters/concepts you recommend we prioritize?',
+      '',
+      'Thank you for your time!',
+      '[Your Name]'
+    ].join('\n');
+
+    els.emailTemplate.value = DEFAULT_EMAIL_TEMPLATE;
+
+    function setStatus(message, type) {
+      els.statusMessage.textContent = message;
+      els.statusMessage.className = 'status' + (type ? ' ' + type : '');
     }
 
-    function hasContent() {
-      return files.length > 0 || pasteArea.value.trim().length > 20;
-    }
-
-    function refreshUI() {
-      var has = hasContent();
-      generateBtn.disabled = !has || isGenerating || selectedTypes.length === 0;
-
-      dropzone.classList.toggle('has-files', files.length > 0);
-      dropzoneTitle.textContent = files.length > 0 ? 'Add more files' : 'Drop your study materials here';
-      fileListArea.hidden = files.length === 0;
-      fileCount.textContent = files.length + ' file' + (files.length !== 1 ? 's' : '') + ' ready';
-
-      fileChips.innerHTML = '';
-      files.forEach(function(f, i) {
-        var chip = document.createElement('span');
-        chip.className = 'file-chip';
-        chip.innerHTML =
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
-          '<span class="file-chip-name">' + escapeHtml(f.name) + '</span>' +
-          '<span class="file-chip-size">' + formatSize(f.size) + '</span>' +
-          '<button type="button" class="file-chip-remove" data-idx="' + i + '" title="Remove">&times;</button>';
-        fileChips.appendChild(chip);
+    function setBusy(value) {
+      state.busy = value;
+      [
+        els.saveFilesBtn,
+        els.scanOutlineBtn,
+        els.generateMindmapBtn,
+        els.generateQuizBtn,
+        els.createProjectConfirmBtn,
+        els.refreshProjectsBtn
+      ].forEach(function (button) {
+        button.disabled = value;
       });
     }
 
-    function escapeHtml(s) {
-      var d = document.createElement('div');
-      d.textContent = s;
-      return d.innerHTML;
-    }
-
-    function showError(msg) {
-      errorCard.textContent = msg;
-      errorCard.hidden = false;
-    }
-
-    function clearError() {
-      errorCard.hidden = true;
-      errorCard.textContent = '';
-    }
-
-    function setLoading(loading, statusText) {
-      isGenerating = loading;
-      refreshUI();
-      if (loading) {
-        generateLabel.textContent = statusText || 'Processing...';
-        var spinner = document.createElement('span');
-        spinner.className = 'spinner';
-        generateBtn.insertBefore(spinner, generateBtn.firstChild);
-        var icon = generateBtn.querySelector('svg');
-        if (icon) icon.style.display = 'none';
-      } else {
-        generateLabel.textContent = 'Generate Quiz';
-        var sp = generateBtn.querySelector('.spinner');
-        if (sp) sp.remove();
-        var icon = generateBtn.querySelector('svg');
-        if (icon) icon.style.display = '';
-      }
-    }
-
-    function updateStatus(text) {
-      generateLabel.textContent = text;
-    }
-
-    function addFiles(newFiles) {
-      var maxSize = 10 * 1024 * 1024;
-      for (var i = 0; i < newFiles.length; i++) {
-        if (newFiles[i].size > maxSize) {
-          showError(newFiles[i].name + ' exceeds the 10 MB limit.');
-          continue;
+    function api(path, options) {
+      const req = Object.assign({}, options || {});
+      req.headers = Object.assign({}, req.headers || {}, {
+        'Authorization': 'Bearer ' + token
+      });
+      return fetch(API_BASE + path, req).then(async function (res) {
+        let data = {};
+        try { data = await res.json(); } catch (_) {}
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || ('Request failed: ' + res.status));
         }
-        files.push(newFiles[i]);
-      }
-      refreshUI();
+        return data;
+      });
     }
 
-    // ── Drop zone events ──
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
-    dropzone.addEventListener('click', function() { fileInput.click(); });
-    dropzone.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
-    });
-    dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
-    dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('drag-over'); });
-    dropzone.addEventListener('drop', function(e) {
-      e.preventDefault();
-      dropzone.classList.remove('drag-over');
-      if (e.dataTransfer.files.length) addFiles(Array.from(e.dataTransfer.files));
-    });
-    fileInput.addEventListener('change', function() {
-      if (fileInput.files.length) addFiles(Array.from(fileInput.files));
-      fileInput.value = '';
-    });
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
 
-    // ── File chip removal ──
+    function openModal() {
+      els.newProjectModal.classList.add('open');
+      els.projectNameInput.focus();
+    }
 
-    fileChips.addEventListener('click', function(e) {
-      var btn = e.target.closest('.file-chip-remove');
-      if (!btn) return;
-      var idx = parseInt(btn.getAttribute('data-idx'), 10);
-      files.splice(idx, 1);
-      refreshUI();
-    });
+    function closeModal() {
+      els.newProjectModal.classList.remove('open');
+      els.projectNameInput.value = '';
+      els.projectExamNameInput.value = '';
+      els.projectExamDateInput.value = '';
+      els.projectDescInput.value = '';
+    }
 
-    clearAllBtn.addEventListener('click', function() {
-      files = [];
-      refreshUI();
-    });
-
-    // ── Paste area ──
-
-    pasteArea.addEventListener('input', function() { refreshUI(); });
-
-    // ── Question type toggles ──
-
-    typeButtons.addEventListener('click', function(e) {
-      var btn = e.target.closest('.type-btn');
-      if (!btn) return;
-      var type = btn.getAttribute('data-type');
-      var idx = selectedTypes.indexOf(type);
-      if (idx > -1) {
-        if (selectedTypes.length <= 1) return;
-        selectedTypes.splice(idx, 1);
-        btn.classList.remove('active');
-      } else {
-        selectedTypes.push(type);
-        btn.classList.add('active');
+    function renderProjectSelect() {
+      const projects = state.projects;
+      if (!projects.length) {
+        els.projectSelect.innerHTML = '<option value="">No project yet</option>';
+        els.projectSelect.disabled = true;
+        return;
       }
-      refreshUI();
-    });
 
-    // ── Number of questions ──
+      els.projectSelect.disabled = false;
+      els.projectSelect.innerHTML = projects.map(function (project) {
+        const selected = project.id === state.selectedProjectId ? ' selected' : '';
+        return '<option value="' + project.id + '"' + selected + '>' + escapeHtml(project.name) + '</option>';
+      }).join('');
+    }
 
-    numButtons.addEventListener('click', function(e) {
-      var btn = e.target.closest('.num-btn');
-      if (!btn) return;
-      numQuestions = parseInt(btn.getAttribute('data-num'), 10);
-      numButtons.querySelectorAll('.num-btn').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-    });
+    function renderSummary() {
+      const detail = state.projectDetail;
+      if (!detail || !detail.project) {
+        els.projectSummary.textContent = 'Select or create a project to start.';
+        els.statFiles.textContent = '0';
+        els.statQuizSessions.textContent = '0';
+        els.statAccuracy.textContent = '—';
+        return;
+      }
 
-    // ── File text extraction ──
+      const project = detail.project;
+      const files = Array.isArray(detail.files) ? detail.files : [];
+      const trend = Array.isArray(detail.analytics && detail.analytics.trend) ? detail.analytics.trend : [];
+      const latest = trend.length ? trend[trend.length - 1].accuracy : null;
 
-    var pdfjsLoaded = null;
+      els.projectSummary.innerHTML =
+        '<strong>' + escapeHtml(project.name) + '</strong>' +
+        (project.examDate ? ' · Exam date: ' + escapeHtml(project.examDate) : '') +
+        (project.description ? '<br><span style="color:var(--muted)">' + escapeHtml(project.description) + '</span>' : '');
+
+      els.statFiles.textContent = String(files.length);
+      els.statQuizSessions.textContent = String(trend.length);
+      els.statAccuracy.textContent = latest == null ? '—' : latest + '%';
+    }
+
+    function renderPendingFiles() {
+      if (!state.pendingFiles.length) {
+        els.pendingFiles.innerHTML = '<p class="empty-text">No pending files.</p>';
+        return;
+      }
+
+      els.pendingFiles.innerHTML = state.pendingFiles.map(function (file, index) {
+        return '<div class="list-item">' +
+          '<div class="list-main">' +
+            '<div class="list-title">' + escapeHtml(file.name) + '</div>' +
+            '<div class="list-meta">' + formatBytes(file.size) + '</div>' +
+          '</div>' +
+          '<button class="btn btn-soft" data-remove-pending="' + index + '">Remove</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function renderSavedFiles() {
+      const files = (state.projectDetail && state.projectDetail.files) || [];
+      if (!files.length) {
+        els.savedFiles.innerHTML = '<p class="empty-text">No saved files in this project yet.</p>';
+        return;
+      }
+
+      els.savedFiles.innerHTML = files.map(function (file) {
+        const badge = file.isOutlineCandidate ? '<span class="muted-pill" style="font-size:0.65rem; padding:3px 8px;">outline candidate</span>' : '';
+        return '<div class="list-item">' +
+          '<div class="list-main">' +
+            '<div class="list-title">' + escapeHtml(file.fileName) + '</div>' +
+            '<div class="list-meta">' + formatBytes(file.contentLength || 0) + '</div>' +
+          '</div>' +
+          badge +
+        '</div>';
+      }).join('');
+    }
+
+    function renderOutlineCandidates(candidates) {
+      if (!candidates || !candidates.length) {
+        els.outlineCandidates.innerHTML = '<p class="empty-text">No obvious outline files found. You can still type exam topics manually.</p>';
+        return;
+      }
+
+      els.outlineCandidates.innerHTML = candidates.map(function (item) {
+        const selected = item.id === state.selectedOutlineFileId;
+        return '<div class="list-item">' +
+          '<div class="list-main">' +
+            '<div class="list-title">' + escapeHtml(item.fileName) + '</div>' +
+            '<div class="list-meta">Score ' + item.score + ' · ' + escapeHtml(item.preview || '') + '</div>' +
+          '</div>' +
+          '<button class="btn ' + (selected ? 'btn-primary' : 'btn-soft') + '" data-outline-file="' + item.id + '">' + (selected ? 'Selected' : 'Use This') + '</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function drawAnalytics() {
+      const trend = (state.projectDetail && state.projectDetail.analytics && state.projectDetail.analytics.trend) || [];
+      const canvas = els.analyticsCanvas;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width = canvas.clientWidth;
+      const height = canvas.height = canvas.clientHeight;
+      ctx.clearRect(0, 0, width, height);
+
+      if (!trend.length) {
+        els.analyticsEmpty.style.display = '';
+        return;
+      }
+
+      els.analyticsEmpty.style.display = 'none';
+      const values = trend.map(function (point) { return Math.max(0, Math.min(100, Number(point.accuracy) || 0)); });
+      const pad = 28;
+      const xStep = (width - pad * 2) / Math.max(values.length - 1, 1);
+
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 5; i++) {
+        const y = pad + ((height - pad * 2) / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(width - pad, y);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      values.forEach(function (value, index) {
+        const x = pad + xStep * index;
+        const y = height - pad - (value / 100) * (height - pad * 2);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = '#8b5cf6';
+      values.forEach(function (value, index) {
+        const x = pad + xStep * index;
+        const y = height - pad - (value / 100) * (height - pad * 2);
+        ctx.beginPath();
+        ctx.arc(x, y, 3.8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function findNode(id, nodes, parentInfo) {
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        if (node.id === id) {
+          return { node: node, parentNodes: nodes, index: i, parentInfo: parentInfo || null };
+        }
+        const found = findNode(id, node.children || [], { node: node, parentNodes: nodes, index: i });
+        if (found) return found;
+      }
+      return null;
+    }
+
+    function renderMindmap() {
+      const mindmap = state.mindmap;
+      if (!mindmap || !Array.isArray(mindmap.nodes)) {
+        els.mindmapShell.style.display = 'none';
+        return;
+      }
+
+      els.mindmapShell.style.display = '';
+      els.mindmapTitle.textContent = mindmap.title || 'ExamTopics Mindmap';
+      const dateText = mindmap.generatedAt ? new Date(mindmap.generatedAt).toLocaleString() : 'just now';
+      els.mindmapMeta.textContent = (mindmap.message || 'This mindmap was made specifically for your exam.') + ' · Generated ' + dateText;
+
+      els.mindmapTree.innerHTML = '';
+      mindmap.nodes.forEach(function (node) {
+        els.mindmapTree.appendChild(renderMindNode(node, 0));
+      });
+    }
+
+    function renderMindNode(node, depth) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'mind-node status-' + (node.status || 'gray');
+      if (depth > 0) wrapper.style.marginLeft = Math.min(depth * 14, 70) + 'px';
+
+      const row = document.createElement('div');
+      row.className = 'mind-node-row';
+
+      const label = document.createElement('div');
+      label.className = 'mind-label';
+      label.setAttribute('contenteditable', 'true');
+      label.setAttribute('data-node-id', node.id);
+      label.textContent = node.text || '';
+
+      const actions = document.createElement('div');
+      actions.className = 'node-actions';
+      actions.innerHTML =
+        '<button class="node-btn" title="Add child" data-node-action="add" data-node-id="' + node.id + '">+</button>' +
+        '<button class="node-btn" title="Delete node" data-node-action="delete" data-node-id="' + node.id + '">−</button>';
+
+      row.appendChild(label);
+      row.appendChild(actions);
+      wrapper.appendChild(row);
+
+      if (Array.isArray(node.children) && node.children.length) {
+        const children = document.createElement('div');
+        children.className = 'mind-children';
+        node.children.forEach(function (child) {
+          children.appendChild(renderMindNode(child, depth + 1));
+        });
+        wrapper.appendChild(children);
+      }
+
+      return wrapper;
+    }
+
+    async function loadProjects() {
+      setStatus('Loading projects...');
+      const data = await api('/api/quiz/projects');
+      state.projects = data.projects || [];
+
+      if (!state.projects.length) {
+        state.selectedProjectId = null;
+        state.projectDetail = null;
+      } else if (!state.selectedProjectId) {
+        state.selectedProjectId = state.projects[0].id;
+      } else if (!state.projects.some(function (project) { return project.id === state.selectedProjectId; })) {
+        state.selectedProjectId = state.projects[0].id;
+      }
+
+      renderProjectSelect();
+      if (state.selectedProjectId) {
+        await loadProjectDetail(state.selectedProjectId);
+      } else {
+        renderSummary();
+        renderPendingFiles();
+        renderSavedFiles();
+        drawAnalytics();
+        renderOutlineCandidates([]);
+        renderMindmap();
+        setStatus('No project yet. Create your first project.', 'success');
+      }
+    }
+
+    async function loadProjectDetail(projectId) {
+      if (!projectId) return;
+      setStatus('Loading project details...');
+      const data = await api('/api/quiz/projects/' + encodeURIComponent(projectId));
+      state.projectDetail = data;
+      state.selectedProjectId = projectId;
+      state.selectedOutlineFileId = data.examPrep && data.examPrep.selectedFileId ? data.examPrep.selectedFileId : null;
+      state.mindmap = data.examPrep && data.examPrep.mindmap ? data.examPrep.mindmap : null;
+      if (data.examPrep && data.examPrep.examTopics) {
+        els.topicsInput.value = data.examPrep.examTopics;
+      } else {
+        els.topicsInput.value = '';
+      }
+      renderProjectSelect();
+      renderSummary();
+      renderPendingFiles();
+      renderSavedFiles();
+      drawAnalytics();
+      renderMindmap();
+      renderOutlineCandidates([]);
+      setStatus('Project ready. Continue with exam prep.', 'success');
+    }
+
+    function addPendingFiles(fileList) {
+      const maxBytes = 10 * 1024 * 1024;
+      Array.from(fileList || []).forEach(function (file) {
+        if (file.size > maxBytes) {
+          setStatus(file.name + ' exceeds 10 MB and was skipped.', 'error');
+          return;
+        }
+        state.pendingFiles.push(file);
+      });
+      renderPendingFiles();
+    }
+
+    let pdfLibPromise = null;
     function loadPdfJs() {
-      if (pdfjsLoaded) return pdfjsLoaded;
-      pdfjsLoaded = new Promise(function(resolve, reject) {
+      if (pdfLibPromise) return pdfLibPromise;
+      pdfLibPromise = new Promise(function (resolve, reject) {
         if (window.pdfjsLib) {
           resolve(window.pdfjsLib);
           return;
         }
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-        s.onload = function() {
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        script.onload = function () {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
           resolve(window.pdfjsLib);
         };
-        s.onerror = reject;
-        document.head.appendChild(s);
+        script.onerror = reject;
+        document.head.appendChild(script);
       });
-      return pdfjsLoaded;
+      return pdfLibPromise;
     }
 
-    var mammothLoaded = null;
+    let mammothPromise = null;
     function loadMammoth() {
-      if (mammothLoaded) return mammothLoaded;
-      mammothLoaded = new Promise(function(resolve, reject) {
+      if (mammothPromise) return mammothPromise;
+      mammothPromise = new Promise(function (resolve, reject) {
         if (window.mammoth) {
           resolve(window.mammoth);
           return;
         }
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
-        s.onload = function() { resolve(window.mammoth); };
-        s.onerror = reject;
-        document.head.appendChild(s);
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+        script.onload = function () { resolve(window.mammoth); };
+        script.onerror = reject;
+        document.head.appendChild(script);
       });
-      return mammothLoaded;
+      return mammothPromise;
     }
 
     async function extractText(file) {
-      var ext = file.name.split('.').pop().toLowerCase();
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
 
-      if (ext === 'txt' || ext === 'md' || ext === 'csv' || ext === 'json') {
+      if (['txt', 'md', 'csv', 'json'].indexOf(ext) >= 0) {
         return await file.text();
       }
 
       if (ext === 'docx') {
-        var mam = await loadMammoth();
-        var ab = await file.arrayBuffer();
-        var result = await mam.extractRawText({ arrayBuffer: ab });
-        return result.value;
+        const mammoth = await loadMammoth();
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+        return result.value || '';
       }
 
       if (ext === 'pdf') {
-        try {
-          var lib = await loadPdfJs();
-          var ab = await file.arrayBuffer();
-          var pdf = await lib.getDocument({ data: ab }).promise;
-          var text = '';
-          for (var i = 1; i <= pdf.numPages; i++) {
-            var page = await pdf.getPage(i);
-            var content = await page.getTextContent();
-            text += content.items.map(function(item) { return item.str; }).join(' ') + '\n';
-          }
-          if (text.trim().length > 30) return text;
-          return '[PDF had no extractable text: ' + file.name + ']';
-        } catch (e) {
-          console.warn('PDF.js extraction failed:', e);
-          var t = await file.text();
-          var cleaned = t.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, '\n');
-          return cleaned.trim().length > 50 ? cleaned : '[Could not extract PDF: ' + file.name + ']';
+        const lib = await loadPdfJs();
+        const data = await file.arrayBuffer();
+        const pdf = await lib.getDocument({ data: data }).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map(function (item) { return item.str; }).join(' ') + '\n';
         }
+        return text;
       }
 
       return await file.text();
     }
 
-    // ── Generate ──
+    async function savePendingFiles() {
+      if (!state.selectedProjectId) {
+        throw new Error('Select a project first.');
+      }
+      if (!state.pendingFiles.length) {
+        return { files: [] };
+      }
 
-    generateBtn.addEventListener('click', async function() {
-      if (isGenerating || !hasContent()) return;
-      clearError();
-      setLoading(true, 'Reading files...');
-
-      try {
-        var content = pasteArea.value;
-
-        for (var fi = 0; fi < files.length; fi++) {
-          updateStatus('Extracting text from ' + files[fi].name + ' (' + (fi + 1) + '/' + files.length + ')...');
-          var t = await extractText(files[fi]);
-          content += '\n\n--- From: ' + files[fi].name + ' ---\n' + t;
-        }
-
-        if (content.trim().length < 30) {
-          throw new Error('Not enough content. Please add more text or files.');
-        }
-
-        updateStatus('Analyzing materials...');
-
-        // 未登录也可生成：有 token 则带上 Authorization，没有则匿名请求
-        var token = localStorage.getItem("quizall.token");
-        var headers = { 'Content-Type': 'application/json' };
-        if (token) headers.Authorization = "Bearer " + token;
-
-        var res = await fetch(API_BASE + '/api/quiz/generate', {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify({
-            content: content.trim(),
-            types: selectedTypes,
-            numQuestions: numQuestions
-          })
+      setStatus('Extracting and saving files to project...');
+      const payload = [];
+      for (let i = 0; i < state.pendingFiles.length; i++) {
+        const file = state.pendingFiles[i];
+        setStatus('Extracting ' + file.name + ' (' + (i + 1) + '/' + state.pendingFiles.length + ')...');
+        const text = await extractText(file);
+        if (!text || text.trim().length < 20) continue;
+        payload.push({
+          name: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          text: text,
         });
+      }
 
-        var data = await res.json();
+      if (!payload.length) {
+        throw new Error('No extractable text found in pending files.');
+      }
 
-        if (!res.ok || !data.ok) {
-          var msg = data.error || 'Quiz generation failed. Please try again.';
-          if (res.status === 429 && data.retryAfter) {
-            msg = (data.error || 'AI rate limit reached.') + ' Try again in ' + data.retryAfter + ' seconds.';
-          }
-          throw new Error(msg);
+      const result = { files: [] };
+      const batchSize = 4;
+      for (let i = 0; i < payload.length; i += batchSize) {
+        const chunk = payload.slice(i, i + batchSize);
+        const chunkRes = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: chunk }),
+        });
+        if (Array.isArray(chunkRes.files)) {
+          result.files = result.files.concat(chunkRes.files);
         }
+      }
 
-        if (!Array.isArray(data.quiz) || data.quiz.length === 0) {
-          throw new Error('No questions were generated. Try adding more content.');
-        }
+      state.pendingFiles = [];
+      renderPendingFiles();
+      await loadProjectDetail(state.selectedProjectId);
+      setStatus('Saved ' + result.files.length + ' files to project.', 'success');
+      return result;
+    }
 
-        updateStatus('Preparing your quiz...');
+    async function scanOutlineCandidates() {
+      if (!state.selectedProjectId) {
+        throw new Error('Select a project first.');
+      }
+      setStatus('Scanning saved files for exam outline keywords...');
+      const data = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/outline-candidates');
+      renderOutlineCandidates(data.candidates || []);
+      if (data.recommendedFileId) {
+        state.selectedOutlineFileId = data.recommendedFileId;
+        renderOutlineCandidates(data.candidates || []);
+      }
+      setStatus('Auto-scan finished.', 'success');
+    }
 
-        sessionStorage.setItem('quizall.currentQuiz', JSON.stringify(data));
-        window.location.href = 'quiz.html';
+    async function generateMindmap() {
+      if (!state.selectedProjectId) {
+        throw new Error('Select a project first.');
+      }
 
-      } catch (err) {
-        showError(err.message || 'Something went wrong. Please try again.');
-        setLoading(false);
+      if (state.pendingFiles.length) {
+        await savePendingFiles();
+      }
+
+      setStatus('Building personalized exam mindmap...');
+      const payload = {
+        sourceMode: state.selectedOutlineFileId ? 'file' : 'typed',
+        selectedFileId: state.selectedOutlineFileId || null,
+        topicsInput: els.topicsInput.value.trim(),
+      };
+
+      const data = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/exam-prep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      state.mindmap = data.mindmap;
+      if (data.examTopics && !els.topicsInput.value.trim()) {
+        els.topicsInput.value = data.examTopics;
+      }
+      if (data.emailTemplate) {
+        els.emailTemplate.value = data.emailTemplate;
+      }
+      renderMindmap();
+      setStatus('ExamTopics mindmap generated. You can now edit nodes.', 'success');
+    }
+
+    async function saveMindmap() {
+      if (!state.selectedProjectId || !state.mindmap) {
+        throw new Error('Generate a mindmap first.');
+      }
+
+      setStatus('Saving mindmap changes...');
+      await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/mindmap', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          examTopics: els.topicsInput.value.trim() || 'Updated topics',
+          mindmap: state.mindmap,
+        }),
+      });
+
+      setStatus('Mindmap saved.', 'success');
+    }
+
+    async function createProject() {
+      const name = els.projectNameInput.value.trim();
+      if (!name) throw new Error('Project name is required.');
+
+      setStatus('Creating project...');
+      const payload = {
+        name: name,
+        examName: els.projectExamNameInput.value.trim(),
+        examDate: els.projectExamDateInput.value || null,
+        description: els.projectDescInput.value.trim(),
+      };
+
+      const data = await api('/api/quiz/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      closeModal();
+      await loadProjects();
+      if (data.project && data.project.id) {
+        state.selectedProjectId = data.project.id;
+        await loadProjectDetail(data.project.id);
+      }
+      setStatus('Project created.', 'success');
+    }
+
+    async function generateQuiz() {
+      if (!state.selectedProjectId) {
+        throw new Error('Select a project first.');
+      }
+      if (state.selectedTypes.size === 0) {
+        throw new Error('Select at least one question type.');
+      }
+
+      if (state.pendingFiles.length) {
+        await savePendingFiles();
+      }
+
+      const examTopics = els.topicsInput.value.trim();
+      if (!examTopics && !state.mindmap) {
+        throw new Error('Add exam topics or generate a mindmap first.');
+      }
+
+      setStatus('Generating quiz from project materials...');
+      const response = await api('/api/quiz/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: state.selectedProjectId,
+          examTopics: examTopics,
+          content: examTopics,
+          types: Array.from(state.selectedTypes),
+          numQuestions: state.numQuestions,
+        }),
+      });
+
+      if (!Array.isArray(response.quiz) || response.quiz.length === 0) {
+        throw new Error('Quiz generation returned no questions.');
+      }
+
+      const quizPayload = {
+        project: response.project || (state.projectDetail && state.projectDetail.project) || null,
+        projectId: state.selectedProjectId,
+        subject: response.analysis && response.analysis.subject ? response.analysis.subject : ((state.projectDetail && state.projectDetail.project && state.projectDetail.project.name) || 'Quiz'),
+        topics: response.analysis && Array.isArray(response.analysis.topics) ? response.analysis.topics : [],
+        generatedAt: new Date().toISOString(),
+        questions: response.quiz,
+        sourcePack: response.sources || [],
+        meta: response.meta || {},
+      };
+
+      sessionStorage.setItem('quizall.currentQuiz', JSON.stringify(quizPayload));
+      window.location.href = 'quiz.html';
+    }
+
+    els.dropzone.addEventListener('click', function () { els.fileInput.click(); });
+    els.dropzone.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        els.fileInput.click();
       }
     });
 
-    refreshUI();
+    els.dropzone.addEventListener('dragover', function (event) {
+      event.preventDefault();
+      els.dropzone.classList.add('drag');
+    });
+    els.dropzone.addEventListener('dragleave', function () {
+      els.dropzone.classList.remove('drag');
+    });
+    els.dropzone.addEventListener('drop', function (event) {
+      event.preventDefault();
+      els.dropzone.classList.remove('drag');
+      addPendingFiles(event.dataTransfer.files);
+    });
+    els.fileInput.addEventListener('change', function () {
+      addPendingFiles(els.fileInput.files);
+      els.fileInput.value = '';
+    });
+
+    els.pendingFiles.addEventListener('click', function (event) {
+      const removeIndex = event.target.getAttribute('data-remove-pending');
+      if (removeIndex == null) return;
+      state.pendingFiles.splice(Number(removeIndex), 1);
+      renderPendingFiles();
+    });
+
+    els.clearPendingBtn.addEventListener('click', function () {
+      state.pendingFiles = [];
+      renderPendingFiles();
+      setStatus('Pending files cleared.');
+    });
+
+    els.saveFilesBtn.addEventListener('click', async function () {
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        await savePendingFiles();
+      } catch (err) {
+        setStatus(err.message || 'Failed to save files.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    els.projectSelect.addEventListener('change', async function () {
+      const projectId = els.projectSelect.value;
+      if (!projectId) return;
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        await loadProjectDetail(projectId);
+      } catch (err) {
+        setStatus(err.message || 'Failed to load project.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    els.refreshProjectsBtn.addEventListener('click', async function () {
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        await loadProjects();
+      } catch (err) {
+        setStatus(err.message || 'Failed to refresh projects.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    els.newProjectBtn.addEventListener('click', openModal);
+    els.cancelProjectBtn.addEventListener('click', closeModal);
+    els.newProjectModal.addEventListener('click', function (event) {
+      if (event.target === els.newProjectModal) closeModal();
+    });
+
+    els.createProjectConfirmBtn.addEventListener('click', async function () {
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        await createProject();
+      } catch (err) {
+        setStatus(err.message || 'Failed to create project.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    els.scanOutlineBtn.addEventListener('click', async function () {
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        await scanOutlineCandidates();
+      } catch (err) {
+        setStatus(err.message || 'Failed to auto-scan.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    els.outlineCandidates.addEventListener('click', function (event) {
+      const fileId = event.target.getAttribute('data-outline-file');
+      if (!fileId) return;
+      state.selectedOutlineFileId = fileId;
+      const buttons = els.outlineCandidates.querySelectorAll('[data-outline-file]');
+      buttons.forEach(function (button) {
+        const selected = button.getAttribute('data-outline-file') === fileId;
+        button.textContent = selected ? 'Selected' : 'Use This';
+        button.classList.toggle('btn-primary', selected);
+        button.classList.toggle('btn-soft', !selected);
+      });
+      setStatus('Outline file selected.');
+    });
+
+    els.generateMindmapBtn.addEventListener('click', async function () {
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        await generateMindmap();
+      } catch (err) {
+        setStatus(err.message || 'Failed to generate mindmap.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    els.copyEmailTemplateBtn.addEventListener('click', async function () {
+      try {
+        await navigator.clipboard.writeText(els.emailTemplate.value);
+        setStatus('Email template copied.', 'success');
+      } catch (_) {
+        setStatus('Unable to copy template. Copy manually instead.', 'error');
+      }
+    });
+
+    els.mindmapTree.addEventListener('input', function (event) {
+      const nodeId = event.target.getAttribute('data-node-id');
+      if (!nodeId || !state.mindmap || !Array.isArray(state.mindmap.nodes)) return;
+      const found = findNode(nodeId, state.mindmap.nodes, null);
+      if (!found) return;
+      found.node.text = event.target.textContent.trim() || 'Untitled node';
+    });
+
+    els.mindmapTree.addEventListener('click', function (event) {
+      const action = event.target.getAttribute('data-node-action');
+      const nodeId = event.target.getAttribute('data-node-id');
+      if (!action || !nodeId || !state.mindmap || !Array.isArray(state.mindmap.nodes)) return;
+
+      const found = findNode(nodeId, state.mindmap.nodes, null);
+      if (!found) return;
+
+      if (action === 'add') {
+        if (!Array.isArray(found.node.children)) found.node.children = [];
+        found.node.children.push({
+          id: 'n_' + Date.now() + '_' + Math.random().toString(16).slice(2, 7),
+          text: 'New subtopic',
+          status: 'gray',
+          children: []
+        });
+      }
+
+      if (action === 'delete') {
+        if (found.parentNodes && found.parentNodes.length > 1) {
+          found.parentNodes.splice(found.index, 1);
+        } else if (found.parentNodes && found.parentNodes.length === 1 && found.parentNodes === state.mindmap.nodes) {
+          setStatus('At least one root node is required.', 'error');
+          return;
+        } else {
+          found.parentNodes.splice(found.index, 1);
+        }
+      }
+
+      renderMindmap();
+    });
+
+    els.addRootNodeBtn.addEventListener('click', function () {
+      if (!state.mindmap || !Array.isArray(state.mindmap.nodes)) return;
+      state.mindmap.nodes.push({
+        id: 'n_' + Date.now() + '_' + Math.random().toString(16).slice(2, 7),
+        text: 'New topic',
+        status: 'gray',
+        children: []
+      });
+      renderMindmap();
+    });
+
+    els.saveMindmapBtn.addEventListener('click', async function () {
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        await saveMindmap();
+      } catch (err) {
+        setStatus(err.message || 'Failed to save mindmap.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    els.typeToggles.addEventListener('click', function (event) {
+      const button = event.target.closest('[data-type]');
+      if (!button) return;
+      const type = button.getAttribute('data-type');
+      if (!type) return;
+
+      if (state.selectedTypes.has(type)) {
+        if (state.selectedTypes.size === 1) return;
+        state.selectedTypes.delete(type);
+        button.classList.remove('active');
+      } else {
+        state.selectedTypes.add(type);
+        button.classList.add('active');
+      }
+    });
+
+    els.numToggles.addEventListener('click', function (event) {
+      const button = event.target.closest('[data-num]');
+      if (!button) return;
+      const num = Number(button.getAttribute('data-num'));
+      if (!Number.isInteger(num)) return;
+      state.numQuestions = num;
+      els.numToggles.querySelectorAll('[data-num]').forEach(function (item) {
+        item.classList.toggle('active', item === button);
+      });
+    });
+
+    els.generateQuizBtn.addEventListener('click', async function () {
+      if (state.busy) return;
+      setBusy(true);
+      try {
+        await generateQuiz();
+      } catch (err) {
+        setStatus(err.message || 'Failed to generate quiz.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    window.addEventListener('resize', drawAnalytics);
+
+    renderPendingFiles();
+    renderSavedFiles();
+    drawAnalytics();
+
+    (async function init() {
+      setBusy(true);
+      try {
+        await loadProjects();
+      } catch (err) {
+        setStatus(err.message || 'Initialization failed.', 'error');
+      } finally {
+        setBusy(false);
+      }
+    })();
   })();
   </script>
 </body>

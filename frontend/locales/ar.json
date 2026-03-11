@@ -7,7 +7,12 @@
     "account": "الحساب",
     "questionWizard": "المعالج السؤالي",
     "system": "النظام",
-    "tryIt": "جرّب المعالج"
+    "tryIt": "جرّب المعالج",
+    "create": "إنشاء مشروع",
+    "workspace": "مساحة التحضير للاختبار",
+    "createProject": "إنشاء مشروع",
+    "history": "السجل",
+    "analyticsAdmin": "تحليلات الإدارة"
   },
   "language": {
     "label": "اللغة",

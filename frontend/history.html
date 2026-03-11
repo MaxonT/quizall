@@ -8,11 +8,262 @@
   <script src="lib/themeManager.js"></script>
   <link rel="stylesheet" href="theme.css" />
   <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="quiz.css" />
   <script src="config.js"></script>
   <script src="lib/authGuard.js"></script>
   <script src="lib/i18next.min.js"></script>
   <script type="module" src="i18n/index.js"></script>
+  <style>
+    .history-shell {
+      max-width: 1050px;
+      margin: 24px auto 80px;
+      padding: 0 12px;
+      display: grid;
+      gap: 14px;
+      position: relative;
+    }
+
+    .header {
+      border: 1px solid rgba(148,163,184,0.2);
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(140deg, rgba(11,16,37,0.94), rgba(9,13,29,0.95));
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 3px;
+      background: linear-gradient(90deg, rgba(34,211,238,0.22), rgba(139,92,246,0.44), rgba(52,211,153,0.25));
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 1.24rem;
+    }
+
+    .header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .select,
+    .btn {
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.3);
+      background: rgba(9,14,30,0.88);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.88rem;
+      padding: 10px 12px;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background-color .18s ease;
+    }
+
+    .btn {
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn:hover,
+    .select:hover {
+      border-color: rgba(34,211,238,0.4);
+      box-shadow: 0 8px 18px rgba(14,165,183,0.16);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      border-color: rgba(239,68,68,0.4);
+      color: #fecaca;
+    }
+
+    .status {
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,0.2);
+      background: rgba(10,15,34,0.82);
+      padding: 10px 12px;
+      font-size: 0.87rem;
+      color: #dbeafe;
+    }
+
+    .status.error {
+      border-color: rgba(248,113,113,0.45);
+      background: rgba(127,29,29,0.22);
+      color: #fecaca;
+    }
+
+    .list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .item {
+      border: 1px solid rgba(148,163,184,0.2);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(10, 15, 32, 0.86);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .item:hover {
+      border-color: rgba(34,211,238,0.36);
+      box-shadow: 0 14px 26px rgba(15,23,42,0.24);
+      transform: translateY(-2px);
+    }
+
+    .item-title {
+      margin: 0;
+      font-size: 0.96rem;
+      color: var(--text);
+    }
+
+    .item-meta {
+      margin-top: 6px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .score {
+      border: 1px solid rgba(148,163,184,0.3);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.84rem;
+      font-weight: 800;
+      align-self: flex-start;
+    }
+
+    .score.good { color: #22c55e; border-color: rgba(34,197,94,0.45); }
+    .score.mid { color: #f59e0b; border-color: rgba(245,158,11,0.45); }
+    .score.low { color: #ef4444; border-color: rgba(239,68,68,0.5); }
+
+    .empty {
+      border: 1px dashed rgba(148,163,184,0.3);
+      border-radius: 14px;
+      padding: 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .load-more-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    html[data-theme="light"] .history-shell::before {
+      content: "";
+      position: absolute;
+      inset: -20px -6px auto -6px;
+      height: 120px;
+      pointer-events: none;
+      background:
+        linear-gradient(100deg, rgba(30,64,175,0.1), rgba(79,70,229,0.06) 35%, transparent 75%),
+        repeating-linear-gradient(0deg, rgba(71,85,105,0.05) 0 1px, transparent 1px 24px);
+      border-radius: 20px;
+      z-index: -1;
+    }
+
+    html[data-theme="light"] .header {
+      background:
+        linear-gradient(140deg, rgba(255,255,255,0.98), rgba(245,248,255,0.96)),
+        repeating-linear-gradient(0deg, rgba(71,85,105,0.04) 0 1px, transparent 1px 24px);
+      border-color: rgba(148,163,184,0.32);
+      box-shadow: 0 12px 24px rgba(15,23,42,0.1);
+    }
+
+    html[data-theme="light"] .header::after {
+      background: linear-gradient(90deg, rgba(79,70,229,0.14), rgba(30,64,175,0.3), rgba(14,165,183,0.2));
+    }
+
+    html[data-theme="light"] .header h1 {
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .header p {
+      color: #475569;
+    }
+
+    html[data-theme="light"] .select,
+    html[data-theme="light"] .btn {
+      background: rgba(255,255,255,0.95);
+      border-color: rgba(148,163,184,0.44);
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .btn:hover,
+    html[data-theme="light"] .select:hover {
+      border-color: rgba(79,70,229,0.36);
+      box-shadow: 0 10px 20px rgba(30,41,59,0.12);
+    }
+
+    html[data-theme="light"] .btn-danger {
+      border-color: rgba(220,38,38,0.34);
+      color: #b91c1c;
+      background: rgba(254,242,242,0.95);
+    }
+
+    html[data-theme="light"] .status {
+      border-color: rgba(148,163,184,0.3);
+      background: rgba(248,250,252,0.94);
+      color: #1e293b;
+    }
+
+    html[data-theme="light"] .status.error {
+      border-color: rgba(220,38,38,0.38);
+      background: rgba(254,242,242,0.95);
+      color: #991b1b;
+    }
+
+    html[data-theme="light"] .item {
+      border-color: rgba(148,163,184,0.34);
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,249,255,0.96));
+      box-shadow: 0 8px 18px rgba(15,23,42,0.07);
+    }
+
+    html[data-theme="light"] .item:hover {
+      border-color: rgba(30,64,175,0.32);
+      box-shadow: 0 14px 24px rgba(30,41,59,0.14);
+    }
+
+    html[data-theme="light"] .item-title {
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .item-meta,
+    html[data-theme="light"] .empty {
+      color: #475569;
+    }
+
+    html[data-theme="light"] .empty {
+      border-color: rgba(148,163,184,0.42);
+      background: rgba(255,255,255,0.7);
+    }
+  </style>
 </head>
 <body class="app-shell">
   <header class="topbar">
@@ -20,7 +271,7 @@
     <nav class="controls">
       <div class="navlinks">
         <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="create.html" data-i18n="nav.create">Create Quiz</a>
+        <a href="create.html" data-i18n="nav.create">Exam Prep Workspace</a>
         <a href="history.html" class="active" data-i18n="nav.history">History</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
       </div>
@@ -34,295 +285,234 @@
     </nav>
   </header>
 
-  <main class="quiz-container" id="historyMain">
-    <!-- Page Header -->
-    <div class="quiz-page-header">
-      <h1 class="quiz-page-title">Quiz History</h1>
-      <p class="quiz-page-subtitle">Review your past quiz results</p>
-    </div>
-
-    <!-- Toolbar -->
-    <div style="display:flex;justify-content:flex-end;margin-bottom:16px" id="toolbar">
-      <button class="quiz-action-btn danger" id="clearAllBtn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        Clear All
-      </button>
-    </div>
-
-    <!-- Loading -->
-    <div id="loadingState" style="display:flex;justify-content:center;padding:48px 0">
-      <div class="quiz-generate-btn .spinner" style="width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:quizSpin .7s linear infinite;background:none;box-shadow:none;padding:0;cursor:default"></div>
-    </div>
-
-    <!-- History List -->
-    <div class="quiz-history-list" id="historyList" style="display:none"></div>
-
-    <!-- Empty State -->
-    <div id="emptyState" style="display:none">
-      <div class="quiz-empty">
-        <div class="quiz-empty__icon">📝</div>
-        <h2 class="quiz-empty__title">No quizzes yet</h2>
-        <p class="quiz-empty__text">You haven't taken any quizzes yet. Create your first quiz and start learning!</p>
-        <a href="create.html" class="quiz-action-btn primary" style="margin-top:12px">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Create Quiz
-        </a>
+  <main class="history-shell">
+    <section class="header">
+      <div>
+        <h1>Quiz History</h1>
+        <p>Project-scoped records of your quiz sessions.</p>
       </div>
-    </div>
+      <div class="row">
+        <select id="projectFilter" class="select"></select>
+        <button id="refreshBtn" class="btn" type="button">Refresh</button>
+        <button id="clearBtn" class="btn btn-danger" type="button">Clear Scope</button>
+      </div>
+    </section>
 
-    <!-- Load More -->
-    <button class="quiz-load-more" id="loadMoreBtn" style="display:none">Load more</button>
+    <div id="status" class="status">Loading...</div>
+
+    <section id="list" class="list"></section>
+
+    <div class="load-more-wrap">
+      <button id="loadMoreBtn" class="btn" type="button" style="display:none;">Load More</button>
+    </div>
   </main>
 
-  <!-- Clear All Confirmation Modal -->
-  <div class="quiz-modal-overlay" id="clearModal">
-    <div class="quiz-modal">
-      <h3 class="quiz-modal__title">Clear All History?</h3>
-      <p class="quiz-modal__text">This will permanently delete all your quiz history. This action cannot be undone.</p>
-      <div class="quiz-modal__actions">
-        <button class="quiz-action-btn" id="cancelClearBtn">Cancel</button>
-        <button class="quiz-action-btn danger" id="confirmClearBtn">Delete All</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Delete Single Confirmation Modal -->
-  <div class="quiz-modal-overlay" id="deleteModal">
-    <div class="quiz-modal">
-      <h3 class="quiz-modal__title">Delete this entry?</h3>
-      <p class="quiz-modal__text">This quiz result will be permanently removed from your history.</p>
-      <div class="quiz-modal__actions">
-        <button class="quiz-action-btn" id="cancelDeleteBtn">Cancel</button>
-        <button class="quiz-action-btn danger" id="confirmDeleteBtn">Delete</button>
-      </div>
-    </div>
-  </div>
-
+  <script src="lib/navUserBar.js"></script>
   <script>
   (function () {
-    var API = (window.QUIZALL_API_BASE || '') + '/api/quiz/history';
-    var page = 1;
-    var limit = 20;
-    var hasMore = false;
-    var pendingDeleteId = null;
-
-    var listEl      = document.getElementById('historyList');
-    var emptyEl     = document.getElementById('emptyState');
-    var loadingEl   = document.getElementById('loadingState');
-    var loadMoreBtn = document.getElementById('loadMoreBtn');
-    var clearAllBtn = document.getElementById('clearAllBtn');
-
-    /* ── Auth check ── */
-    var token = localStorage.getItem('quizall.token') || sessionStorage.getItem('quizall.token');
-    if (!token) {
-      loadingEl.style.display = 'none';
-      emptyEl.style.display = '';
-      document.querySelector('.quiz-empty__title').textContent = 'Login Required';
-      document.querySelector('.quiz-empty__text').textContent = 'Please log in to view your quiz history.';
-      var cta = emptyEl.querySelector('.quiz-action-btn');
-      if (cta) { cta.href = 'settings.html#accountPanel'; cta.textContent = 'Log In'; }
+    if (!window.authGuard || !window.authGuard.getToken()) {
+      window.location.href = 'index.html';
       return;
     }
 
-    fetchHistory();
+    const API_BASE = window.authGuard.API_BASE;
+    const token = window.authGuard.getToken();
 
-    /* ── Fetch history ── */
-    function fetchHistory() {
-      fetch(API + '?page=' + page + '&limit=' + limit, {
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
-      .then(function (r) {
-        if (!r.ok) throw new Error('Failed to load history');
-        return r.json();
-      })
-      .then(function (res) {
-        loadingEl.style.display = 'none';
-        var items = res.data || res.history || res.items || res || [];
-        if (!Array.isArray(items)) items = [];
-        hasMore = items.length >= limit;
+    const state = {
+      page: 1,
+      limit: 20,
+      hasMore: false,
+      projectId: '',
+      projects: [],
+    };
 
-        if (page === 1 && items.length === 0) {
-          emptyEl.style.display = '';
-          return;
+    const els = {
+      projectFilter: document.getElementById('projectFilter'),
+      refreshBtn: document.getElementById('refreshBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      status: document.getElementById('status'),
+      list: document.getElementById('list'),
+      loadMoreBtn: document.getElementById('loadMoreBtn'),
+    };
+
+    function api(path, options) {
+      const req = Object.assign({}, options || {});
+      req.headers = Object.assign({}, req.headers || {}, {
+        'Authorization': 'Bearer ' + token
+      });
+      return fetch(API_BASE + path, req).then(async function (res) {
+        let data = {};
+        try { data = await res.json(); } catch (_) {}
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || ('Request failed: ' + res.status));
         }
-
-        listEl.style.display = '';
-        clearAllBtn.style.display = '';
-        renderItems(items);
-        loadMoreBtn.style.display = hasMore ? '' : 'none';
-      })
-      .catch(function (err) {
-        loadingEl.style.display = 'none';
-        listEl.style.display = '';
-        listEl.innerHTML =
-          '<div class="quiz-empty" style="padding:32px 0">' +
-            '<div class="quiz-empty__icon">⚠️</div>' +
-            '<p class="quiz-empty__text">Failed to load history. Please try again later.</p>' +
-          '</div>';
-        console.error('[QuizAll] History fetch error:', err);
+        return data;
       });
     }
 
-    function renderItems(items) {
-      items.forEach(function (item) {
-        var el = document.createElement('div');
-        el.className = 'quiz-history-item';
-        el.setAttribute('data-id', item._id || item.id || '');
+    function setStatus(message, type) {
+      els.status.textContent = message;
+      els.status.className = 'status' + (type ? ' ' + type : '');
+    }
 
-        var score = typeof item.score === 'number' ? item.score : (item.percentage || 0);
-        var scoreClass = score >= 80 ? 'score-green' : score >= 50 ? 'score-yellow' : 'score-red';
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
-        var count = item.questionCount || item.totalQuestions || 0;
-        var subject = item.subject || item.title || item.topic || 'Quiz';
-        var dateStr = relativeDate(item.createdAt || item.date || item.timestamp);
-        var timeTaken = item.timeTaken ? formatTime(item.timeTaken) : '';
+    function formatDate(dateText) {
+      const date = new Date(dateText);
+      if (Number.isNaN(date.getTime())) return dateText || '—';
+      return date.toLocaleString();
+    }
 
-        el.innerHTML =
-          '<div class="quiz-history-item__score">' +
-            '<div class="quiz-score-badge ' + scoreClass + '">' + score + '%</div>' +
-          '</div>' +
-          '<div class="quiz-history-item__body">' +
-            '<div class="quiz-history-item__subject">' + escHtml(subject) + '</div>' +
-            '<div class="quiz-history-item__meta">' +
-              '<span>' + count + ' questions</span>' +
-              (timeTaken ? '<span>' + timeTaken + '</span>' : '') +
-              '<span>' + dateStr + '</span>' +
+    function scoreClass(accuracy) {
+      if (accuracy >= 80) return 'good';
+      if (accuracy >= 60) return 'mid';
+      return 'low';
+    }
+
+    function renderProjects() {
+      const options = ['<option value="">All Projects</option>'];
+      state.projects.forEach(function (project) {
+        const selected = state.projectId === project.id ? ' selected' : '';
+        options.push('<option value="' + project.id + '"' + selected + '>' + escapeHtml(project.name) + '</option>');
+      });
+      els.projectFilter.innerHTML = options.join('');
+    }
+
+    function appendItems(items) {
+      if (!items.length && state.page === 1) {
+        els.list.innerHTML = '<div class="empty">No quiz history for this scope yet.</div>';
+        return;
+      }
+
+      const html = items.map(function (item) {
+        const accuracy = Number(item.accuracy) || 0;
+        const projectText = item.projectName || item.projectId || 'Unscoped';
+        return '<article class="item" data-id="' + item.id + '">' +
+          '<div>' +
+            '<h3 class="item-title">' + escapeHtml(item.subject || 'Quiz') + '</h3>' +
+            '<div class="item-meta">' +
+              '<span>Project: ' + escapeHtml(projectText) + '</span>' +
+              '<span>Questions: ' + (item.total || item.questionCount || 0) + '</span>' +
+              '<span>Correct: ' + (item.score || 0) + '</span>' +
+              '<span>' + formatDate(item.createdAt) + '</span>' +
             '</div>' +
           '</div>' +
-          '<div class="quiz-history-item__actions">' +
-            '<button class="quiz-action-btn--icon quiz-action-btn danger" title="Delete" data-delete="' + (item._id || item.id || '') + '">' +
-              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
-            '</button>' +
-          '</div>';
+          '<div class="row" style="align-items:flex-start;">' +
+            '<span class="score ' + scoreClass(accuracy) + '">' + accuracy + '%</span>' +
+            '<button class="btn btn-danger" data-delete="' + item.id + '">Delete</button>' +
+          '</div>' +
+        '</article>';
+      }).join('');
 
-        listEl.appendChild(el);
-      });
+      if (state.page === 1) {
+        els.list.innerHTML = html;
+      } else {
+        els.list.insertAdjacentHTML('beforeend', html);
+      }
     }
 
-    /* ── Load more ── */
-    loadMoreBtn.addEventListener('click', function () {
-      page++;
-      loadMoreBtn.style.display = 'none';
-      fetchHistory();
-    });
-
-    /* ── Delete single ── */
-    listEl.addEventListener('click', function (e) {
-      var btn = e.target.closest('[data-delete]');
-      if (!btn) return;
-      e.stopPropagation();
-      pendingDeleteId = btn.getAttribute('data-delete');
-      document.getElementById('deleteModal').classList.add('open');
-    });
-
-    document.getElementById('cancelDeleteBtn').addEventListener('click', function () {
-      document.getElementById('deleteModal').classList.remove('open');
-      pendingDeleteId = null;
-    });
-
-    document.getElementById('confirmDeleteBtn').addEventListener('click', function () {
-      if (!pendingDeleteId) return;
-      var id = pendingDeleteId;
-      document.getElementById('deleteModal').classList.remove('open');
-
-      fetch(API + '/' + id, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
-      .then(function (r) {
-        if (!r.ok) throw new Error('Delete failed');
-        var el = listEl.querySelector('[data-id="' + id + '"]');
-        if (el) {
-          el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-          el.style.opacity = '0';
-          el.style.transform = 'translateX(20px)';
-          setTimeout(function () {
-            el.remove();
-            if (listEl.children.length === 0) {
-              listEl.style.display = 'none';
-              emptyEl.style.display = '';
-              clearAllBtn.style.display = 'none';
-            }
-          }, 300);
-        }
-      })
-      .catch(function (err) {
-        console.error('[QuizAll] Delete error:', err);
-      });
-
-      pendingDeleteId = null;
-    });
-
-    /* ── Clear all ── */
-    clearAllBtn.addEventListener('click', function () {
-      document.getElementById('clearModal').classList.add('open');
-    });
-
-    document.getElementById('cancelClearBtn').addEventListener('click', function () {
-      document.getElementById('clearModal').classList.remove('open');
-    });
-
-    document.getElementById('confirmClearBtn').addEventListener('click', function () {
-      document.getElementById('clearModal').classList.remove('open');
-
-      fetch(API, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
-      .then(function (r) {
-        if (!r.ok) throw new Error('Clear all failed');
-        listEl.innerHTML = '';
-        listEl.style.display = 'none';
-        emptyEl.style.display = '';
-        clearAllBtn.style.display = 'none';
-        loadMoreBtn.style.display = 'none';
-      })
-      .catch(function (err) {
-        console.error('[QuizAll] Clear all error:', err);
-      });
-    });
-
-    /* Close modals on overlay click */
-    document.querySelectorAll('.quiz-modal-overlay').forEach(function (overlay) {
-      overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) overlay.classList.remove('open');
-      });
-    });
-
-    /* ── Utilities ── */
-
-    function relativeDate(dateStr) {
-      if (!dateStr) return '';
-      var date = new Date(dateStr);
-      var now  = new Date();
-      var diff = now - date;
-      var seconds = Math.floor(diff / 1000);
-      var minutes = Math.floor(seconds / 60);
-      var hours   = Math.floor(minutes / 60);
-      var days    = Math.floor(hours / 24);
-
-      if (seconds < 60) return 'Just now';
-      if (minutes < 60) return minutes + (minutes === 1 ? ' minute ago' : ' minutes ago');
-      if (hours < 24) return hours + (hours === 1 ? ' hour ago' : ' hours ago');
-      if (days === 1) return 'Yesterday';
-      if (days < 7) return days + ' days ago';
-      if (days < 30) return Math.floor(days / 7) + (Math.floor(days / 7) === 1 ? ' week ago' : ' weeks ago');
-      return date.toLocaleDateString();
+    async function loadProjects() {
+      const data = await api('/api/quiz/projects');
+      state.projects = data.projects || [];
+      renderProjects();
     }
 
-    function formatTime(ms) {
-      var s = Math.floor(ms / 1000);
-      var m = Math.floor(s / 60);
-      s = s % 60;
-      if (m > 0) return m + 'm ' + s + 's';
-      return s + 's';
+    async function loadHistory(reset) {
+      if (reset) state.page = 1;
+
+      setStatus('Loading history...');
+      const params = new URLSearchParams();
+      params.set('page', String(state.page));
+      params.set('limit', String(state.limit));
+      if (state.projectId) params.set('projectId', state.projectId);
+
+      const data = await api('/api/quiz/history?' + params.toString());
+      const items = data.results || [];
+      state.hasMore = Boolean(data.pagination && state.page < data.pagination.totalPages);
+      appendItems(items);
+      els.loadMoreBtn.style.display = state.hasMore ? '' : 'none';
+
+      setStatus('Loaded ' + (data.pagination ? data.pagination.total : items.length) + ' record(s).', '');
     }
 
-    function escHtml(s) {
-      var d = document.createElement('div');
-      d.textContent = s;
-      return d.innerHTML;
+    async function deleteItem(id) {
+      if (!confirm('Delete this record?')) return;
+      await api('/api/quiz/history/' + encodeURIComponent(id), { method: 'DELETE' });
+      const item = els.list.querySelector('[data-id="' + id + '"]');
+      if (item) item.remove();
+      if (!els.list.children.length) {
+        els.list.innerHTML = '<div class="empty">No quiz history for this scope yet.</div>';
+      }
+      setStatus('History item deleted.', '');
     }
+
+    async function clearScope() {
+      if (!confirm('Clear all history in current scope?')) return;
+      const query = state.projectId ? ('?projectId=' + encodeURIComponent(state.projectId)) : '';
+      await api('/api/quiz/history' + query, { method: 'DELETE' });
+      state.page = 1;
+      els.list.innerHTML = '';
+      await loadHistory(true);
+      setStatus('History cleared for current scope.', '');
+    }
+
+    els.projectFilter.addEventListener('change', async function () {
+      state.projectId = els.projectFilter.value;
+      try {
+        await loadHistory(true);
+      } catch (err) {
+        setStatus(err.message || 'Failed to load history.', 'error');
+      }
+    });
+
+    els.refreshBtn.addEventListener('click', async function () {
+      try {
+        await loadProjects();
+        await loadHistory(true);
+      } catch (err) {
+        setStatus(err.message || 'Failed to refresh.', 'error');
+      }
+    });
+
+    els.loadMoreBtn.addEventListener('click', async function () {
+      state.page += 1;
+      try {
+        await loadHistory(false);
+      } catch (err) {
+        setStatus(err.message || 'Failed to load more.', 'error');
+      }
+    });
+
+    els.list.addEventListener('click', async function (event) {
+      const deleteId = event.target.getAttribute('data-delete');
+      if (!deleteId) return;
+      try {
+        await deleteItem(deleteId);
+      } catch (err) {
+        setStatus(err.message || 'Delete failed.', 'error');
+      }
+    });
+
+    els.clearBtn.addEventListener('click', async function () {
+      try {
+        await clearScope();
+      } catch (err) {
+        setStatus(err.message || 'Failed to clear history.', 'error');
+      }
+    });
+
+    (async function init() {
+      try {
+        await loadProjects();
+        await loadHistory(true);
+      } catch (err) {
+        setStatus(err.message || 'Initialization failed.', 'error');
+      }
+    })();
   })();
   </script>
 </body>

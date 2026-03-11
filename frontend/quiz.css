@@ -203,15 +203,41 @@ html[data-theme="light"] .quiz-dropzone.drag-over {
   box-shadow: none;
 }
 .quiz-generate-btn .spinner {
+  position: relative;
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 2.5px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.36);
+  border-right-color: transparent;
   border-radius: 50%;
-  animation: quizSpin 0.7s linear infinite;
+  animation: quizQSpin 0.8s linear infinite;
 }
-@keyframes quizSpin {
+
+.quiz-generate-btn .spinner::before {
+  content: "Q";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.quiz-generate-btn .spinner::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 2px;
+  right: 1px;
+  bottom: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  transform: rotate(38deg);
+}
+
+@keyframes quizQSpin {
   to { transform: rotate(360deg); }
 }
 

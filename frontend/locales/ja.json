@@ -7,7 +7,12 @@
     "account": "アカウント",
     "questionWizard": "質問ウィザード",
     "system": "システム",
-    "tryIt": "ウィザードを試す"
+    "tryIt": "ウィザードを試す",
+    "create": "プロジェクト作成",
+    "workspace": "試験ワークスペース",
+    "createProject": "プロジェクト作成",
+    "history": "履歴",
+    "analyticsAdmin": "管理分析"
   },
   "language": {
     "label": "言語",

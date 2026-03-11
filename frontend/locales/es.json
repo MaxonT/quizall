@@ -7,7 +7,12 @@
     "account": "Cuenta",
     "questionWizard": "Asistente de preguntas",
     "system": "Sistema",
-    "tryIt": "Probar asistente"
+    "tryIt": "Probar asistente",
+    "create": "Crear proyecto",
+    "workspace": "Espacio de preparación",
+    "createProject": "Crear proyecto",
+    "history": "Historial",
+    "analyticsAdmin": "Panel admin"
   },
   "language": {
     "label": "Idioma",

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Results — QuizAll</title>
+  <title>Quiz Results — QuizAll</title>
   <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
   <script src="lib/themeManager.js"></script>
   <link rel="stylesheet" href="theme.css" />
@@ -13,6 +13,149 @@
   <script src="lib/authGuard.js"></script>
   <script src="lib/i18next.min.js"></script>
   <script type="module" src="i18n/index.js"></script>
+  <style>
+    .results-shell {
+      max-width: 980px;
+      margin: 24px auto 80px;
+      padding: 0 12px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .score-card {
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.22);
+      background: linear-gradient(140deg, rgba(11,17,39,0.94), rgba(8,13,30,0.95));
+      padding: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .score-card h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 5vw, 2.3rem);
+      letter-spacing: -0.03em;
+    }
+
+    .score-meta {
+      margin-top: 8px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.9rem;
+    }
+
+    .score-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 112px;
+      border-radius: 999px;
+      font-size: 1.35rem;
+      font-weight: 900;
+      padding: 8px 14px;
+      border: 1px solid rgba(148,163,184,0.32);
+      background: rgba(8,12,28,0.84);
+    }
+
+    .score-good { color: #22c55e; border-color: rgba(34,197,94,0.46); }
+    .score-mid { color: #f59e0b; border-color: rgba(245,158,11,0.46); }
+    .score-low { color: #ef4444; border-color: rgba(239,68,68,0.5); }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text);
+      background: rgba(10, 14, 30, 0.9);
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+      color: #fff;
+    }
+
+    .review-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .review-item {
+      border: 1px solid rgba(148,163,184,0.2);
+      border-radius: 14px;
+      background: rgba(9,14,33,0.86);
+      padding: 12px;
+    }
+
+    .review-item.correct {
+      border-color: rgba(34,197,94,0.35);
+      background: rgba(4,45,33,0.23);
+    }
+
+    .review-item.wrong {
+      border-color: rgba(239,68,68,0.35);
+      background: rgba(63,13,18,0.22);
+    }
+
+    .review-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .review-badge {
+      border: 1px solid rgba(148,163,184,0.3);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .review-question {
+      margin: 0;
+      color: var(--text);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    .review-line {
+      margin-top: 8px;
+      font-size: 0.86rem;
+      color: #dbeafe;
+      line-height: 1.5;
+    }
+
+    .review-line strong {
+      color: #a5f3fc;
+    }
+
+    .review-source {
+      margin-top: 8px;
+      border: 1px dashed rgba(34,211,238,0.34);
+      border-radius: 10px;
+      padding: 7px 9px;
+      color: #a5f3fc;
+      font-size: 0.8rem;
+      background: rgba(8,35,47,0.24);
+    }
+  </style>
 </head>
 <body class="app-shell">
   <header class="topbar">
@@ -20,7 +163,7 @@
     <nav class="controls">
       <div class="navlinks">
         <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="create.html" data-i18n="nav.create">Create Quiz</a>
+        <a href="create.html" data-i18n="nav.create">Exam Prep Workspace</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
       </div>
@@ -34,344 +177,112 @@
     </nav>
   </header>
 
-  <main class="quiz-container" id="resultsMain">
-    <!-- Score Card -->
-    <div class="quiz-score-card" id="scoreCard">
-      <div class="quiz-score-number" id="scoreNumber">0%</div>
-      <div class="quiz-score-message" id="scoreMessage"></div>
-      <div class="quiz-score-subtitle" id="scoreSubtitle"></div>
-      <div class="quiz-score-time" id="scoreTime">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <span id="timeTaken"></span>
+  <main class="results-shell" id="resultsShell">
+    <section class="score-card">
+      <div>
+        <h1 id="scoreTitle">Quiz Results</h1>
+        <div id="scoreMeta" class="score-meta"></div>
       </div>
-    </div>
+      <div id="scorePill" class="score-pill">0%</div>
+    </section>
 
-    <!-- Difficulty Breakdown -->
-    <h3 class="quiz-section-header">Difficulty Breakdown</h3>
-    <div class="quiz-breakdown-grid" id="difficultyGrid">
-      <div class="quiz-breakdown-card">
-        <div class="quiz-breakdown-card__title easy">Easy</div>
-        <div class="quiz-breakdown-card__count" id="easyCount">–</div>
-        <div class="quiz-breakdown-bar"><div class="quiz-breakdown-bar__fill easy" id="easyBar" style="width:0%"></div></div>
-      </div>
-      <div class="quiz-breakdown-card">
-        <div class="quiz-breakdown-card__title medium">Medium</div>
-        <div class="quiz-breakdown-card__count" id="mediumCount">–</div>
-        <div class="quiz-breakdown-bar"><div class="quiz-breakdown-bar__fill medium" id="mediumBar" style="width:0%"></div></div>
-      </div>
-      <div class="quiz-breakdown-card">
-        <div class="quiz-breakdown-card__title hard">Hard</div>
-        <div class="quiz-breakdown-card__count" id="hardCount">–</div>
-        <div class="quiz-breakdown-bar"><div class="quiz-breakdown-bar__fill hard" id="hardBar" style="width:0%"></div></div>
-      </div>
-    </div>
+    <section class="actions">
+      <a href="create.html" class="btn btn-primary">Back to Workspace</a>
+      <a href="history.html" class="btn">Open History</a>
+      <a href="index.html" class="btn">Home</a>
+    </section>
 
-    <!-- Topic Breakdown -->
-    <div id="topicSection" style="display:none">
-      <h3 class="quiz-section-header">Topic Breakdown</h3>
-      <div class="quiz-topic-grid" id="topicGrid"></div>
-    </div>
-
-    <!-- Actions -->
-    <div class="quiz-actions" id="actionButtons">
-      <button class="quiz-action-btn primary" id="retryBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-        Retry
-      </button>
-      <a href="create.html" class="quiz-action-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New Quiz
-      </a>
-      <a href="index.html" class="quiz-action-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Home
-      </a>
-    </div>
-
-    <!-- Review Section -->
-    <h3 class="quiz-section-header">Review</h3>
-    <div id="reviewContainer"></div>
+    <section>
+      <h2 style="margin:0 0 10px; font-size:1.05rem;">Review</h2>
+      <div id="reviewList" class="review-list"></div>
+    </section>
   </main>
 
-  <!-- Confetti canvas -->
-  <div class="quiz-confetti" id="confettiContainer"></div>
-
+  <script src="lib/navUserBar.js"></script>
   <script>
   (function () {
-    const raw = sessionStorage.getItem('quizall.quizResults');
+    const raw = sessionStorage.getItem('quizall.lastResult');
     if (!raw) {
-      document.getElementById('resultsMain').innerHTML =
-        '<div class="quiz-empty">' +
-          '<div class="quiz-empty__icon">📋</div>' +
-          '<h2 class="quiz-empty__title">No Results Found</h2>' +
-          '<p class="quiz-empty__text">It looks like you haven\'t completed a quiz yet.</p>' +
-          '<a href="create.html" class="quiz-action-btn primary" style="margin-top:12px">Create a Quiz</a>' +
-        '</div>';
+      const shell = document.getElementById('resultsShell');
+      shell.innerHTML = '<section class="score-card"><h1 style="margin:0;">No result found</h1><p class="score-meta">Complete a quiz first.</p><a href="create.html" class="btn btn-primary">Go to Workspace</a></section>';
       return;
     }
 
     const data = JSON.parse(raw);
-    const questions = data.questions || [];
-    const answers   = data.answers   || {};
-    const totalQ    = questions.length;
-    let correctCount = 0;
+    const total = Number(data.total) || 0;
+    const correct = Number(data.correct) || 0;
+    const score = total > 0 ? Math.round(correct / total * 100) : (Number(data.score) || 0);
 
-    questions.forEach(function (q, i) {
-      const userAns = answers[i];
-      const isCorrect = checkAnswer(q, userAns);
-      if (isCorrect) correctCount++;
-    });
+    const scorePill = document.getElementById('scorePill');
+    scorePill.textContent = score + '%';
+    scorePill.classList.add(score >= 80 ? 'score-good' : (score >= 60 ? 'score-mid' : 'score-low'));
 
-    const pct = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
+    const minutes = Math.floor((Number(data.timeSeconds) || 0) / 60);
+    const seconds = (Number(data.timeSeconds) || 0) % 60;
+    const timeText = (minutes > 0 ? (minutes + 'm ') : '') + seconds + 's';
 
-    /* Score color class */
-    var scoreClass = pct >= 80 ? 'score-green' : pct >= 50 ? 'score-yellow' : 'score-red';
-    var scoreEl = document.getElementById('scoreNumber');
-    scoreEl.classList.add(scoreClass);
+    const subject = data.subject || 'Quiz Session';
+    document.getElementById('scoreTitle').textContent = subject;
+    document.getElementById('scoreMeta').textContent =
+      correct + ' / ' + total + ' correct' +
+      (data.projectName || data.projectId ? (' · Project: ' + (data.projectName || data.projectId)) : '') +
+      ' · Time: ' + timeText;
 
-    /* Message */
-    var msg = pct >= 80 ? 'Excellent!' : pct >= 50 ? 'Good effort!' : 'Keep studying!';
-    document.getElementById('scoreMessage').textContent = msg;
-    document.getElementById('scoreSubtitle').textContent = correctCount + ' of ' + totalQ + ' correct';
-
-    /* Time */
-    var elapsed = data.timeTaken || 0;
-    document.getElementById('timeTaken').textContent = formatTime(elapsed);
-
-    /* Animate score counter */
-    animateCounter(scoreEl, pct, scoreClass);
-
-    /* Confetti for high scores */
-    if (pct >= 80) {
-      setTimeout(function () { launchConfetti(); }, 400);
+    const reviewList = document.getElementById('reviewList');
+    const questions = Array.isArray(data.questions) ? data.questions : [];
+    if (!questions.length) {
+      reviewList.innerHTML = '<p style="color:var(--muted); margin:0;">No question-level review data available.</p>';
+      return;
     }
 
-    /* Difficulty breakdown */
-    buildDifficultyBreakdown(questions, answers);
+    reviewList.innerHTML = questions.map(function (item, index) {
+      const correctClass = item.isCorrect ? 'correct' : 'wrong';
+      const type = String(item.type || '').replace(/_/g, ' ');
+      const yourAnswer = formatAnswer(item.userAnswer, item);
+      const correctAnswer = formatCorrect(item);
 
-    /* Topic breakdown */
-    buildTopicBreakdown(questions, answers);
+      return '<article class="review-item ' + correctClass + '">' +
+        '<div class="review-head">' +
+          '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">' +
+            '<span class="review-badge">Q' + (index + 1) + '</span>' +
+            '<span class="review-badge">' + escapeHtml(type) + '</span>' +
+            '<span class="review-badge">' + escapeHtml(item.topic_node || 'General') + '</span>' +
+          '</div>' +
+          '<span class="review-badge" style="color:' + (item.isCorrect ? '#22c55e' : '#ef4444') + ';">' + (item.isCorrect ? 'Correct' : 'Needs Review') + '</span>' +
+        '</div>' +
+        '<p class="review-question">' + escapeHtml(item.question || '') + '</p>' +
+        '<div class="review-line"><strong>Your answer:</strong> ' + escapeHtml(yourAnswer) + '</div>' +
+        '<div class="review-line"><strong>Expected:</strong> ' + escapeHtml(correctAnswer) + '</div>' +
+        (item.explanation ? '<div class="review-line"><strong>Explanation:</strong> ' + escapeHtml(item.explanation) + '</div>' : '') +
+        '<div class="review-source">Source: ' + escapeHtml(item.source_reference || 'Project materials') + '</div>' +
+      '</article>';
+    }).join('');
 
-    /* Review questions */
-    buildReview(questions, answers);
-
-    /* Retry button */
-    document.getElementById('retryBtn').addEventListener('click', function () {
-      if (data.quizConfig) {
-        sessionStorage.setItem('quizall.quizConfig', JSON.stringify(data.quizConfig));
+    function formatAnswer(answer, item) {
+      if (answer == null || answer === '') return 'Not answered';
+      if (item.type === 'multiple_choice') {
+        const idx = Number(answer);
+        if (Array.isArray(item.options) && idx >= 0 && idx < item.options.length) {
+          return String.fromCharCode(65 + idx) + '. ' + item.options[idx];
+        }
       }
-      window.location.href = 'quiz.html';
-    });
+      return String(answer);
+    }
 
-    /* ────────────────────── helpers ────────────────────── */
-
-    function checkAnswer(q, userAns) {
-      if (userAns === undefined || userAns === null || userAns === '') return false;
-      var correct = (q.correctAnswer !== undefined) ? q.correctAnswer : q.answer;
-      if (correct === undefined) return false;
-      if (typeof correct === 'string' && typeof userAns === 'string') {
-        return correct.trim().toLowerCase() === userAns.trim().toLowerCase();
+    function formatCorrect(item) {
+      if (item.type === 'multiple_choice') {
+        const idx = Number(item.correct_answer);
+        if (Array.isArray(item.options) && idx >= 0 && idx < item.options.length) {
+          return String.fromCharCode(65 + idx) + '. ' + item.options[idx];
+        }
       }
-      return String(correct) === String(userAns);
+      return String(item.correct_answer == null ? '' : item.correct_answer);
     }
 
-    function formatTime(ms) {
-      var s = Math.floor(ms / 1000);
-      var m = Math.floor(s / 60);
-      s = s % 60;
-      if (m > 0) return m + 'm ' + s + 's';
-      return s + 's';
-    }
-
-    function animateCounter(el, target, cls) {
-      var current = 0;
-      var duration = 1200;
-      var step = 16;
-      var increment = target / (duration / step);
-      el.textContent = '0%';
-      var interval = setInterval(function () {
-        current += increment;
-        if (current >= target) {
-          current = target;
-          clearInterval(interval);
-        }
-        el.textContent = Math.round(current) + '%';
-      }, step);
-    }
-
-    function buildDifficultyBreakdown(qs, ans) {
-      var buckets = { easy: { total: 0, correct: 0 }, medium: { total: 0, correct: 0 }, hard: { total: 0, correct: 0 } };
-      qs.forEach(function (q, i) {
-        var d = (q.difficulty || 'medium').toLowerCase();
-        if (!buckets[d]) d = 'medium';
-        buckets[d].total++;
-        if (checkAnswer(q, ans[i])) buckets[d].correct++;
-      });
-
-      ['easy', 'medium', 'hard'].forEach(function (key) {
-        var b = buckets[key];
-        var pctVal = b.total > 0 ? Math.round((b.correct / b.total) * 100) : 0;
-        var countEl = document.getElementById(key + 'Count');
-        var barEl   = document.getElementById(key + 'Bar');
-        if (countEl) countEl.textContent = b.correct + ' / ' + b.total;
-        if (barEl) {
-          setTimeout(function () { barEl.style.width = pctVal + '%'; }, 300);
-        }
-      });
-    }
-
-    function buildTopicBreakdown(qs, ans) {
-      var topics = {};
-      qs.forEach(function (q, i) {
-        var t = q.topic || q.subject || 'General';
-        if (!topics[t]) topics[t] = { total: 0, correct: 0 };
-        topics[t].total++;
-        if (checkAnswer(q, ans[i])) topics[t].correct++;
-      });
-
-      var keys = Object.keys(topics);
-      if (keys.length <= 1) return;
-
-      document.getElementById('topicSection').style.display = '';
-      var grid = document.getElementById('topicGrid');
-      grid.innerHTML = '';
-      keys.forEach(function (name) {
-        var t = topics[name];
-        var pctVal = t.total > 0 ? Math.round((t.correct / t.total) * 100) : 0;
-        var card = document.createElement('div');
-        card.className = 'quiz-topic-card';
-        card.innerHTML =
-          '<div class="quiz-topic-card__name">' + escHtml(name) + '</div>' +
-          '<div class="quiz-topic-card__stat">' + t.correct + ' / ' + t.total + ' (' + pctVal + '%)</div>' +
-          '<div class="quiz-topic-card__bar"><div class="quiz-topic-card__bar-fill" style="width:' + pctVal + '%"></div></div>';
-        grid.appendChild(card);
-      });
-    }
-
-    function buildReview(qs, ans) {
-      var container = document.getElementById('reviewContainer');
-      container.innerHTML = '';
-      qs.forEach(function (q, i) {
-        var userAns  = ans[i];
-        var isCorrect = checkAnswer(q, userAns);
-        var correctAns = (q.correctAnswer !== undefined) ? q.correctAnswer : q.answer;
-        var card = document.createElement('div');
-        card.className = 'quiz-question-card ' + (isCorrect ? 'review-correct' : 'review-wrong');
-        card.style.animationDelay = (i * 0.06) + 's';
-
-        var diffClass = (q.difficulty || 'medium').toLowerCase();
-        var header =
-          '<div class="quiz-question-header">' +
-            '<span class="quiz-question-number">Q' + (i + 1) + '</span>' +
-            '<span class="quiz-difficulty-badge ' + diffClass + '">' + capitalize(diffClass) + '</span>' +
-            (q.type ? '<span class="quiz-type-badge">' + escHtml(q.type) + '</span>' : '') +
-            (q.topic ? '<span class="quiz-topic-tag">' + escHtml(q.topic) + '</span>' : '') +
-          '</div>';
-
-        var questionText = '<p class="quiz-question-text">' + escHtml(q.question || q.text || '') + '</p>';
-
-        var answersHtml = '';
-        var type = (q.type || 'mcq').toLowerCase();
-
-        if (type === 'mcq' || type === 'multiple_choice' || type === 'multiple choice') {
-          answersHtml = buildMCQReview(q, userAns, correctAns, isCorrect);
-        } else if (type === 'tf' || type === 'true_false' || type === 'true/false') {
-          answersHtml = buildTFReview(userAns, correctAns, isCorrect);
-        } else if (type === 'fib' || type === 'fill_in_blank' || type === 'fill in blank') {
-          answersHtml = buildFIBReview(userAns, correctAns, isCorrect);
-        } else {
-          answersHtml = buildMCQReview(q, userAns, correctAns, isCorrect);
-        }
-
-        var explanation = '';
-        if (q.explanation) {
-          explanation =
-            '<div class="quiz-explanation">' +
-              '<span class="quiz-explanation__label">Explanation</span>' +
-              escHtml(q.explanation) +
-            '</div>';
-        }
-
-        if (!isCorrect) {
-          var correctDisplay = '';
-          if (Array.isArray(q.options) && typeof correctAns === 'number') {
-            correctDisplay = q.options[correctAns] || String(correctAns);
-          } else {
-            correctDisplay = String(correctAns);
-          }
-          explanation = '<div class="quiz-correct-answer">Correct answer: ' + escHtml(correctDisplay) + '</div>' + explanation;
-        }
-
-        card.innerHTML = header + questionText + answersHtml + explanation;
-        container.appendChild(card);
-      });
-    }
-
-    function buildMCQReview(q, userAns, correctAns, isCorrect) {
-      var opts = q.options || [];
-      var html = '<div class="quiz-options">';
-      opts.forEach(function (opt, idx) {
-        var state = '';
-        var label = String.fromCharCode(65 + idx);
-        if (idx === Number(correctAns)) state = 'correct';
-        if (idx === Number(userAns) && !isCorrect) state = 'wrong';
-        if (idx === Number(userAns) && isCorrect) state = 'correct';
-        html += '<div class="quiz-option ' + state + '">' +
-          '<span class="quiz-option__marker">' + label + '</span>' +
-          '<span>' + escHtml(opt) + '</span>' +
-        '</div>';
-      });
-      html += '</div>';
-      return html;
-    }
-
-    function buildTFReview(userAns, correctAns, isCorrect) {
-      var html = '<div class="quiz-tf-group">';
-      ['True', 'False'].forEach(function (val) {
-        var normalUser = String(userAns).toLowerCase();
-        var normalCorrect = String(correctAns).toLowerCase();
-        var state = '';
-        if (val.toLowerCase() === normalCorrect) state = 'correct';
-        if (val.toLowerCase() === normalUser && !isCorrect) state = 'wrong';
-        html += '<div class="quiz-tf-btn ' + state + '">' + val + '</div>';
-      });
-      html += '</div>';
-      return html;
-    }
-
-    function buildFIBReview(userAns, correctAns, isCorrect) {
-      return '<div class="quiz-fib-input ' + (isCorrect ? 'correct' : 'wrong') + '" style="pointer-events:none;padding:14px 18px">' +
-        'Your answer: ' + escHtml(String(userAns || '(no answer)')) +
-      '</div>';
-    }
-
-    function capitalize(s) {
-      return s.charAt(0).toUpperCase() + s.slice(1);
-    }
-
-    function escHtml(s) {
-      var d = document.createElement('div');
-      d.textContent = s;
-      return d.innerHTML;
-    }
-
-    function launchConfetti() {
-      var container = document.getElementById('confettiContainer');
-      var colors = ['#7C3AED', '#06B6D4', '#22D3EE', '#4ADE80', '#F59E0B', '#F87171', '#fbbf24', '#8b5cf6'];
-      for (var i = 0; i < 60; i++) {
-        var piece = document.createElement('div');
-        piece.className = 'quiz-confetti__piece';
-        piece.style.left = Math.random() * 100 + '%';
-        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-        piece.style.animationDelay = (Math.random() * 1.5) + 's';
-        piece.style.animationDuration = (2 + Math.random() * 2) + 's';
-        piece.style.width  = (6 + Math.random() * 8) + 'px';
-        piece.style.height = (6 + Math.random() * 8) + 'px';
-        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-        piece.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
-        container.appendChild(piece);
-      }
-      setTimeout(function () { container.innerHTML = ''; }, 4500);
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
   })();
   </script>

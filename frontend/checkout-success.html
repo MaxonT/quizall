@@ -69,15 +69,40 @@
     }
     
     .status-spinner {
+      position: relative;
       width: 24px;
       height: 24px;
-      border: 3px solid var(--border-color);
-      border-top-color: var(--accent);
+      border: 2px solid var(--border-color);
+      border-right-color: transparent;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
+      animation: statusQSpin 0.9s linear infinite;
     }
     
-    @keyframes spin {
+    .status-spinner::before {
+      content: "Q";
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .status-spinner::after {
+      content: "";
+      position: absolute;
+      width: 5px;
+      height: 2px;
+      right: 1px;
+      bottom: 2px;
+      border-radius: 999px;
+      background: var(--accent);
+      transform: rotate(38deg);
+    }
+
+    @keyframes statusQSpin {
       to { transform: rotate(360deg); }
     }
     

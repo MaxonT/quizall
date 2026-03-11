@@ -369,9 +369,6 @@
       animation: logoMarquee 62s linear infinite;
       will-change: transform;
     }
-    .logo-marquee-wrap:hover .logo-marquee-track {
-      animation-play-state: paused;
-    }
     .uni-logo-item {
       display: inline-flex;
       align-items: center;
@@ -830,6 +827,81 @@
       font-size: 1rem;
     }
 
+    .heatmap-section {
+      margin-top: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      padding: 1rem 1.1rem 1.25rem;
+    }
+    .heatmap-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 0.95rem;
+    }
+    .heatmap-head h2 {
+      margin: 0;
+      font-size: 1.08rem;
+    }
+    .heatmap-head p {
+      margin: 0.3rem 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .streak-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(45,212,191,0.34);
+      border-radius: 999px;
+      background: rgba(45,212,191,0.12);
+      color: #99f6e4;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 6px 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(20, minmax(0, 1fr));
+      gap: 5px;
+    }
+    .heatmap-cell {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 5px;
+      border: 1px solid rgba(148,163,184,0.14);
+      background: rgba(148,163,184,0.08);
+    }
+    .heatmap-l1 { background: rgba(14,165,233,0.28); border-color: rgba(14,165,233,0.4); }
+    .heatmap-l2 { background: rgba(45,212,191,0.42); border-color: rgba(45,212,191,0.55); }
+    .heatmap-l3 { background: rgba(34,197,94,0.56); border-color: rgba(34,197,94,0.68); }
+    .heatmap-legend {
+      margin-top: 0.72rem;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+    .heatmap-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .heatmap-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      border: 1px solid rgba(148,163,184,0.3);
+      background: rgba(148,163,184,0.1);
+    }
+
     /* ---------- History Table ---------- */
     .history-section { margin-top: 2rem; }
     .history-section h2 {
@@ -933,37 +1005,8 @@
       margin: 0;
     }
 
-    /* ---------- Cursor FX ---------- */
-    .cursor-ring {
-      position: fixed;
-      left: 0;
-      top: 0;
-      pointer-events: none;
-      transform: translate3d(-9999px, -9999px, 0) translate(-50%, -50%) scale(1);
-      opacity: 0;
-    }
-    .cursor-ring {
-      width: 48px;
-      height: 48px;
-      border-radius: 999px;
-      border: 1.4px solid rgba(139,92,246,0.7);
-      background: rgba(139,92,246,0.04);
-      z-index: 1101;
-      transition: opacity 0.12s ease, transform 0.1s ease, border-color 0.2s ease;
-      will-change: transform, opacity;
-    }
-    body.cursor-active .cursor-ring {
-      opacity: 1;
-    }
-    body.cursor-pressing .cursor-ring {
-      transform: translate3d(var(--cursor-x, -9999px), var(--cursor-y, -9999px), 0) translate(-50%, -50%) scale(0.86);
-    }
-    body.cursor-enabled {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Ccircle cx='5' cy='5' r='2.4' fill='%2322d3ee'/%3E%3C/svg%3E") 5 5, auto;
-    }
-    body.cursor-enabled * {
-      cursor: inherit !important;
-    }
+    /* ---------- Cursor FX ----------
+       Cursor visuals are now global in style.css + lib/navUserBar.js */
 
     /* ---------- Theme Overrides ---------- */
     html[data-theme="light"] .output-shell {
@@ -1074,11 +1117,6 @@
       border-color: rgba(109,40,217,0.38);
       box-shadow: 0 8px 18px rgba(109,40,217,0.14);
     }
-    html[data-theme="light"] .cursor-ring {
-      border-color: rgba(14,165,183,0.62);
-      background: rgba(14,165,183,0.05);
-    }
-
     /* ---------- Responsive ---------- */
     @media (max-width: 640px) {
       .hero { padding: 3rem 1rem 2rem; }
@@ -1086,6 +1124,7 @@
       .btn-hero { justify-content: center; }
       .welcome-banner { padding: 1.5rem; }
       .welcome-name { font-size: 1.35rem; }
+      .heatmap-grid { grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 4px; }
       .auth-section { padding: 0 1rem 3rem; }
       .output-shell { padding: 1.35rem 1.1rem; }
       .output-grid { grid-template-columns: 1fr; }
@@ -1111,22 +1150,6 @@
         animation: none !important;
         transition: none !important;
       }
-      .cursor-ring {
-        display: none !important;
-      }
-      body.cursor-enabled,
-      body.cursor-enabled * {
-        cursor: auto !important;
-      }
-    }
-    @media (hover: none), (pointer: coarse) {
-      .cursor-ring {
-        display: none !important;
-      }
-      body.cursor-enabled,
-      body.cursor-enabled * {
-        cursor: auto !important;
-      }
     }
   </style>
 </head>
@@ -1136,7 +1159,7 @@
     <nav class="controls">
       <div class="navlinks">
         <a href="index.html" class="active" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="create.html" data-i18n="nav.create">Create Quiz</a>
+        <a href="create.html" data-i18n="nav.create">Exam Prep Workspace</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
       </div>
@@ -1163,46 +1186,6 @@
         <div class="hero-actions">
           <a href="#authSection" class="btn-hero btn-hero-primary">Get Started Free</a>
           <a href="#howItWorks" class="btn-hero btn-hero-secondary">Learn More ↓</a>
-        </div>
-      </section>
-
-      <!-- Why Output Matters -->
-      <section class="section output-matters" id="whyOutputMatters">
-        <div class="output-shell">
-          <div class="output-header">
-            <span class="output-kicker">Brand Philosophy</span>
-            <h2 class="output-headline">Output &gt; Input. Always</h2>
-          </div>
-          <div class="output-grid">
-            <article class="output-card output-quote">
-              <span class="output-quote-icon" aria-hidden="true">❝</span>
-              <p class="output-main-copy">
-                Psychological research shows: <span class="output-emphasis">Output &gt; Input. Always.</span>
-                <em>Passively consuming information</em> (lectures, books, videos) does not update your mental weights.
-                Real learning requires <span class="output-focus">loss calculation</span> — solving problems, teaching others,
-                writing summaries, and being tested. Every time you feel <em>"I think I get it"</em>, immediately test yourself
-                through output — you'll discover exactly where you don't.<sup>[1][2]</sup>
-              </p>
-              <div class="output-pill-row" aria-label="Active output examples">
-                <span class="output-pill">Solve Problems</span>
-                <span class="output-pill">Teach Others</span>
-                <span class="output-pill">Write Summaries</span>
-                <span class="output-pill">Get Tested</span>
-              </div>
-              <p class="output-quote-attribution">---- Roediger &amp; Karpicke, retrieval-practice researchers</p>
-            </article>
-            <article class="output-card output-bridge">
-              <h3>Product Thesis</h3>
-              <p>
-                This is exactly why QuizAll exists — <strong>turning passive input into active output</strong>,
-                helping you pinpoint what you truly don't understand.
-              </p>
-              <div class="output-citations" aria-label="Research citations">
-                <p><span class="output-citation-index">[1]</span>Roediger, H. L., &amp; Karpicke, J. D. (2006). <em>Psychological Science, 17</em>(3), 249–255.</p>
-                <p><span class="output-citation-index">[2]</span>Karpicke, J. D., &amp; Blunt, J. R. (2011). <em>Science, 331</em>(6018), 772–775.</p>
-              </div>
-            </article>
-          </div>
         </div>
       </section>
 
@@ -1341,6 +1324,46 @@
           </div>
         </div>
       </section>
+
+      <!-- Why Output Matters -->
+      <section class="section output-matters" id="whyOutputMatters">
+        <div class="output-shell">
+          <div class="output-header">
+            <span class="output-kicker">Brand Philosophy</span>
+            <h2 class="output-headline">Output &gt; Input. Always</h2>
+          </div>
+          <div class="output-grid">
+            <article class="output-card output-quote">
+              <span class="output-quote-icon" aria-hidden="true">❝</span>
+              <p class="output-main-copy">
+                Psychological research shows: <span class="output-emphasis">Output &gt; Input. Always.</span>
+                <em>Passively consuming information</em> (lectures, books, videos) does not update your mental weights.
+                Real learning requires <span class="output-focus">loss calculation</span> — solving problems, teaching others,
+                writing summaries, and being tested. Every time you feel <em>"I think I get it"</em>, immediately test yourself
+                through output — you'll discover exactly where you don't.<sup>[1][2]</sup>
+              </p>
+              <div class="output-pill-row" aria-label="Active output examples">
+                <span class="output-pill">Solve Problems</span>
+                <span class="output-pill">Teach Others</span>
+                <span class="output-pill">Write Summaries</span>
+                <span class="output-pill">Get Tested</span>
+              </div>
+              <p class="output-quote-attribution">---- Roediger &amp; Karpicke, retrieval-practice researchers</p>
+            </article>
+            <article class="output-card output-bridge">
+              <h3>Product Thesis</h3>
+              <p>
+                This is exactly why QuizAll exists — <strong>turning passive input into active output</strong>,
+                helping you pinpoint what you truly don't understand.
+              </p>
+              <div class="output-citations" aria-label="Research citations">
+                <p><span class="output-citation-index">[1]</span>Roediger, H. L., &amp; Karpicke, J. D. (2006). <em>Psychological Science, 17</em>(3), 249–255.</p>
+                <p><span class="output-citation-index">[2]</span>Karpicke, J. D., &amp; Blunt, J. R. (2011). <em>Science, 331</em>(6018), 772–775.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- ╔══════════════════════════════════════════╗
@@ -1353,9 +1376,9 @@
           <h2>Start output-first learning right now.</h2>
           <p>Your core actions are pinned here so you can create a quiz, review recent work, and jump into analytics without any scrolling.</p>
           <div class="member-hero-actions">
-            <a href="create.html" class="member-action primary">Start New Quiz</a>
+            <a href="create.html" class="member-action primary">Open Exam Workspace</a>
             <a href="history.html" class="member-action">Review History</a>
-            <a href="analytics-dashboard.html" class="member-action">Open Dashboard</a>
+            <a href="analytics-dashboard.html" class="member-action" data-admin-only data-i18n="nav.analyticsAdmin">Admin Analytics</a>
           </div>
         </section>
 
@@ -1381,9 +1404,26 @@
           </div>
           <a href="create.html" class="cta-card">
             <span class="cta-card-icon">✨</span>
-            <span class="cta-card-text">Create New Quiz</span>
+            <span class="cta-card-text">Open Exam Workspace</span>
           </a>
         </div>
+
+        <section class="heatmap-section" id="heatmapSection">
+          <div class="heatmap-head">
+            <div>
+              <h2>Study Streak Heatmap</h2>
+              <p>Across all projects. Light = materials viewed, Medium = quiz finished, Dark = accuracy above 80%.</p>
+            </div>
+            <span class="streak-chip" id="streakChip">Streak 0d</span>
+          </div>
+          <div id="heatmapGrid" class="heatmap-grid"></div>
+          <div class="heatmap-legend">
+            <span><i class="heatmap-dot"></i> No activity</span>
+            <span><i class="heatmap-dot heatmap-l1"></i> Materials viewed</span>
+            <span><i class="heatmap-dot heatmap-l2"></i> Quiz completed</span>
+            <span><i class="heatmap-dot heatmap-l3"></i> Quiz &gt; 80%</span>
+          </div>
+        </section>
 
         <!-- Recent History -->
         <div class="history-section" id="historySection">
@@ -1414,7 +1454,6 @@
 
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container"></div>
-  <div id="cursorRing" class="cursor-ring" aria-hidden="true"></div>
 
   <script src="lib/navUserBar.js"></script>
   <script src="core.js"></script>
@@ -1524,69 +1563,6 @@
       }
       $logoTrack.innerHTML = "";
       $logoTrack.appendChild(fragment);
-    }
-
-    function initCustomCursor() {
-      var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
-      var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-      if (!finePointer.matches || reducedMotion.matches) return;
-
-      var ring = document.getElementById("cursorRing");
-      if (!ring) return;
-
-      document.body.classList.add("cursor-enabled");
-      var rafId = 0;
-      var x = -9999;
-      var y = -9999;
-
-      function renderRing() {
-        rafId = 0;
-        document.body.style.setProperty("--cursor-x", x + "px");
-        document.body.style.setProperty("--cursor-y", y + "px");
-        if (!document.body.classList.contains("cursor-pressing")) {
-          ring.style.transform = "translate3d(" + x + "px, " + y + "px, 0) translate(-50%, -50%)";
-        }
-      }
-      function scheduleRender() {
-        if (rafId) return;
-        rafId = window.requestAnimationFrame(renderRing);
-      }
-
-      window.addEventListener("pointermove", function (event) {
-        if (event.pointerType && event.pointerType !== "mouse") return;
-        x = event.clientX;
-        y = event.clientY;
-        document.body.classList.add("cursor-active");
-        scheduleRender();
-      }, { passive: true });
-      window.addEventListener("pointerdown", function (event) {
-        if (event.pointerType && event.pointerType !== "mouse") return;
-        x = event.clientX;
-        y = event.clientY;
-        document.body.classList.add("cursor-pressing");
-        scheduleRender();
-      });
-      window.addEventListener("pointerup", function () {
-        document.body.classList.remove("cursor-pressing");
-        scheduleRender();
-      });
-      window.addEventListener("blur", function () {
-        document.body.classList.remove("cursor-pressing");
-        document.body.classList.remove("cursor-active");
-        x = -9999;
-        y = -9999;
-        scheduleRender();
-      });
-      window.addEventListener("focus", function () {
-        document.body.classList.remove("cursor-pressing");
-      });
-      document.addEventListener("mouseleave", function () {
-        document.body.classList.remove("cursor-active");
-        document.body.classList.remove("cursor-pressing");
-        x = -9999;
-        y = -9999;
-        scheduleRender();
-      });
     }
 
     // ─── View Toggle ───────────────────────────
@@ -1776,90 +1752,119 @@
         var p = decodeJwtPayload(t);
         return p && typeof p.email === "string" ? p.email : "";
       }
+      var emailFromToken = "";
       try {
-        var emailFromToken = getEmailFromToken(token);
+        emailFromToken = getEmailFromToken(token);
         document.getElementById("welcomeName").textContent = "Welcome back" + (emailFromToken ? ", " + emailFromToken : "") + "!";
         document.getElementById("welcomeEmail").textContent = emailFromToken;
       } catch (_) {}
 
-      // Fetch history
-      try {
-        var res = await fetch(API_BASE + "/api/quiz/history?limit=5", {
-          headers: { "Authorization": "Bearer " + token }
-        });
+      async function fetchAuthed(path) {
+        var res = await fetch(API_BASE + path, { headers: { "Authorization": "Bearer " + token } });
         if (res.status === 401) {
           toast("Session expired. Please sign in again.", "error");
           localStorage.removeItem(TOKEN_KEY);
           window.dispatchEvent(new CustomEvent("authStateChanged"));
           showView();
-          return;
+          throw new Error("Unauthorized");
         }
-        var data = await res.json();
-        var raw = Array.isArray(data) ? data : (data.results || data.quizzes || data.history || []);
-        var quizzes = raw.map(function (r) {
-          var pct = (r.total && r.total > 0) ? Math.round((r.score / r.total) * 100) : null;
-          return {
-            subject: r.subject,
-            score: pct,
-            percentage: pct,
-            total_questions: r.question_count || r.total_questions || r.totalQuestions || r.total || 0,
-            created_at: r.created_at || r.createdAt
-          };
+        var json = await res.json().catch(function () { return {}; });
+        if (!res.ok || json.ok === false) {
+          throw new Error(json.error || ("Request failed: " + res.status));
+        }
+        return json;
+      }
+
+      try {
+        var bundle = await Promise.all([
+          fetchAuthed("/api/quiz/history?limit=8&page=1"),
+          fetchAuthed("/api/quiz/study-streak?days=140"),
+          fetchAuthed("/api/quiz/projects?limit=100")
+        ]);
+
+        var historyData = bundle[0];
+        var streakData = bundle[1];
+        var projectsData = bundle[2];
+
+        var rows = Array.isArray(historyData.results) ? historyData.results : [];
+        var totalQuizzes = historyData.pagination && Number.isFinite(historyData.pagination.total) ? historyData.pagination.total : rows.length;
+
+        var totalQuestions = 0;
+        var scored = 0;
+        var scoreSum = 0;
+        rows.forEach(function (r) {
+          var qCount = Number(r.total || r.questionCount || 0);
+          if (Number.isFinite(qCount)) totalQuestions += qCount;
+          if (Number.isFinite(Number(r.accuracy))) {
+            scoreSum += Number(r.accuracy);
+            scored += 1;
+          }
         });
 
-        if (!quizzes.length) {
+        document.getElementById("statQuizzes").textContent = String(totalQuizzes);
+        document.getElementById("statAvg").textContent = scored ? Math.round(scoreSum / scored) + "%" : "–";
+        document.getElementById("statQuestions").textContent = String(totalQuestions);
+
+        var projectCount = Array.isArray(projectsData.projects) ? projectsData.projects.length : 0;
+        document.getElementById("welcomeEmail").textContent =
+          (projectCount ? ("Projects: " + projectCount + " · ") : "") + emailFromToken;
+
+        renderHeatmap(streakData.heatmap || [], streakData.currentStreak || 0, streakData.maxStreak || 0);
+
+        if (!rows.length) {
           document.getElementById("historySection").classList.add("idx-hidden");
           document.getElementById("emptyState").classList.remove("idx-hidden");
-          document.getElementById("statQuizzes").textContent = "0";
-          document.getElementById("statAvg").textContent = "–";
-          document.getElementById("statQuestions").textContent = "0";
+          document.getElementById("historyContent").innerHTML = "";
           return;
         }
 
         document.getElementById("historySection").classList.remove("idx-hidden");
         document.getElementById("emptyState").classList.add("idx-hidden");
 
-        // Stats
-        var totalQ      = quizzes.length;
-        var totalQs     = 0;
-        var totalScore  = 0;
-        var scored      = 0;
-        quizzes.forEach(function (q) {
-          var qs = q.total_questions || q.totalQuestions || 0;
-          totalQs += qs;
-          var sc = q.score != null ? q.score : (q.percentage != null ? q.percentage : null);
-          if (sc != null) { totalScore += sc; scored++; }
-        });
-        document.getElementById("statQuizzes").textContent = totalQ;
-        document.getElementById("statAvg").textContent = scored ? Math.round(totalScore / scored) + "%" : "–";
-        document.getElementById("statQuestions").textContent = totalQs;
-
-        // Table
-        var html = '<table class="history-table"><thead><tr><th>Subject</th><th>Score</th><th>Questions</th><th>Date</th></tr></thead><tbody>';
-        quizzes.forEach(function (q) {
-          var subj  = q.subject || q.title || q.topic || "Quiz";
-          var sc    = q.score != null ? q.score : (q.percentage != null ? q.percentage : null);
-          var qs    = q.total_questions || q.totalQuestions || "–";
-          var date  = q.created_at || q.createdAt || q.date || "";
-          var cls   = "mid";
-          if (sc != null) {
-            if (sc >= 80) cls = "good";
-            else if (sc < 50) cls = "low";
-          }
-          var scText = sc != null ? sc + "%" : "–";
+        var html = '<table class="history-table"><thead><tr><th>Project</th><th>Subject</th><th>Score</th><th>Questions</th><th>Date</th></tr></thead><tbody>';
+        rows.forEach(function (q) {
+          var subj = q.subject || "Quiz";
+          var projectName = q.projectName || q.projectId || "Unscoped";
+          var sc = Number.isFinite(Number(q.accuracy)) ? Number(q.accuracy) : 0;
+          var qs = q.total || q.questionCount || "–";
+          var date = q.createdAt || "";
+          var cls = sc >= 80 ? "good" : (sc < 50 ? "low" : "mid");
           var dateText = date ? new Date(date).toLocaleDateString() : "–";
-          html += '<tr><td>' + escHtml(subj) + '</td><td><span class="score-badge ' + cls + '">' + scText + '</span></td><td>' + qs + '</td><td>' + dateText + '</td></tr>';
+          html += '<tr><td>' + escHtml(projectName) + '</td><td>' + escHtml(subj) + '</td><td><span class="score-badge ' + cls + '">' + sc + '%</span></td><td>' + qs + '</td><td>' + dateText + '</td></tr>';
         });
         html += '</tbody></table>';
         document.getElementById("historyContent").innerHTML = html;
       } catch (err) {
+        if (err && err.message === "Unauthorized") return;
         console.warn("[index] Failed to load dashboard:", err);
         document.getElementById("historySection").classList.add("idx-hidden");
         document.getElementById("emptyState").classList.remove("idx-hidden");
         document.getElementById("statQuizzes").textContent = "–";
         document.getElementById("statAvg").textContent = "–";
         document.getElementById("statQuestions").textContent = "–";
+        renderHeatmap([], 0, 0);
       }
+    }
+
+    function renderHeatmap(entries, currentStreak, maxStreak) {
+      var grid = document.getElementById("heatmapGrid");
+      var chip = document.getElementById("streakChip");
+      if (!grid || !chip) return;
+
+      chip.textContent = "Streak " + currentStreak + "d · Max " + maxStreak + "d";
+
+      var list = Array.isArray(entries) ? entries : [];
+      if (!list.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);font-size:0.85rem;">No activity yet.</div>';
+        return;
+      }
+
+      grid.innerHTML = list.map(function (entry) {
+        var intensity = Number(entry.intensity) || 0;
+        var cls = intensity === 3 ? "heatmap-l3" : (intensity === 2 ? "heatmap-l2" : (intensity === 1 ? "heatmap-l1" : ""));
+        var title = (entry.date || "") + " · level " + intensity;
+        return '<span class="heatmap-cell ' + cls + '" title="' + escHtml(title) + '"></span>';
+      }).join("");
     }
 
     function escHtml(s) {
@@ -1876,7 +1881,6 @@
 
     // ─── Init ──────────────────────────────────
     renderTrustMarquee();
-    initCustomCursor();
     showView();
   })();
   </script>
