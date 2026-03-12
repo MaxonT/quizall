@@ -45,8 +45,11 @@ services:
         value: no-cache
     routes:
       - type: rewrite
-        source: /*
-        destination: /404.html
+        source: /science
+        destination: /science/index.html
+      - type: rewrite
+        source: /science/
+        destination: /science/index.html
 
 databases:
   - name: quizall-db
