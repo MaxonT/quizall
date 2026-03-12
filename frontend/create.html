@@ -15,11 +15,11 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" />
   <style>
     .workspace {
-      max-width: 1120px;
-      margin: 28px auto 64px;
-      padding: 0 16px;
+      width: min(1180px, calc(100% - clamp(96px, 14vw, 260px)));
+      margin: 34px auto 84px;
+      padding: 0;
       display: grid;
-      gap: 16px;
+      gap: 22px;
     }
 
     .hero {
@@ -1236,13 +1236,6 @@
       font-size: 0.87rem;
     }
 
-    .workspace {
-      max-width: 1180px;
-      margin: 34px auto 84px;
-      padding: 0 20px;
-      gap: 22px;
-    }
-
     .workflow-strip {
       border: 1px solid rgba(148,163,184,0.24);
       border-radius: 14px;
@@ -1794,7 +1787,7 @@
       .workspace-bottom-grid { grid-template-columns: 1fr; }
       .science-journey-notes { grid-template-columns: 1fr; }
       .workspace {
-        padding: 0 14px;
+        width: calc(100% - 28px);
         gap: 18px;
       }
     }
