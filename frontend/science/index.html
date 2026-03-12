@@ -43,6 +43,21 @@
       --science-concept-bg: rgba(34, 211, 238, 0.16);
       --science-concept-border: rgba(34, 211, 238, 0.38);
       --science-concept-text: #c9f7ff;
+      --semantic-mechanism-bg: rgba(167, 139, 250, 0.16);
+      --semantic-mechanism-border: rgba(167, 139, 250, 0.4);
+      --semantic-mechanism-text: #c4b5fd;
+      --semantic-action-bg: rgba(34, 211, 238, 0.16);
+      --semantic-action-border: rgba(34, 211, 238, 0.4);
+      --semantic-action-text: #67e8f9;
+      --semantic-evidence-bg: rgba(251, 191, 36, 0.16);
+      --semantic-evidence-border: rgba(251, 191, 36, 0.4);
+      --semantic-evidence-text: #fcd34d;
+      --semantic-outcome-bg: rgba(52, 211, 153, 0.16);
+      --semantic-outcome-border: rgba(52, 211, 153, 0.4);
+      --semantic-outcome-text: #6ee7b7;
+      --semantic-reference-bg: rgba(251, 113, 133, 0.16);
+      --semantic-reference-border: rgba(251, 113, 133, 0.38);
+      --semantic-reference-text: #fda4af;
       --chart-axis: rgba(148, 163, 184, 0.52);
       --chart-grid: rgba(148, 163, 184, 0.22);
       --chart-muted: #93a4bc;
@@ -76,6 +91,21 @@
       --science-concept-bg: rgba(79, 70, 229, 0.1);
       --science-concept-border: rgba(79, 70, 229, 0.22);
       --science-concept-text: #312e81;
+      --semantic-mechanism-bg: rgba(124, 58, 237, 0.14);
+      --semantic-mechanism-border: rgba(124, 58, 237, 0.3);
+      --semantic-mechanism-text: #5b21b6;
+      --semantic-action-bg: rgba(14, 165, 233, 0.14);
+      --semantic-action-border: rgba(14, 165, 233, 0.32);
+      --semantic-action-text: #075985;
+      --semantic-evidence-bg: rgba(245, 158, 11, 0.14);
+      --semantic-evidence-border: rgba(245, 158, 11, 0.32);
+      --semantic-evidence-text: #92400e;
+      --semantic-outcome-bg: rgba(16, 185, 129, 0.14);
+      --semantic-outcome-border: rgba(16, 185, 129, 0.3);
+      --semantic-outcome-text: #065f46;
+      --semantic-reference-bg: rgba(244, 63, 94, 0.13);
+      --semantic-reference-border: rgba(244, 63, 94, 0.28);
+      --semantic-reference-text: #9f1239;
       --chart-axis: rgba(148, 163, 184, 0.45);
       --chart-grid: rgba(148, 163, 184, 0.24);
       --chart-muted: #64748b;
@@ -444,6 +474,97 @@
       color: var(--science-journal-text);
     }
 
+    .semantic-legend {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .semantic-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid var(--semantic-chip-border, var(--science-line-strong));
+      background: var(--semantic-chip-bg, var(--science-btn-soft-bg));
+      color: var(--semantic-chip-color, var(--science-text));
+      padding: 4px 10px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .semantic-chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.92;
+      display: inline-block;
+    }
+
+    .semantic-chip-mechanism {
+      --semantic-chip-bg: var(--semantic-mechanism-bg);
+      --semantic-chip-border: var(--semantic-mechanism-border);
+      --semantic-chip-color: var(--semantic-mechanism-text);
+    }
+
+    .semantic-chip-action {
+      --semantic-chip-bg: var(--semantic-action-bg);
+      --semantic-chip-border: var(--semantic-action-border);
+      --semantic-chip-color: var(--semantic-action-text);
+    }
+
+    .semantic-chip-evidence {
+      --semantic-chip-bg: var(--semantic-evidence-bg);
+      --semantic-chip-border: var(--semantic-evidence-border);
+      --semantic-chip-color: var(--semantic-evidence-text);
+    }
+
+    .semantic-chip-outcome {
+      --semantic-chip-bg: var(--semantic-outcome-bg);
+      --semantic-chip-border: var(--semantic-outcome-border);
+      --semantic-chip-color: var(--semantic-outcome-text);
+    }
+
+    .semantic-chip-reference {
+      --semantic-chip-bg: var(--semantic-reference-bg);
+      --semantic-chip-border: var(--semantic-reference-border);
+      --semantic-chip-color: var(--semantic-reference-text);
+    }
+
+    .semantic-note {
+      display: inline-flex;
+      align-items: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .semantic-note-text {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .semantic-item {
+      margin-left: 0;
+    }
+
+    ul .semantic-item {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .semantic-tone-mechanism { color: var(--semantic-mechanism-text); }
+    .semantic-tone-action { color: var(--semantic-action-text); }
+    .semantic-tone-evidence { color: var(--semantic-evidence-text); }
+    .semantic-tone-outcome { color: var(--semantic-outcome-text); }
+    .semantic-tone-reference { color: var(--semantic-reference-text); }
+
     .pipeline {
       position: relative;
       z-index: 1;
@@ -659,6 +780,24 @@
       letter-spacing: 0.03em;
       color: var(--science-muted);
       white-space: normal;
+    }
+
+    .why-signal-text .semantic-note {
+      width: auto;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .why-signal-text .semantic-chip {
+      font-size: 0.66rem;
+      padding: 2px 8px;
+    }
+
+    .why-signal-text .semantic-note-text {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--science-muted);
+      letter-spacing: 0.03em;
     }
 
     .deep-dive {
@@ -1210,6 +1349,7 @@
       <p id="prefaceQuote">"学习不是信息的堆积，而是认知的重构。QuizAll 的核心逻辑并非凭空而来，而是植根于认知心理学数十年的实证研究。本文将揭示这 6 个关键步骤如何协同工作，将瞬时记忆转化为永久技能。"</p>
     </blockquote>
     <div class="journals" id="journalList"></div>
+    <div class="semantic-legend" id="semanticLegend" aria-label="Semantic categories"></div>
   </section>
 
   <main class="pipeline" id="pipeline"></main>
@@ -1340,6 +1480,54 @@
 
       var transitionMap = copy.transitions || {};
       var whyMap = copy.whyMap || {};
+      var semanticLegendEl = document.getElementById("semanticLegend");
+
+      function getSemanticLabels(locale) {
+        if (/^zh/i.test(locale)) {
+          return {
+            mechanism: "认知机制",
+            action: "学习动作",
+            evidence: "研究证据",
+            outcome: "学习结果",
+            reference: "参考文献"
+          };
+        }
+        return {
+          mechanism: "Cognitive Mechanism",
+          action: "Learning Action",
+          evidence: "Evidence Signal",
+          outcome: "Learning Outcome",
+          reference: "Reference"
+        };
+      }
+
+      var semanticLabels = getSemanticLabels(currentLocale);
+      var semanticCategories = [
+        { id: "mechanism", label: semanticLabels.mechanism },
+        { id: "action", label: semanticLabels.action },
+        { id: "evidence", label: semanticLabels.evidence },
+        { id: "outcome", label: semanticLabels.outcome },
+        { id: "reference", label: semanticLabels.reference }
+      ];
+
+      var semanticRuleMap = {
+        mechanism: [
+          /schema|cognitive|memory|encoding|retrieval|zpd|flow|forgetting|spacing|transfer|calibration|iteration|boundary|model|mechanism|gradient|workload|load/gi,
+          /认知|记忆|编码|提取|检索|图式|负荷|遗忘|间隔|迁移|边界|模型|机制/gi
+        ],
+        action: [
+          /upload|generate|practice|review|activate|track|test|explain|quiz|mindmap|apply|operational|workflow|session|output/gi,
+          /上传|生成|练习|复习|激活|追踪|测试|解释|测验|思维导图|工作流|输出/gi
+        ],
+        evidence: [
+          /study|studies|research|effect|finding|evidence|meta|experiment|replicated|paper|journal|result/gi,
+          /研究|证据|效应|发现|实验|论文|期刊|结果|元分析/gi
+        ],
+        outcome: [
+          /retention|durable|improve|improves|performance|mastery|accuracy|generalization|stability|long-term|better|gain/gi,
+          /保持|长期|提升|效果|表现|掌握|准确|泛化|稳定|增益/gi
+        ]
+      };
 
       var conceptRegexList = [
         /Desirable difficulties/gi,
@@ -1353,6 +1541,10 @@
         /Spaced repetition/gi,
         /Transfer-appropriate processing/gi
       ];
+
+      function stripHtmlTags(input) {
+        return String(input == null ? "" : input).replace(/<[^>]*>/g, " ");
+      }
 
       function formatTemplate(template, context) {
         return String(template || "").replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, function (_, key) {
@@ -1368,6 +1560,80 @@
           .replace(/"/g, "&quot;")
           .replace(/'/g, "&#39;");
       }
+
+      function semanticCategoryById(id) {
+        return semanticCategories.find(function (item) { return item.id === id; }) || semanticCategories[0];
+      }
+
+      function semanticChip(categoryId) {
+        var category = semanticCategoryById(categoryId);
+        return (
+          '<span class="semantic-chip semantic-chip-' + category.id + '">' +
+            '<span class="semantic-chip-dot" aria-hidden="true"></span>' +
+            safeText(category.label) +
+          '</span>'
+        );
+      }
+
+      function scoreSemantic(textValue, categoryId) {
+        var rules = semanticRuleMap[categoryId] || [];
+        var input = String(textValue || "");
+        var score = 0;
+        rules.forEach(function (rule) {
+          var matches = input.match(rule);
+          if (matches && matches.length) score += matches.length;
+        });
+        return score;
+      }
+
+      function detectSemanticCategory(textValue, fallbackId) {
+        if (fallbackId === "reference") return semanticCategoryById("reference");
+        var normalizedFallback = semanticCategoryById(fallbackId).id;
+        var content = stripHtmlTags(textValue);
+        var bestId = normalizedFallback;
+        var bestScore = 0;
+        ["mechanism", "action", "evidence", "outcome"].forEach(function (categoryId) {
+          var score = scoreSemantic(content, categoryId);
+          if (score > bestScore) {
+            bestScore = score;
+            bestId = categoryId;
+          }
+        });
+        return semanticCategoryById(bestScore > 0 ? bestId : normalizedFallback);
+      }
+
+      function annotateSemantic(textValue, fallbackId, options) {
+        var opts = options || {};
+        var category = detectSemanticCategory(textValue, fallbackId);
+        var renderedText = opts.allowConceptHighlight ? highlightConcepts(String(textValue || "")) : safeText(textValue);
+        return (
+          '<span class="semantic-note">' +
+            semanticChip(category.id) +
+            '<span class="semantic-note-text">' + renderedText + '</span>' +
+          '</span>'
+        );
+      }
+
+      function renderSemanticLegend() {
+        if (!semanticLegendEl) return;
+        semanticLegendEl.innerHTML = semanticCategories.map(function (category) {
+          return semanticChip(category.id);
+        }).join("");
+      }
+
+      function decorateHeroSemanticCopy() {
+        var heroSummaryEl = document.getElementById("heroSummary");
+        var prefaceQuoteEl = document.getElementById("prefaceQuote");
+        if (heroSummaryEl) {
+          heroSummaryEl.innerHTML = annotateSemantic(heroSummaryEl.textContent || "", "mechanism", { allowConceptHighlight: true });
+        }
+        if (prefaceQuoteEl) {
+          prefaceQuoteEl.innerHTML = annotateSemantic(prefaceQuoteEl.textContent || "", "outcome", { allowConceptHighlight: false });
+        }
+      }
+
+      renderSemanticLegend();
+      decorateHeroSemanticCopy();
 
       function highlightConcepts(textValue) {
         var output = String(textValue);
@@ -1628,7 +1894,7 @@
         var node = document.createElement("section");
         node.className = "step-transition";
         node.innerHTML =
-          '<p class="transition-text">' + highlightConcepts(transition.text) + '</p>' +
+          '<p class="transition-text">' + annotateSemantic(transition.text, "outcome", { allowConceptHighlight: true }) + '</p>' +
           '<figure class="transition-art">' +
             buildTransitionArt(step, idx) +
             '<figcaption>' + transition.caption + '</figcaption>' +
@@ -1992,8 +2258,8 @@
                 '<span class="paper-summary-ref">[' + (citationIndex + 1) + ']</span>' +
                 '<span class="paper-summary-icon" aria-hidden="true"></span>' +
               '</summary>' +
-              '<p>' + highlightConcepts(buildAbstract(step, citation, citationIndex)) + '</p>' +
-              '<p class="paper-citation">' + citation + '</p>' +
+              '<p>' + annotateSemantic(buildAbstract(step, citation, citationIndex), "evidence", { allowConceptHighlight: true }) + '</p>' +
+              '<p class="paper-citation">' + annotateSemantic(citation, "reference", { allowConceptHighlight: false }) + '</p>' +
             '</details>'
           );
         }).join("");
@@ -2009,22 +2275,22 @@
                 '</div>' +
                 '<a class="step-link" href="#' + step.id + '">' + (copy.stepLinkPrefix || "Link #") + step.number + '</a>' +
               '</div>' +
-              '<p class="step-desc">' + highlightConcepts(step.description) + '</p>' +
+              '<p class="step-desc">' + annotateSemantic(step.description, "mechanism", { allowConceptHighlight: true }) + '</p>' +
               '<div class="cols">' +
                 '<section class="subpanel findings-panel">' +
                   '<h3>' + (copy.keyFindingsTitle || "Key Findings") + '</h3>' +
                   '<ul>' +
                     step.keyFindings.map(function (finding) {
-                      return '<li>' + highlightConcepts(finding) + '</li>';
+                      return '<li class="semantic-item">' + annotateSemantic(finding, "evidence", { allowConceptHighlight: true }) + '</li>';
                     }).join("") +
                   '</ul>' +
                   '<aside class="why-box">' +
                     '<h4>' + (copy.whyTitle || "The Why") + '</h4>' +
-                    '<p class="why-main">' + whyLead + '</p>' +
-                    '<p class="why-support">' + highlightConcepts(whySupport) + '</p>' +
+                    '<p class="why-main">' + annotateSemantic(whyLead, "mechanism", { allowConceptHighlight: true }) + '</p>' +
+                    '<p class="why-support">' + annotateSemantic(whySupport, "action", { allowConceptHighlight: true }) + '</p>' +
                     '<div class="why-signal">' +
                       '<span class="why-signal-bars" aria-hidden="true"><i></i><i></i><i></i></span>' +
-                      '<span class="why-signal-text">' + highlightConcepts(whySignal) + '</span>' +
+                      '<span class="why-signal-text">' + annotateSemantic(whySignal, "outcome", { allowConceptHighlight: true }) + '</span>' +
                     '</div>' +
                   '</aside>' +
                 '</section>' +
@@ -2032,7 +2298,7 @@
                   '<h3>' + (copy.citationsSectionTitle || "Citations") + '</h3>' +
                   '<ol>' +
                     step.citations.map(function (citation) {
-                      return '<li>' + citation + '</li>';
+                      return '<li class="semantic-item">' + annotateSemantic(citation, "reference", { allowConceptHighlight: false }) + '</li>';
                     }).join("") +
                   '</ol>' +
                 '</section>' +
@@ -2070,7 +2336,8 @@
 
       scienceData.fullCitations.forEach(function (citation) {
         var li = document.createElement("li");
-        li.textContent = citation;
+        li.className = "semantic-item";
+        li.innerHTML = annotateSemantic(citation, "reference", { allowConceptHighlight: false });
         citationEl.appendChild(li);
       });
 
