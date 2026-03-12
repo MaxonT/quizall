@@ -1237,17 +1237,19 @@
     }
 
     .workspace {
-      max-width: 1320px;
-      gap: 18px;
+      max-width: 1180px;
+      margin: 34px auto 84px;
+      padding: 0 20px;
+      gap: 22px;
     }
 
     .workflow-strip {
       border: 1px solid rgba(148,163,184,0.24);
       border-radius: 14px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       background: rgba(11,18,38,0.74);
       display: flex;
-      gap: 8px;
+      gap: 10px;
       overflow-x: auto;
       scrollbar-width: thin;
     }
@@ -1295,6 +1297,7 @@
         linear-gradient(180deg, rgba(15,22,46,0.94), rgba(10,14,32,0.95));
       box-shadow: 0 16px 32px rgba(2,8,23,0.32);
       transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+      padding: 20px;
     }
 
     .card.card-elevated::before {
@@ -1317,8 +1320,8 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 14px;
+      margin-bottom: 14px;
       flex-wrap: wrap;
     }
 
@@ -1349,14 +1352,14 @@
     .upload-shell,
     .prep-shell {
       display: grid;
-      gap: 14px;
+      gap: 16px;
     }
 
     .asset-lists {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 4px;
+      gap: 14px;
+      margin-top: 8px;
     }
 
     .list-panel {
@@ -1374,9 +1377,9 @@
     .prep-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 12px;
+      gap: 16px;
       align-items: start;
-      margin-top: 4px;
+      margin-top: 8px;
     }
 
     .prep-toolbar {
@@ -1386,15 +1389,15 @@
     .workspace-bottom-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 16px;
+      gap: 20px;
       align-items: start;
     }
 
     .project-detail-tabs {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
-      margin-top: 2px;
+      margin-top: 6px;
     }
 
     .project-tab-btn {
@@ -1432,7 +1435,7 @@
 
     .science-journey {
       display: grid;
-      gap: 12px;
+      gap: 14px;
     }
 
     .science-journey-head {
@@ -1467,7 +1470,7 @@
 
     .science-journey-notes {
       display: grid;
-      gap: 8px;
+      gap: 10px;
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
@@ -1503,7 +1506,8 @@
 
     .status.workspace-status {
       border-radius: 14px;
-      padding: 12px 14px;
+      padding: 14px 16px;
+      margin-top: 2px;
     }
 
     html[data-theme="light"] body.app-shell {
@@ -1789,6 +1793,10 @@
       .asset-lists { grid-template-columns: 1fr; }
       .workspace-bottom-grid { grid-template-columns: 1fr; }
       .science-journey-notes { grid-template-columns: 1fr; }
+      .workspace {
+        padding: 0 14px;
+        gap: 18px;
+      }
     }
   </style>
 </head>
