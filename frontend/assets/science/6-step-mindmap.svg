@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#061225"/>
+      <stop offset="1" stop-color="#0d1b35"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8B5CF6"/>
+      <stop offset="0.5" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#2DD4BF"/>
+    </linearGradient>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#22D3EE" flood-opacity="0.45"/>
+    </filter>
+    <style>
+      .label { font-family: "Source Sans 3", "Inter", sans-serif; font-size: 20px; font-weight: 700; fill: #E6EEF9; }
+      .sub { font-family: "Source Sans 3", "Inter", sans-serif; font-size: 14px; font-weight: 500; fill: #9FB4CE; }
+      .node { fill: #10223f; stroke: rgba(148,163,184,0.45); stroke-width: 1.2; }
+      .branch { stroke: rgba(148,163,184,0.55); stroke-width: 2; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <rect x="1" y="1" width="1198" height="758" stroke="rgba(148,163,184,0.18)"/>
+
+  <!-- Center -->
+  <g filter="url(#glow)">
+    <circle cx="600" cy="380" r="118" fill="#0A1A33" stroke="url(#core)" stroke-width="3"/>
+    <text x="600" y="356" text-anchor="middle" class="label">QuizAll 核心学习管道</text>
+    <text x="600" y="384" text-anchor="middle" class="label">6-Step Pipeline</text>
+    <text x="600" y="413" text-anchor="middle" class="sub">From memory traces to durable skills</text>
+  </g>
+
+  <!-- Branch lines -->
+  <line x1="600" y1="262" x2="600" y2="142" class="branch"/>
+  <line x1="708" y1="304" x2="875" y2="220" class="branch"/>
+  <line x1="718" y1="425" x2="880" y2="545" class="branch"/>
+  <line x1="600" y1="498" x2="600" y2="642" class="branch"/>
+  <line x1="480" y1="426" x2="320" y2="545" class="branch"/>
+  <line x1="491" y1="306" x2="324" y2="220" class="branch"/>
+
+  <!-- Step 01 -->
+  <g>
+    <rect x="462" y="72" width="276" height="92" rx="16" class="node"/>
+    <text x="600" y="105" text-anchor="middle" class="label">预热（Schema）</text>
+    <text x="600" y="131" text-anchor="middle" class="sub">Cognitive Load · Advance Organizer</text>
+  </g>
+
+  <!-- Step 02 -->
+  <g>
+    <rect x="860" y="172" width="286" height="92" rx="16" class="node"/>
+    <text x="1003" y="205" text-anchor="middle" class="label">暴露（Forward Pass）</text>
+    <text x="1003" y="231" text-anchor="middle" class="sub">Comprehensible Input · Spacing</text>
+  </g>
+
+  <!-- Step 03 -->
+  <g>
+    <rect x="860" y="500" width="286" height="92" rx="16" class="node"/>
+    <text x="1003" y="533" text-anchor="middle" class="label">提取（Retrieval）</text>
+    <text x="1003" y="559" text-anchor="middle" class="sub">Testing Effect · Generation Effect</text>
+  </g>
+
+  <!-- Step 04 -->
+  <g>
+    <rect x="457" y="618" width="286" height="92" rx="16" class="node"/>
+    <text x="600" y="651" text-anchor="middle" class="label">调控（Boundary）</text>
+    <text x="600" y="677" text-anchor="middle" class="sub">ZPD · Flow · Adaptive Difficulty</text>
+  </g>
+
+  <!-- Step 05 -->
+  <g>
+    <rect x="52" y="500" width="286" height="92" rx="16" class="node"/>
+    <text x="195" y="533" text-anchor="middle" class="label">泛化（Variability）</text>
+    <text x="195" y="559" text-anchor="middle" class="sub">Interleaving · Transfer</text>
+  </g>
+
+  <!-- Step 06 -->
+  <g>
+    <rect x="52" y="172" width="286" height="92" rx="16" class="node"/>
+    <text x="195" y="205" text-anchor="middle" class="label">固化（Spaced Repetition）</text>
+    <text x="195" y="231" text-anchor="middle" class="sub">Forgetting Curve · Spaced Retrieval</text>
+  </g>
+</svg>

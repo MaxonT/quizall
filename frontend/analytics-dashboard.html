@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Analytics Dashboard | QuizAll</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <script src="lib/themeManager.js"></script>
+  <script src="config.js"></script>
+  <script src="lib/authGuard.js"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="analytics-dashboard.css">
   <!-- Recharts via CDN -->
@@ -25,7 +28,7 @@
     <div class="brand">
       <span class="brand-icon">📊</span>
       <span class="brand-text">QuizAll</span>
-      <span class="brand-badge">Analytics</span>
+      <span class="brand-badge">Admin Analytics</span>
     </div>
     <div class="controls">
       <div class="live-indicator">
@@ -302,9 +305,6 @@
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  
-  <!-- Config (must load before dashboard script) -->
-  <script src="config.js"></script>
   
   <!-- Analytics Dashboard Script -->
   <script type="module" src="analytics-dashboard.js"></script>

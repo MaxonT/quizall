@@ -7,6 +7,7 @@
 
 import { Router } from "express";
 import { db } from "../lib/db.js";
+import { requireAuth } from "./auth.js";
 
 export const analyticsDashboardRouter = Router();
 
@@ -24,12 +25,32 @@ function dbAll(sql, params = []) {
   return Promise.resolve(db.prepare(sql).all(...params));
 }
 
+async function requireAdmin(req, res, next) {
+  try {
+    const userId = req.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    const row = await dbGet(`SELECT subscription_tier FROM users WHERE id = ?`, [userId]);
+    const tier = String(row?.subscription_tier || "").toLowerCase();
+    if (tier !== "admin") {
+      return res.status(403).json({ ok: false, error: "Admin access required" });
+    }
+    return next();
+  } catch (err) {
+    console.error("[analytics-dashboard] admin guard error:", err.message);
+    return res.status(500).json({ ok: false, error: "Failed to validate admin access" });
+  }
+}
+
 // Compute ISO string for N days ago
 function daysAgo(n) {
   return new Date(Date.now() - n * 86400000).toISOString();
 }
 
 // ─── Routes ────────────────────────────────────────────────────────────────
+
+analyticsDashboardRouter.use(requireAuth, requireAdmin);
 
 /**
  * GET /api/analytics/dashboard/summary

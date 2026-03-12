@@ -39,9 +39,16 @@
   ],
   "rewrites": [
     {
+      "source": "/science",
+      "destination": "/science/index.html"
+    },
+    {
+      "source": "/science/",
+      "destination": "/science/index.html"
+    },
+    {
       "source": "/((?!.*\\.).*)$",
       "destination": "/index.html"
     }
   ]
 }
-

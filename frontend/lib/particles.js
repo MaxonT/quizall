@@ -12,18 +12,17 @@
     // Insert as the first child of body
     document.body.prepend(container);
 
-    // Increased count for "2x more visible" effect
-    const particleCount = 32; 
+    // Keep lightweight but visibly present.
+    const particleCount = 40;
 
     for (let i = 0; i < particleCount; i++) {
       const particle = document.createElement('div');
       particle.className = 'particle';
       
-      // Increased size range: 3px - 7px (vs 2-5px)
-      const size = Math.random() * 4 + 3; 
+      const size = Math.random() * 3.4 + 2.6;
       const posX = Math.random() * 100; // 0% - 100%
       const posY = Math.random() * 100; // 0% - 100%
-      const duration = Math.random() * 20 + 15; // 15s - 35s
+      const duration = Math.random() * 18 + 12; // 12s - 30s
       const delay = Math.random() * -30; // Start mid-animation
 
       particle.style.width = `${size}px`;

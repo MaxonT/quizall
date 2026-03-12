@@ -7,7 +7,13 @@
     "account": "खाता",
     "questionWizard": "प्रश्न विज़ार्ड",
     "system": "सिस्टम",
-    "tryIt": "विज़ार्ड आज़माएँ"
+    "tryIt": "विज़ार्ड आज़माएँ",
+    "create": "प्रोजेक्ट बनाएँ",
+    "workspace": "एग्ज़ाम वर्कस्पेस",
+    "createProject": "प्रोजेक्ट बनाएँ",
+    "history": "इतिहास",
+    "science": "विज्ञान",
+    "analyticsAdmin": "एडमिन एनालिटिक्स"
   },
   "language": {
     "label": "भाषा",

@@ -7,7 +7,13 @@
     "account": "계정",
     "questionWizard": "질문 위자드",
     "system": "시스템",
-    "tryIt": "위자드 시도"
+    "tryIt": "위자드 시도",
+    "create": "프로젝트 만들기",
+    "workspace": "시험 워크스페이스",
+    "createProject": "프로젝트 만들기",
+    "history": "기록",
+    "science": "사이언스",
+    "analyticsAdmin": "관리자 분석"
   },
   "language": {
     "label": "언어",

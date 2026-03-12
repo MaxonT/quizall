@@ -11,7 +11,13 @@
     "home": "Home",
     "subscription": "Subscription",
     "specs": "Specs",
-    "wizard": "Wizard"
+    "wizard": "Wizard",
+    "create": "Create Quiz",
+    "workspace": "Exam Prep Workspace",
+    "createProject": "Create Project",
+    "history": "History",
+    "science": "Science",
+    "analyticsAdmin": "Admin Analytics"
   },
   "language": {
     "label": "Language",
@@ -117,16 +123,9 @@
     "contact": "Support"
   },
   "common": {
-    "copied": "Copied!",
-    "stillWorking": "Still working on it...",
-    "error": "Error",
-    "success": "Success",
-    "connectionFailed": "Connection failed.",
-    "connectionFailedDesc": "Please check your network connection and try again. If the problem persists, verify your API key in settings.",
+    "consent_text": "We use cookies to improve your experience and remember preferences.",
     "consent_btn": "Accept",
     "deny_btn": "Deny",
-    "consent_text": "We use cookies to improve your experience and remember preferences.",
-    "retry": "Retry",
     "loading": "Loading..."
   },
   "kpi_accuracy": "Accuracy",
@@ -343,12 +342,6 @@
   "examples": {
     "title": "See QuizAll in real workflows",
     "subtitle": "Turn messy business requests into executable prompt specs, tests, and reports."
-  },
-  "common": {
-    "consent_text": "We use cookies to improve your experience and remember preferences.",
-    "consent_btn": "Accept",
-    "deny_btn": "Deny",
-    "loading": "Loading..."
   },
   "beta": {
     "badge_text": "Beta",
