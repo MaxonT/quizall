@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Exam Prep Workspace Template</title>
+  <script>
+    (function () {
+      var key = "theme";
+      var saved = localStorage.getItem(key) || "dark";
+      var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+      var theme = saved === "auto" ? (mq && mq.matches ? "dark" : "light") : saved;
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <link rel="stylesheet" href="./exam-prep-workspace.template.css" />
+</head>
+<body class="ep-shell">
+  <header class="ep-topbar">
+    <div class="ep-topbar-inner">
+      <a class="ep-brand" href="/index.html">Exam Prep Workspace</a>
+      <nav class="ep-top-links">
+        <a href="/index.html">Dashboard</a>
+        <a href="/science">Science</a>
+      </nav>
+    </div>
+  </header>
+
+  <aside class="ep-stage-rail" aria-label="Stage navigation">
+    <nav class="ep-stage-nav" id="epStageNav">
+      <p class="ep-stage-title">Current Stages</p>
+    </nav>
+  </aside>
+
+  <main class="ep-workspace">
+    <section class="ep-hero">
+      <span class="ep-pill">Exam Prep v2 Template</span>
+      <h1 id="epHeroTitle">Project-based exam prep with editable mindmap + contextual science loop.</h1>
+      <p id="epHeroBody">Upload once, map topics, run retrieval sessions, and close the loop with analytics and stage activation.</p>
+    </section>
+
+    <section class="ep-workflow-strip" aria-label="workflow">
+      <span class="ep-workflow-item is-active"><b>1</b> Project Scope</span>
+      <span class="ep-workflow-item"><b>2</b> Materials</span>
+      <span class="ep-workflow-item"><b>3</b> Topics & Mindmap</span>
+      <span class="ep-workflow-item"><b>4</b> Quiz</span>
+      <span class="ep-workflow-item"><b>5</b> Analytics</span>
+      <span class="ep-workflow-item"><b>6</b> Science</span>
+    </section>
+
+    <section class="ep-card" id="ep-step-1">
+      <div class="ep-card-head">
+        <span class="ep-step-badge">Step 1</span>
+        <div>
+          <h2>Project Scope</h2>
+          <p>One project per exam/course. All actions are scoped to selected project.</p>
+        </div>
+      </div>
+      <div class="ep-grid-2">
+        <div>
+          <label class="ep-label" for="epProjectSelect">Active Project</label>
+          <div class="ep-row">
+            <select id="epProjectSelect" class="ep-input"></select>
+            <button class="ep-btn ep-btn-soft" id="epRefreshProjectsBtn" type="button">Refresh</button>
+            <button class="ep-btn ep-btn-primary" id="epNewProjectBtn" type="button">+ New</button>
+          </div>
+          <div class="ep-status" id="epProjectSummary">Select or create a project.</div>
+        </div>
+        <div class="ep-stats">
+          <div class="ep-stat">
+            <span class="ep-stat-label">Saved Materials</span>
+            <span class="ep-stat-value" id="epStatFiles">0</span>
+          </div>
+          <div class="ep-stat">
+            <span class="ep-stat-label">Quiz Sessions</span>
+            <span class="ep-stat-value" id="epStatQuizSessions">0</span>
+          </div>
+          <div class="ep-stat">
+            <span class="ep-stat-label">Latest Accuracy</span>
+            <span class="ep-stat-value" id="epStatAccuracy">—</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ep-card" id="ep-step-2">
+      <div class="ep-card-head">
+        <span class="ep-step-badge">Step 2</span>
+        <div>
+          <h2>Materials</h2>
+          <p>Upload files once and keep them inside the project context.</p>
+        </div>
+      </div>
+      <div class="ep-dropzone" id="epDropzone" tabindex="0" role="button">
+        <strong>Drop files here or click to upload</strong>
+        <small>PDF, DOCX, TXT, MD, CSV, JSON</small>
+        <input id="epFileInput" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json" hidden />
+      </div>
+      <div class="ep-row">
+        <button class="ep-btn ep-btn-soft" id="epClearPendingBtn" type="button">Clear Pending</button>
+        <button class="ep-btn ep-btn-primary" id="epSaveFilesBtn" type="button">Save Pending Files</button>
+      </div>
+      <div class="ep-grid-2">
+        <div class="ep-panel">
+          <p class="ep-label">Pending Upload</p>
+          <div id="epPendingFiles"></div>
+        </div>
+        <div class="ep-panel">
+          <p class="ep-label">Saved In Project</p>
+          <div id="epSavedFiles"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ep-card" id="ep-step-3">
+      <div class="ep-card-head">
+        <span class="ep-step-badge">Step 3</span>
+        <div>
+          <h2>Topics + Mindmap</h2>
+          <p>Scan outline candidates or paste topics, then generate editable mindmap.</p>
+        </div>
+      </div>
+      <div class="ep-grid-2">
+        <div>
+          <label class="ep-label" for="epTopicsInput">Exam Topics</label>
+          <textarea id="epTopicsInput" class="ep-input ep-textarea" placeholder="Paste exam topics here..."></textarea>
+        </div>
+        <div>
+          <label class="ep-label" for="epEmailTemplate">Professor Email Template</label>
+          <textarea id="epEmailTemplate" class="ep-input ep-textarea ep-textarea-sm" readonly></textarea>
+          <button class="ep-btn ep-btn-soft" id="epCopyTemplateBtn" type="button">Copy Template</button>
+        </div>
+      </div>
+      <div class="ep-row">
+        <button class="ep-btn ep-btn-soft" id="epScanOutlineBtn" type="button">Auto-Scan Outline Files</button>
+        <button class="ep-btn ep-btn-primary" id="epGenerateMindmapBtn" type="button">Generate Mindmap</button>
+      </div>
+      <div class="ep-panel">
+        <p class="ep-label">Outline Candidates</p>
+        <div id="epOutlineCandidates"></div>
+      </div>
+      <div class="ep-mindmap-shell" id="epMindmapShell" hidden>
+        <div class="ep-mindmap-head">
+          <div>
+            <h3 id="epMindmapTitle">ExamTopics Mindmap</h3>
+            <p id="epMindmapMeta">Generated for your selected project.</p>
+          </div>
+          <div class="ep-row">
+            <button class="ep-btn ep-btn-soft" id="epAddRootNodeBtn" type="button">+ Root Node</button>
+            <button class="ep-btn ep-btn-primary" id="epSaveMindmapBtn" type="button">Save Mindmap</button>
+          </div>
+        </div>
+        <div id="epMindmapTree"></div>
+      </div>
+    </section>
+
+    <section class="ep-card" id="ep-step-4">
+      <div class="ep-card-head">
+        <span class="ep-step-badge">Step 4-6</span>
+        <div>
+          <h2>Project Tabs</h2>
+          <p>Quiz session, analytics chart, and science journey in one switchboard.</p>
+        </div>
+      </div>
+      <div class="ep-tabs" id="epProjectTabs">
+        <button class="ep-tab is-active" type="button" data-tab="quiz">Quiz Session</button>
+        <button class="ep-tab" type="button" data-tab="analytics">Analytics</button>
+        <button class="ep-tab" type="button" data-tab="science">Science</button>
+      </div>
+    </section>
+
+    <section class="ep-tab-panel is-active" data-panel="quiz" id="ep-step-5">
+      <section class="ep-card">
+        <div class="ep-card-head">
+          <span class="ep-step-badge">Step 4</span>
+          <div>
+            <h2>Quiz Session</h2>
+            <p>FRQ first; question mix and count are configurable.</p>
+          </div>
+        </div>
+        <div class="ep-quiz-config">
+          <div>
+            <p class="ep-label">Question Types</p>
+            <div class="ep-toggle-group" id="epTypeToggles"></div>
+          </div>
+          <div>
+            <p class="ep-label">Question Count</p>
+            <div class="ep-toggle-group" id="epNumToggles"></div>
+          </div>
+        </div>
+        <button class="ep-btn ep-btn-primary" id="epGenerateQuizBtn" type="button">Generate Quiz</button>
+      </section>
+    </section>
+
+    <section class="ep-tab-panel" data-panel="analytics" id="ep-step-6">
+      <section class="ep-card">
+        <div class="ep-card-head">
+          <span class="ep-step-badge">Step 5</span>
+          <div>
+            <h2>Analytics</h2>
+            <p>Minimal line chart with theory/actual switch and crosshair tooltip.</p>
+          </div>
+        </div>
+        <div class="ep-chart-controls">
+          <button class="ep-mode-btn is-active" type="button" data-chart-mode="theory">Theoretical Prediction</button>
+          <button class="ep-mode-btn" type="button" data-chart-mode="actual">Actual User Data</button>
+        </div>
+        <div class="ep-chart-shell" id="epChartShell">
+          <svg id="epChartSvg" viewBox="0 0 980 430" class="ep-chart-svg" role="img" aria-label="Project retention trend"></svg>
+          <div id="epChartTooltip" class="ep-chart-tooltip" hidden></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="ep-tab-panel" data-panel="science">
+      <section class="ep-card">
+        <div class="ep-card-head">
+          <span class="ep-step-badge">Step 6</span>
+          <div>
+            <h2>Science Journey</h2>
+            <p>Action-based stage activation map for this project.</p>
+          </div>
+        </div>
+        <div class="ep-science-grid" id="epScienceGrid"></div>
+        <div class="ep-science-notes" id="epScienceNotes"></div>
+      </section>
+    </section>
+
+    <div class="ep-status ep-status-global" id="epStatusMessage">Ready.</div>
+  </main>
+
+  <div class="ep-modal" id="epNewProjectModal" hidden>
+    <div class="ep-modal-card">
+      <h3>Create New Project</h3>
+      <p>Use one project per course or exam.</p>
+      <div class="ep-stack">
+        <input class="ep-input" id="epProjectNameInput" placeholder="Project name" />
+        <input class="ep-input" id="epProjectExamNameInput" placeholder="Exam name (optional)" />
+        <input class="ep-input" id="epProjectExamDateInput" type="date" />
+        <textarea class="ep-input ep-textarea ep-textarea-sm" id="epProjectDescInput" placeholder="Description (optional)"></textarea>
+      </div>
+      <div class="ep-row ep-row-end">
+        <button class="ep-btn ep-btn-soft" id="epCancelProjectBtn" type="button">Cancel</button>
+        <button class="ep-btn ep-btn-primary" id="epCreateProjectBtn" type="button">Create Project</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./exam-prep-workspace.data.template.js"></script>
+  <script src="./exam-prep-workspace.api.template.js"></script>
+  <script src="./exam-prep-workspace.template.js"></script>
+</body>
+</html>
+
