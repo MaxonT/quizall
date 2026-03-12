@@ -765,9 +765,12 @@ function normalizeGeneratedQuizPayload(raw, allowedTypes, fallbackTopics, fallba
 }
 
 async function getTopicAccuracyMap(userId, projectId) {
+  const correctCountExpr = USE_POSTGRES
+    ? "SUM(CASE WHEN qq.is_correct IS TRUE THEN 1 ELSE 0 END)"
+    : "SUM(CASE WHEN qq.is_correct = 1 THEN 1 ELSE 0 END)";
   const rows = await dbAll(
     `SELECT qq.topic_node AS topic_node,
-            SUM(CASE WHEN qq.is_correct = 1 THEN 1 ELSE 0 END) AS correct_count,
+            ${correctCountExpr} AS correct_count,
             COUNT(*) AS total_count
      FROM quiz_questions qq
      JOIN quiz_results qr ON qr.id = qq.result_id
