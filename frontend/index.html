@@ -27,6 +27,10 @@
        ============================================ */
 
     .idx-hidden { display: none !important; }
+    :root {
+      --home-axis-max: 1120px;
+      --home-axis-pad: clamp(16px, 2.3vw, 28px);
+    }
 
     /* ---------- Hero ---------- */
     .hero {
@@ -461,6 +465,73 @@
       display: flex;
       flex-direction: column;
     }
+    #dashboardView {
+      width: 100%;
+    }
+    .dashboard-top-region {
+      position: relative;
+      width: 100%;
+      padding: 0.5rem 0 2.25rem;
+      isolation: isolate;
+    }
+    .dashboard-top-region::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 50% -16%, rgba(34, 211, 238, 0.2), transparent 44%),
+        radial-gradient(circle at 80% 16%, rgba(124, 58, 237, 0.2), transparent 50%),
+        linear-gradient(var(--qa-grid-line, rgba(118, 145, 183, 0.24)) 1px, transparent 1px),
+        linear-gradient(90deg, var(--qa-grid-line, rgba(118, 145, 183, 0.24)) 1px, transparent 1px);
+      background-size:
+        100% 100%,
+        100% 100%,
+        var(--qa-grid-size, 72px) var(--qa-grid-size, 72px),
+        var(--qa-grid-size, 72px) var(--qa-grid-size, 72px);
+      background-position: 0 0, 0 0, -1px -1px, -1px -1px;
+      background-repeat: no-repeat, no-repeat, repeat, repeat;
+    }
+    .dashboard-top-region::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.3;
+      mix-blend-mode: screen;
+      background:
+        radial-gradient(circle, var(--qa-star-a, rgba(186, 230, 253, 0.56)) 0 1.3px, transparent 2.2px),
+        radial-gradient(circle, var(--qa-star-b, rgba(125, 211, 252, 0.5)) 0 1.2px, transparent 2.1px),
+        radial-gradient(circle, var(--qa-star-c, rgba(167, 139, 250, 0.42)) 0 1.1px, transparent 2px);
+      background-size: 260px 260px, 320px 320px, 380px 380px;
+      background-position: 0 0, 104px 86px, 66px 126px;
+      animation: qaParticleRise 74s linear infinite;
+    }
+    .dashboard-top-region > .dash {
+      position: relative;
+      z-index: 1;
+    }
+    .dashboard-lower-region {
+      width: 100%;
+      min-height: 2.8rem;
+      background: transparent;
+    }
+    body.logged-in-home {
+      background-color: var(--qa-bg-base, var(--bg)) !important;
+      background-image: none !important;
+    }
+    body.logged-in-home::before {
+      content: none !important;
+    }
+    body.logged-in-home #landingView {
+      display: none !important;
+    }
+    html[data-theme="light"] body.logged-in-home .dashboard-top-region::after {
+      opacity: 0.2;
+      mix-blend-mode: normal;
+    }
     .member-hero {
       position: relative;
       margin-bottom: 1.5rem;
@@ -546,7 +617,7 @@
     body.logged-in-home #landingView { order: 1; }
 
     /* ---------- How It Works ---------- */
-    .section { max-width: 960px; margin: 0 auto; padding: 2.05rem 1.05rem; }
+    .section { max-width: var(--home-axis-max); margin: 0 auto; padding: 2.05rem var(--home-axis-pad); }
     .section-title {
       text-align: center;
       font-size: 1.75rem;
@@ -779,7 +850,7 @@
     }
 
     /* ---------- Dashboard ---------- */
-    .dash { max-width: 960px; margin: 0 auto; padding: 1.45rem 1.05rem; }
+    .dash { max-width: var(--home-axis-max); margin: 0 auto; padding: 1.45rem var(--home-axis-pad); }
     @media (min-width: 901px) {
       body.app-shell { font-size: 14px; }
     }
@@ -1270,7 +1341,7 @@
     }
   </style>
 </head>
-<body class="app-shell home-page">
+  <body class="app-shell home-page">
   <header class="topbar">
     <div class="brand brand-logo"><img src="assets/quizall-logo.svg" alt="QuizAll" class="logo-glow"/></div>
     <nav class="controls">
@@ -1493,6 +1564,7 @@
          ║  LOGGED-IN: Dashboard                     ║
          ╚══════════════════════════════════════════╝ -->
     <div id="dashboardView" class="idx-hidden">
+      <section class="dashboard-top-region">
       <div class="dash">
         <section class="member-hero">
           <span class="member-hero-kicker">Focus Mode</span>
@@ -1573,6 +1645,8 @@
           <a href="create.html" class="btn-hero btn-hero-primary" style="display:inline-flex;">Create Your First Quiz</a>
         </div>
       </div>
+      </section>
+      <section class="dashboard-lower-region" aria-hidden="true"></section>
     </div>
   </main>
 
@@ -1731,18 +1805,18 @@
     }
 
     function showView() {
-      // 合并体验：Landing 永远可见；登录后额外显示 Dashboard，并隐藏登录表单
-      $landing.classList.remove("idx-hidden");
       var authSection = document.getElementById("authSection");
       if (isLoggedIn()) {
         document.body.classList.add("logged-in-home");
         $dashboard.classList.remove("idx-hidden");
+        $landing.classList.add("idx-hidden");
         if (authSection) authSection.classList.add("idx-hidden");
         renderScienceWidget();
         loadDashboard();
       } else {
         document.body.classList.remove("logged-in-home");
         $dashboard.classList.add("idx-hidden");
+        $landing.classList.remove("idx-hidden");
         if (authSection) authSection.classList.remove("idx-hidden");
       }
     }
