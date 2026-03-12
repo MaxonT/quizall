@@ -3,6 +3,7 @@
   if (!data) return;
 
   const DISMISSED_BADGES_KEY = "quizall.science.dismissedBadges";
+  const DISABLE_ALL_BADGES_KEY = "quizall.science.disableAllBadges";
   const PROJECT_FLAGS_KEY = "quizall.science.projectFlags";
   const PENDING_BADGE_KEY = "quizall.science.pendingBadge";
 
@@ -67,6 +68,18 @@
     const dismissed = getDismissedBadges();
     dismissed[badgeId] = true;
     writeStore(DISMISSED_BADGES_KEY, dismissed);
+  }
+
+  function areAllBadgesDisabled() {
+    return localStorage.getItem(DISABLE_ALL_BADGES_KEY) === "1";
+  }
+
+  function setAllBadgesDisabled(disabled) {
+    if (disabled) {
+      localStorage.setItem(DISABLE_ALL_BADGES_KEY, "1");
+      return;
+    }
+    localStorage.removeItem(DISABLE_ALL_BADGES_KEY);
   }
 
   function getProjectFlags(projectId) {
@@ -231,6 +244,20 @@
         justify-content: space-between;
         gap: 10px;
         align-items: center;
+      }
+      .qa-science-badge-optout {
+        margin-top: 8px;
+        font-size: 0.78rem;
+        color: rgba(203, 213, 225, 0.88);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        user-select: none;
+      }
+      .qa-science-badge-optout input {
+        width: 14px;
+        height: 14px;
+        accent-color: #22d3ee;
       }
       .qa-science-badge-link {
         color: #67e8f9;
@@ -446,6 +473,7 @@
   function showBadge(badgeId, options) {
     const badge = BADGES[badgeId];
     if (!badge) return false;
+    if (areAllBadgesDisabled()) return false;
     if (isBadgeDismissed(badgeId)) return false;
 
     const opts = options || {};
@@ -463,13 +491,18 @@
       '<div class="qa-science-badge-actions">' +
       '<a class="qa-science-badge-link" href="' + stepLink + '">Read the full research -></a>' +
       '<button type="button" class="qa-science-badge-dismiss" data-dismiss="1">Dismiss</button>' +
-      '</div>';
+      '</div>' +
+      '<label class="qa-science-badge-optout"><input type="checkbox" data-disable-all="1" />Do not show this again</label>';
 
     host.appendChild(card);
 
     const dismissBtn = card.querySelector("[data-dismiss='1']");
     if (dismissBtn) {
       dismissBtn.addEventListener("click", function () {
+        const disableAllInput = card.querySelector("[data-disable-all='1']");
+        if (disableAllInput && disableAllInput.checked) {
+          setAllBadgesDisabled(true);
+        }
         dismissBadge(badgeId);
         host.innerHTML = "";
       });
@@ -503,6 +536,8 @@
     showBadge: showBadge,
     isBadgeDismissed: isBadgeDismissed,
     dismissBadge: dismissBadge,
+    areAllBadgesDisabled: areAllBadgesDisabled,
+    setAllBadgesDisabled: setAllBadgesDisabled,
     markProjectFlags: markProjectFlags,
     getProjectFlags: getProjectFlags,
     deriveProjectActivations: deriveProjectActivations,

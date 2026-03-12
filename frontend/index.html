@@ -945,6 +945,9 @@
       box-shadow: var(--shadow);
       padding: 1rem 1.1rem 1.25rem;
     }
+    .heatmap-section-preview {
+      margin-top: 0.6rem;
+    }
     .heatmap-head {
       display: flex;
       align-items: flex-start;
@@ -980,6 +983,9 @@
       display: grid;
       grid-template-columns: repeat(20, minmax(0, 1fr));
       gap: 5px;
+    }
+    .heatmap-section-preview .heatmap-grid {
+      grid-template-columns: repeat(28, minmax(0, 1fr));
     }
     .heatmap-cell {
       width: 100%;
@@ -1460,6 +1466,25 @@
         </div>
       </section>
 
+      <section class="section">
+        <div class="heatmap-section heatmap-section-preview" id="landingHeatmapSection">
+          <div class="heatmap-head">
+            <div>
+              <h2>Learning Streak Heatmap</h2>
+              <p>GitHub-style consistency map. Keep your streak alive with short, repeated practice sessions.</p>
+            </div>
+            <span class="streak-chip">Homepage Preview</span>
+          </div>
+          <div id="landingHeatmapGrid" class="heatmap-grid"></div>
+          <div class="heatmap-legend">
+            <span><i class="heatmap-dot"></i> No activity</span>
+            <span><i class="heatmap-dot heatmap-l1"></i> Light review</span>
+            <span><i class="heatmap-dot heatmap-l2"></i> Active quiz</span>
+            <span><i class="heatmap-dot heatmap-l3"></i> Deep mastery</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Auth Forms -->
       <section class="auth-section" id="authSection">
         <div class="auth-card">
@@ -1799,6 +1824,21 @@
       });
     }
 
+    function renderLandingHeatmapPreview() {
+      var grid = document.getElementById("landingHeatmapGrid");
+      if (!grid) return;
+      var total = 28 * 5;
+      var cells = [];
+      for (var i = 0; i < total; i++) {
+        var weeklyPulse = (i % 7 === 0 || i % 7 === 1) ? 2 : 1;
+        var milestoneBoost = (i % 19 === 0 || i % 23 === 0) ? 3 : weeklyPulse;
+        var decay = (i < 24 || i > 126) ? 0 : milestoneBoost;
+        var cls = decay === 3 ? "heatmap-l3" : (decay === 2 ? "heatmap-l2" : (decay === 1 ? "heatmap-l1" : ""));
+        cells.push('<span class="heatmap-cell ' + cls + '" aria-hidden="true"></span>');
+      }
+      grid.innerHTML = cells.join("");
+    }
+
     // ─── View Toggle ───────────────────────────
     function isLoggedIn() {
       return !!localStorage.getItem(TOKEN_KEY);
@@ -2116,6 +2156,7 @@
 
     // ─── Init ──────────────────────────────────
     renderTrustMarquee();
+    renderLandingHeatmapPreview();
     showView();
   })();
   </script>
