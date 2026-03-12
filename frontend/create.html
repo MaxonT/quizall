@@ -1487,6 +1487,36 @@
       font-size: 0.87rem;
     }
 
+    .confirm-modal-card {
+      width: min(460px, 100%);
+    }
+
+    .confirm-modal-title {
+      margin: 0;
+      font-size: 1.04rem;
+      color: #e2e8f0;
+    }
+
+    .confirm-modal-message {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .confirm-modal-actions {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .confirm-modal-actions .btn {
+      min-width: 108px;
+      justify-content: center;
+    }
+
     .workflow-strip {
       border: 1px solid rgba(148,163,184,0.24);
       border-radius: 14px;
@@ -1955,6 +1985,14 @@
       border-color: rgba(148,163,184,0.35);
       background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,248,253,0.96));
       box-shadow: 0 16px 36px rgba(15,23,42,0.14);
+    }
+
+    html[data-theme="light"] .confirm-modal-title {
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .confirm-modal-message {
+      color: #475569;
     }
 
     html[data-theme="light"] .workflow-strip {
@@ -2470,6 +2508,17 @@
     </div>
   </div>
 
+  <div class="modal" id="confirmModal" aria-hidden="true">
+    <div class="modal-card confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <h3 id="confirmModalTitle" class="confirm-modal-title">Confirm action</h3>
+      <p id="confirmModalMessage" class="confirm-modal-message">Are you sure you want to continue?</p>
+      <div class="confirm-modal-actions">
+        <button type="button" class="btn btn-soft" id="confirmModalCancelBtn">Cancel</button>
+        <button type="button" class="btn btn-danger-soft" id="confirmModalConfirmBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <script src="lib/navUserBar.js"></script>
   <script src="lib/scienceData.js"></script>
   <script src="lib/scienceCommon.js"></script>
@@ -2503,6 +2552,7 @@
       uploadCollapsed: false,
       uploadManualExpanded: false,
       moduleMission: null,
+      confirmResolver: null,
       busy: false,
     };
 
@@ -2571,6 +2621,12 @@
       projectDescInput: document.getElementById('projectDescInput'),
       cancelProjectBtn: document.getElementById('cancelProjectBtn'),
       createProjectConfirmBtn: document.getElementById('createProjectConfirmBtn'),
+
+      confirmModal: document.getElementById('confirmModal'),
+      confirmModalTitle: document.getElementById('confirmModalTitle'),
+      confirmModalMessage: document.getElementById('confirmModalMessage'),
+      confirmModalCancelBtn: document.getElementById('confirmModalCancelBtn'),
+      confirmModalConfirmBtn: document.getElementById('confirmModalConfirmBtn'),
     };
 
     const DEFAULT_EMAIL_TEMPLATE = [
@@ -2837,6 +2893,43 @@
       els.projectExamNameInput.value = '';
       els.projectExamDateInput.value = '';
       els.projectDescInput.value = '';
+    }
+
+    function closeConfirmModal(confirmed) {
+      if (!els.confirmModal) return;
+      els.confirmModal.classList.remove('open');
+      els.confirmModal.setAttribute('aria-hidden', 'true');
+      const resolver = state.confirmResolver;
+      state.confirmResolver = null;
+      if (resolver) resolver(!!confirmed);
+    }
+
+    function openConfirmModal(options) {
+      if (!els.confirmModal) return;
+      const opts = options || {};
+      els.confirmModalTitle.textContent = opts.title || 'Confirm action';
+      els.confirmModalMessage.textContent = opts.message || 'Are you sure you want to continue?';
+      els.confirmModalCancelBtn.textContent = opts.cancelText || 'Cancel';
+      els.confirmModalConfirmBtn.textContent = opts.confirmText || 'Confirm';
+      els.confirmModalConfirmBtn.className = 'btn ' + (opts.danger ? 'btn-danger-soft' : 'btn-primary');
+      els.confirmModal.classList.add('open');
+      els.confirmModal.setAttribute('aria-hidden', 'false');
+      setTimeout(function () {
+        els.confirmModalConfirmBtn.focus();
+      }, 0);
+    }
+
+    function requestConfirmation(options) {
+      if (!els.confirmModal) {
+        return Promise.resolve(false);
+      }
+      if (state.confirmResolver) {
+        state.confirmResolver(false);
+      }
+      return new Promise(function (resolve) {
+        state.confirmResolver = resolve;
+        openConfirmModal(options || {});
+      });
     }
 
     function renderProjectSelect() {
@@ -4242,7 +4335,13 @@
       const fileId = event.target.getAttribute('data-delete-file');
       if (!fileId) return;
       if (state.busy) return;
-      const ok = window.confirm('Delete this uploaded file from the project?');
+      const ok = await requestConfirmation({
+        title: 'Delete uploaded file?',
+        message: 'Delete this uploaded file from the project? This action cannot be undone.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        danger: true,
+      });
       if (!ok) return;
       setBusy(true);
       try {
@@ -4323,6 +4422,23 @@
     els.newProjectModal.addEventListener('click', function (event) {
       if (event.target === els.newProjectModal) closeModal();
     });
+    if (els.confirmModal) {
+      els.confirmModalCancelBtn.addEventListener('click', function () {
+        closeConfirmModal(false);
+      });
+      els.confirmModalConfirmBtn.addEventListener('click', function () {
+        closeConfirmModal(true);
+      });
+      els.confirmModal.addEventListener('click', function (event) {
+        if (event.target === els.confirmModal) closeConfirmModal(false);
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && els.confirmModal.classList.contains('open')) {
+          event.preventDefault();
+          closeConfirmModal(false);
+        }
+      });
+    }
 
     els.createProjectConfirmBtn.addEventListener('click', async function () {
       if (state.busy) return;
@@ -4449,7 +4565,13 @@
     if (els.deleteMindmapBtn) {
       els.deleteMindmapBtn.addEventListener('click', async function () {
         if (state.busy) return;
-        const ok = window.confirm('Delete current mindmap from this project?');
+        const ok = await requestConfirmation({
+          title: 'Delete current mindmap?',
+          message: 'Delete current mindmap from this project? You can regenerate a new one later.',
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+          danger: true,
+        });
         if (!ok) return;
         setBusy(true);
         try {
