@@ -42,7 +42,7 @@
       return fallback[key] || key;
     };
     b.innerHTML=`<span data-i18n="common.consent_text">${getText("common.consent_text")}</span>
-    <div style="display:flex;gap:8px">
+    <div class="banner-actions">
       <button class="btn" id="consentDenyBtn" data-i18n="common.deny_btn">${getText("common.deny_btn")}</button>
       <button class="btn" id="consentBtn" data-i18n="common.consent_btn">${getText("common.consent_btn")}</button>
     </div>`;

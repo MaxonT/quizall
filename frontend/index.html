@@ -31,8 +31,14 @@
     /* ---------- Hero ---------- */
     .hero {
       text-align: center;
-      padding: 3.2rem 1.35rem 1.9rem;
       position: relative;
+      min-height: calc(100vh - 74px);
+      min-height: calc(100svh - 74px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: clamp(2.1rem, 5.4vh, 4rem) 1.35rem;
     }
     .hero::before {
       content: "";
@@ -44,7 +50,7 @@
       pointer-events: none;
     }
     .hero-title {
-      font-size: clamp(1.74rem, 3.8vw, 2.85rem);
+      font-size: clamp(2.09rem, 4.56vw, 3.42rem);
       font-weight: 900;
       letter-spacing: -0.5px;
       line-height: 1.15;
@@ -52,6 +58,7 @@
       position: relative;
       text-align: center;
       width: 100%;
+      max-width: 980px;
     }
     .gradient-animated {
       background: linear-gradient(270deg, var(--primary), var(--accent), #a78bfa, var(--ok), var(--accent), var(--primary));
@@ -98,12 +105,23 @@
     }
     .btn-hero:hover { transform: translateY(-2px); }
     .btn-hero-primary {
-      background: linear-gradient(135deg, var(--primary), rgba(6,182,212,0.9));
-      color: #fff;
-      box-shadow: 0 8px 30px rgba(139,92,246,0.35);
+      color: #f8fdff;
+      border: 1px solid rgba(148, 231, 255, 0.54);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+        linear-gradient(135deg, rgba(124, 58, 237, 0.68), rgba(14, 165, 233, 0.66), rgba(45, 212, 191, 0.56));
+      backdrop-filter: blur(16px) saturate(138%);
+      -webkit-backdrop-filter: blur(16px) saturate(138%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -10px 18px rgba(8, 18, 42, 0.22),
+        0 12px 28px rgba(14, 165, 233, 0.22);
     }
     .btn-hero-primary:hover {
-      box-shadow: 0 12px 40px rgba(139,92,246,0.5);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.56),
+        inset 0 -12px 20px rgba(8, 18, 42, 0.24),
+        0 16px 34px rgba(14, 165, 233, 0.28);
     }
     .btn-hero-secondary {
       background: var(--card);
@@ -209,7 +227,7 @@
       position: relative;
       z-index: 1;
       display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
+      grid-template-columns: 1fr 1fr;
       gap: 1rem;
       align-items: start;
     }
@@ -328,7 +346,7 @@
 
     /* ---------- Trust Marquee ---------- */
     .trust-marquee {
-      max-width: 1360px;
+      max-width: 1140px;
       padding-top: 0.7rem;
       padding-bottom: 1.1rem;
     }
@@ -528,7 +546,7 @@
     body.logged-in-home #landingView { order: 1; }
 
     /* ---------- How It Works ---------- */
-    .section { max-width: 1020px; margin: 0 auto; padding: 2.05rem 1.05rem; }
+    .section { max-width: 960px; margin: 0 auto; padding: 2.05rem 1.05rem; }
     .section-title {
       text-align: center;
       font-size: 1.75rem;
@@ -761,7 +779,7 @@
     }
 
     /* ---------- Dashboard ---------- */
-    .dash { max-width: 1020px; margin: 0 auto; padding: 1.45rem 1.05rem; }
+    .dash { max-width: 960px; margin: 0 auto; padding: 1.45rem 1.05rem; }
     @media (min-width: 901px) {
       body.app-shell { font-size: 14px; }
     }
@@ -1213,7 +1231,11 @@
     }
     /* ---------- Responsive ---------- */
     @media (max-width: 640px) {
-      .hero { padding: 2.65rem 0.9rem 1.75rem; }
+      .hero {
+        min-height: calc(100vh - 66px);
+        min-height: calc(100svh - 66px);
+        padding: clamp(1.6rem, 4.5vh, 2.5rem) 0.9rem;
+      }
       .hero-actions { flex-direction: column; align-items: stretch; }
       .btn-hero { justify-content: center; }
       .welcome-banner { padding: 1.5rem; }
@@ -1248,7 +1270,7 @@
     }
   </style>
 </head>
-<body class="app-shell">
+<body class="app-shell home-page">
   <header class="topbar">
     <div class="brand brand-logo"><img src="assets/quizall-logo.svg" alt="QuizAll" class="logo-glow"/></div>
     <nav class="controls">

@@ -53,7 +53,7 @@
   background-image: 
     linear-gradient(to right, #64748b 1px, transparent 1px),
     linear-gradient(to bottom, #64748b 1px, transparent 1px);
-  background-size: 120px 120px;
+  background-size: 280px 280px;
   mask-image: radial-gradient(circle at center, black, transparent 90%);
   -webkit-mask-image: radial-gradient(circle at center, black, transparent 90%);
 }
@@ -392,7 +392,7 @@
     transparent 75%,
     rgba(255, 255, 255, 0.15) 75%
   );
-  background-size: 24px 24px;
+  background-size: 56px 56px;
   animation: shimmer 2s linear infinite;
 }
 

@@ -1,35 +1,164 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QuizAll Science | Research Foundation</title>
   <meta name="description" content="QuizAll's 6-step learning pipeline grounded in peer-reviewed cognitive science research." />
   <link rel="icon" href="/assets/quizall-icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/theme.css" />
+  <script>
+    (function () {
+      var key = "theme";
+      var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+      var saved = localStorage.getItem(key) || "dark";
+      var resolved = saved === "auto" ? ((mq && mq.matches) ? "dark" : "light") : saved;
+      document.documentElement.setAttribute("data-theme", resolved);
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #ffffff;
-      --panel: #fbfcfd;
-      --text: #0f172a;
-      --muted: #475569;
-      --line: #dbe3ec;
-      --ink-soft: #f3f7fb;
-      --cta: #0f172a;
-      --cta-text: #ffffff;
-      --max: 1060px;
+      --max: 980px;
+      --science-grid-size: 64px;
+      --science-bg-1: #050814;
+      --science-bg-2: #050814;
+      --science-bg-3: #050814;
+      --science-text: var(--text);
+      --science-muted: rgba(198, 213, 240, 0.78);
+      --science-line: rgba(148, 163, 184, 0.28);
+      --science-line-strong: rgba(148, 163, 184, 0.44);
+      --science-panel: rgba(11, 17, 34, 0.82);
+      --science-panel-soft: rgba(9, 14, 29, 0.72);
+      --science-subpanel: rgba(8, 13, 28, 0.82);
+      --science-quote: #dbeafe;
+      --science-kicker: #7dd3fc;
+      --science-journal-bg: rgba(13, 28, 48, 0.8);
+      --science-journal-text: #bae6fd;
+      --science-topbar-bg: rgba(8, 13, 28, 0.72);
+      --science-cta-border: rgba(148, 163, 184, 0.36);
+      --science-btn-soft-bg: rgba(13, 24, 42, 0.68);
+      --science-concept-bg: rgba(34, 211, 238, 0.16);
+      --science-concept-border: rgba(34, 211, 238, 0.38);
+      --science-concept-text: #c9f7ff;
+      --chart-axis: rgba(148, 163, 184, 0.52);
+      --chart-grid: rgba(148, 163, 184, 0.22);
+      --chart-muted: #93a4bc;
+      --chart-ink: #dbe6f4;
+      --chart-accent: #3b82f6;
+      --chart-band: rgba(59, 130, 246, 0.17);
+      --chart-tip-bg: rgba(6, 11, 24, 0.92);
+      --transition-art-bg: rgba(8, 13, 28, 0.68);
+      --transition-art-overlay: rgba(14, 22, 42, 0.36);
+    }
+
+    html[data-theme="light"] {
+      --science-grid-size: 62px;
+      --science-bg-1: #eef4fb;
+      --science-bg-2: #eef4fb;
+      --science-bg-3: #eef4fb;
+      --science-text: #0f172a;
+      --science-muted: #475569;
+      --science-line: rgba(148, 163, 184, 0.3);
+      --science-line-strong: rgba(148, 163, 184, 0.44);
+      --science-panel: rgba(255, 255, 255, 0.88);
+      --science-panel-soft: rgba(249, 251, 255, 0.94);
+      --science-subpanel: rgba(255, 255, 255, 0.94);
+      --science-quote: #0f2f4a;
+      --science-kicker: #0f4a7d;
+      --science-journal-bg: rgba(248, 251, 255, 0.9);
+      --science-journal-text: #0b395f;
+      --science-topbar-bg: rgba(255, 255, 255, 0.88);
+      --science-cta-border: rgba(148, 163, 184, 0.4);
+      --science-btn-soft-bg: #ffffff;
+      --science-concept-bg: rgba(79, 70, 229, 0.1);
+      --science-concept-border: rgba(79, 70, 229, 0.22);
+      --science-concept-text: #312e81;
+      --chart-axis: rgba(148, 163, 184, 0.45);
+      --chart-grid: rgba(148, 163, 184, 0.24);
+      --chart-muted: #64748b;
+      --chart-ink: #1e293b;
+      --chart-accent: #2563eb;
+      --chart-band: rgba(37, 99, 235, 0.14);
+      --chart-tip-bg: rgba(255, 255, 255, 0.98);
+      --transition-art-bg: rgba(247, 251, 255, 0.95);
+      --transition-art-overlay: rgba(219, 234, 254, 0.6);
     }
 
     * { box-sizing: border-box; }
 
+    html { font-size: 85%; }
+    @media (max-width: 1200px) { html { font-size: 90%; } }
+    @media (max-width: 760px) { html { font-size: 95%; } }
+
     body {
       margin: 0;
+      min-height: 100vh;
+      position: relative;
+      isolation: isolate;
+      overflow-x: clip;
       font-family: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
-      background: radial-gradient(120% 70% at 20% -10%, #eef6ff 0%, transparent 45%), var(--bg);
+      color: var(--science-text);
+      background-color: var(--science-bg-3);
+      background-image:
+        radial-gradient(circle at 50% -20%, rgba(34, 211, 238, 0.25), transparent 45%),
+        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.25), transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, var(--science-grid-size) var(--science-grid-size), var(--science-grid-size) var(--science-grid-size);
+      background-position: 0 0, 0 0, -1px -1px, -1px -1px;
+      background-repeat: no-repeat, no-repeat, repeat, repeat;
+      background-attachment: fixed, fixed, fixed, fixed;
       line-height: 1.6;
+    }
+
+    html[data-theme="light"] body {
+      background-image:
+        radial-gradient(circle at 50% -20%, rgba(34, 211, 238, 0.2), transparent 45%),
+        radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.16), transparent 50%),
+        linear-gradient(rgba(15, 23, 42, 0.13) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.13) 1px, transparent 1px);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+      mix-blend-mode: screen;
+      background:
+        radial-gradient(circle, rgba(186, 230, 253, 0.56) 0 1.3px, transparent 2.2px),
+        radial-gradient(circle, rgba(125, 211, 252, 0.48) 0 1.2px, transparent 2.1px),
+        radial-gradient(circle, rgba(167, 139, 250, 0.38) 0 1.2px, transparent 2px);
+      background-size: 260px 260px, 320px 320px, 380px 380px;
+      background-position: 0 0, 104px 86px, 66px 126px;
+      animation: scienceParticleRise 74s linear infinite;
+    }
+
+    body::after {
+      content: none;
+    }
+
+    html[data-theme="light"] body::before {
+      opacity: 0.28;
+      mix-blend-mode: normal;
+      background:
+        radial-gradient(circle, rgba(37, 99, 235, 0.26) 0 1.3px, transparent 2.2px),
+        radial-gradient(circle, rgba(14, 165, 183, 0.24) 0 1.2px, transparent 2.1px),
+        radial-gradient(circle, rgba(99, 102, 241, 0.22) 0 1.2px, transparent 2px);
+    }
+
+    @keyframes scienceParticleRise {
+      from {
+        background-position: 0 0, 104px 86px, 66px 126px;
+      }
+      to {
+        background-position: 0 -260px, 104px -234px, 66px -254px;
+      }
     }
 
     a { color: inherit; }
@@ -37,13 +166,15 @@
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 40;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(8px);
+      z-index: 50;
+      border-bottom: 1px solid var(--science-line);
+      background: var(--science-topbar-bg);
+      backdrop-filter: blur(10px);
     }
 
     .topbar-inner {
+      position: relative;
+      z-index: 1;
       max-width: var(--max);
       margin: 0 auto;
       padding: 12px 16px;
@@ -76,23 +207,163 @@
 
     .top-links a {
       text-decoration: none;
-      color: var(--muted);
+      color: var(--science-muted);
       font-weight: 600;
     }
 
-    .top-links a:hover { color: var(--text); }
+    .top-links a:hover { color: var(--science-text); }
 
     .top-links .cta-mini {
       padding: 8px 12px;
       border-radius: 10px;
-      border: 1px solid #0f172a;
-      color: var(--text);
+      border: 1px solid rgba(148, 231, 255, 0.54);
+      color: #f8fdff;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+        linear-gradient(135deg, rgba(124, 58, 237, 0.68), rgba(14, 165, 233, 0.66), rgba(45, 212, 191, 0.56));
+      backdrop-filter: blur(14px) saturate(138%);
+      -webkit-backdrop-filter: blur(14px) saturate(138%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.46),
+        inset 0 -8px 16px rgba(8, 18, 42, 0.2),
+        0 10px 24px rgba(14, 165, 233, 0.22);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+    }
+
+    .top-links .cta-mini:hover {
+      color: #f8fdff;
+      transform: translateY(-1px);
+      filter: saturate(1.05);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.56),
+        inset 0 -10px 18px rgba(8, 18, 42, 0.22),
+        0 14px 28px rgba(14, 165, 233, 0.28);
+    }
+
+    html[data-theme="light"] .top-links .cta-mini {
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.66),
+        inset 0 -8px 14px rgba(37, 99, 235, 0.08),
+        0 10px 22px rgba(37, 99, 235, 0.16);
+    }
+
+    .reading-rail {
+      position: fixed;
+      top: 98px;
+      left: max(10px, calc((100vw - var(--max)) / 2 - 148px));
+      right: auto;
+      z-index: 48;
+      width: 142px;
+    }
+
+    [dir="rtl"] .reading-rail {
+      right: max(10px, calc((100vw - var(--max)) / 2 - 148px));
+      left: auto;
+    }
+
+    .stage-nav {
+      border: 1px solid var(--science-line);
+      border-radius: 12px;
+      background: var(--science-panel-soft);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      backdrop-filter: blur(9px);
+    }
+
+    .stage-nav-title {
+      margin: 0 0 2px;
+      font-size: 0.68rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--science-muted);
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .stage-link {
+      border: 1px solid var(--science-line);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--science-muted);
+      background: rgba(15, 23, 42, 0.2);
+      padding: 8px 7px;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+    }
+
+    .stage-link:hover {
+      color: var(--science-text);
+      border-color: rgba(34, 211, 238, 0.5);
+      background: rgba(34, 211, 238, 0.1);
+    }
+
+    .stage-link.is-active {
+      color: var(--science-text);
+      border-color: rgba(34, 211, 238, 0.62);
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(99, 102, 241, 0.16));
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.22);
+    }
+
+    .stage-link-index {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      font-size: 0.68rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: inherit;
+    }
+
+    .stage-link-text {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .stage-link-main {
+      font-size: 0.73rem;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .stage-link-sub {
+      font-size: 0.7rem;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--science-muted);
+    }
+
+    .stage-link.is-active .stage-link-sub,
+    .stage-link:hover .stage-link-sub {
+      color: var(--science-text);
+    }
+
+    html[data-theme="light"] .stage-link {
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    html[data-theme="light"] .stage-link.is-active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(14, 165, 183, 0.12));
     }
 
     .hero {
+      position: relative;
+      z-index: 1;
       max-width: var(--max);
       margin: 0 auto;
-      padding: 56px 16px 40px;
+      padding: 54px 16px 30px;
     }
 
     .kicker {
@@ -100,14 +371,15 @@
       font-weight: 700;
       letter-spacing: 0.11em;
       text-transform: uppercase;
-      color: #0f4a7d;
+      color: var(--science-kicker);
       margin-bottom: 14px;
       display: inline-block;
     }
 
     h1,
     h2,
-    h3 {
+    h3,
+    h4 {
       font-family: "Source Serif 4", Georgia, serif;
       letter-spacing: -0.02em;
       line-height: 1.2;
@@ -117,14 +389,41 @@
     .hero h1 {
       font-size: clamp(2rem, 4.8vw, 3.5rem);
       max-width: 880px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
+    }
+
+    .hero-byline {
+      margin: 0 0 16px;
+      font-size: 1.02rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #9ad7ff;
+    }
+
+    html[data-theme="light"] .hero-byline {
+      color: #0f4a7d;
     }
 
     .hero p {
       max-width: 820px;
       margin: 0;
-      color: var(--muted);
+      color: var(--science-muted);
       font-size: 1.06rem;
+    }
+
+    .preface {
+      margin-top: 20px;
+      border: 1px solid var(--science-line);
+      background: linear-gradient(160deg, var(--science-panel), var(--science-panel-soft));
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+    }
+
+    .preface p {
+      margin: 0;
+      font-size: 1.02rem;
+      line-height: 1.78;
     }
 
     .journals {
@@ -138,14 +437,16 @@
       font-family: "Source Serif 4", Georgia, serif;
       font-size: 1.02rem;
       font-weight: 700;
-      border: 1px solid #cad8e6;
+      border: 1px solid var(--science-line);
       border-radius: 999px;
       padding: 6px 14px;
-      background: #f8fbff;
-      color: #0b395f;
+      background: var(--science-journal-bg);
+      color: var(--science-journal-text);
     }
 
     .pipeline {
+      position: relative;
+      z-index: 1;
       max-width: var(--max);
       margin: 0 auto;
       padding: 8px 16px 24px;
@@ -154,11 +455,18 @@
     }
 
     .step {
-      border: 1px solid var(--line);
+      border: 1px solid var(--science-line);
       border-radius: 18px;
       padding: 18px;
-      background: var(--panel);
-      scroll-margin-top: 86px;
+      background: linear-gradient(165deg, var(--science-panel), var(--science-panel-soft));
+      scroll-margin-top: 130px;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+    }
+
+    .step-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 90px;
+      gap: 14px;
     }
 
     .step-head {
@@ -184,26 +492,57 @@
     .step-tagline {
       margin-top: 6px;
       font-size: 0.98rem;
-      color: var(--muted);
+      color: var(--science-muted);
       font-weight: 600;
     }
 
     .step-link {
       text-decoration: none;
-      border: 1px solid var(--line);
+      border: 1px solid var(--science-line);
       border-radius: 10px;
       padding: 7px 10px;
       font-size: 0.82rem;
-      color: #334155;
-      background: #ffffff;
+      color: var(--science-muted);
+      background: var(--science-subpanel);
       font-weight: 700;
       white-space: nowrap;
     }
 
     .step-desc {
       margin-top: 12px;
-      color: #1e293b;
+      color: var(--science-text);
       font-size: 1.02rem;
+    }
+
+    .margin-notes {
+      align-self: start;
+      position: sticky;
+      top: 124px;
+      border: 1px solid var(--science-line);
+      border-radius: 12px;
+      background: var(--science-subpanel);
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+      justify-items: center;
+    }
+
+    .margin-title {
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--science-muted);
+      font-weight: 800;
+    }
+
+    .margin-chip {
+      font-size: 0.74rem;
+      border-radius: 999px;
+      border: 1px solid var(--science-line-strong);
+      padding: 2px 7px;
+      color: var(--science-muted);
+      font-weight: 700;
+      line-height: 1;
     }
 
     .cols {
@@ -214,10 +553,10 @@
     }
 
     .subpanel {
-      border: 1px solid #dde7f1;
+      border: 1px solid var(--science-line);
       border-radius: 12px;
       padding: 12px;
-      background: #ffffff;
+      background: var(--science-subpanel);
     }
 
     .subpanel h3 {
@@ -234,20 +573,252 @@
     }
 
     .subpanel li {
-      color: #1f2937;
+      color: var(--science-text);
       line-height: 1.45;
       font-size: 0.94rem;
     }
 
+    .citations-panel ol {
+      list-style: none;
+      padding-left: 0;
+      margin-left: 0;
+      gap: 10px;
+    }
+
+    .why-box {
+      margin-top: 12px;
+      border: 1px solid var(--science-line);
+      border-radius: 10px;
+      padding: 10px;
+      background: linear-gradient(145deg, rgba(34, 211, 238, 0.1), rgba(124, 58, 237, 0.08));
+      display: grid;
+      gap: 8px;
+    }
+
+    html[data-theme="light"] .why-box {
+      background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(14, 165, 233, 0.08));
+    }
+
+    .why-box h4 {
+      margin: 0;
+      font-size: 0.98rem;
+    }
+
+    .why-main {
+      margin: 0;
+      color: var(--science-muted);
+      font-size: 0.92rem;
+      line-height: 1.56;
+    }
+
+    .why-support {
+      margin: 0;
+      color: var(--science-text);
+      opacity: 0.88;
+      font-size: 0.84rem;
+      line-height: 1.52;
+    }
+
+    .why-signal {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      border: 1px dashed var(--science-line-strong);
+      border-radius: 10px;
+      padding: 4px 10px 4px 8px;
+      background: var(--science-btn-soft-bg);
+      max-width: 100%;
+    }
+
+    .why-signal-bars {
+      display: inline-grid;
+      grid-auto-flow: column;
+      align-items: end;
+      gap: 2px;
+      height: 12px;
+    }
+
+    .why-signal-bars i {
+      display: block;
+      width: 3px;
+      border-radius: 999px;
+      background: var(--science-kicker);
+      opacity: 0.9;
+    }
+
+    .why-signal-bars i:nth-child(1) { height: 5px; }
+    .why-signal-bars i:nth-child(2) { height: 9px; }
+    .why-signal-bars i:nth-child(3) { height: 7px; }
+
+    .why-signal-text {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--science-muted);
+      white-space: normal;
+    }
+
+    .deep-dive {
+      margin-top: 12px;
+      border-top: 1px dashed var(--science-line);
+      padding-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .deep-dive-kicker {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--science-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+    }
+
+    .paper-detail {
+      border: 1px solid var(--science-line);
+      border-radius: 10px;
+      padding: 0 10px;
+      background: linear-gradient(140deg, rgba(148, 163, 184, 0.04), rgba(34, 211, 238, 0.05));
+      transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .paper-detail::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--paper-accent, #38bdf8);
+      opacity: 0.52;
+      transition: opacity 0.18s ease;
+    }
+
+    .paper-detail summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 10px 0;
+      color: var(--science-text);
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .paper-detail summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .paper-summary-index {
+      border: 1px solid var(--paper-accent, #38bdf8);
+      border-radius: 7px;
+      padding: 2px 6px;
+      font-size: 0.68rem;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      color: var(--paper-accent, #38bdf8);
+      background: rgba(34, 211, 238, 0.06);
+      min-width: 30px;
+      text-align: center;
+    }
+
+    .paper-summary-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 0.86rem;
+      letter-spacing: 0.02em;
+    }
+
+    .paper-summary-main::after {
+      content: "";
+      width: 22px;
+      height: 1px;
+      background: var(--science-line-strong);
+      opacity: 0.75;
+    }
+
+    .paper-summary-ref {
+      border: 1px solid var(--science-line-strong);
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-size: 0.76rem;
+      color: var(--science-muted);
+      font-weight: 700;
+      line-height: 1.35;
+      background: rgba(148, 163, 184, 0.08);
+    }
+
+    .paper-summary-icon {
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid var(--science-muted);
+      border-bottom: 2px solid var(--science-muted);
+      transform: rotate(45deg);
+      transition: transform 0.18s ease, border-color 0.18s ease;
+      margin-right: 2px;
+    }
+
+    .paper-detail:hover {
+      border-color: var(--science-line-strong);
+      box-shadow: 0 6px 16px rgba(2, 6, 23, 0.2);
+    }
+
+    .paper-detail[open] {
+      border-color: rgba(34, 211, 238, 0.42);
+      background: linear-gradient(150deg, rgba(34, 211, 238, 0.08), rgba(124, 58, 237, 0.08));
+    }
+
+    .paper-detail[open]::before {
+      opacity: 0.96;
+    }
+
+    .paper-detail[open] .paper-summary-index {
+      color: #0b1325;
+      border-color: transparent;
+      background: var(--paper-accent, #38bdf8);
+    }
+
+    .paper-detail[open] .paper-summary-icon {
+      transform: rotate(225deg);
+      border-color: #67e8f9;
+    }
+
+    html[data-theme="light"] .paper-detail[open] .paper-summary-index {
+      color: #ffffff;
+    }
+
+    .paper-detail p {
+      margin: 0 0 10px;
+      font-size: 0.88rem;
+      color: var(--science-muted);
+      line-height: 1.55;
+    }
+
+    .paper-citation {
+      font-size: 0.81rem !important;
+      color: var(--science-text) !important;
+      opacity: 0.9;
+    }
+
     .pull-quote {
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      margin: 6px 0;
-      padding: 28px 6px;
+      margin: 8px 0;
+      padding: 18px 12px 18px 16px;
       font-family: "Source Serif 4", Georgia, serif;
-      font-size: clamp(1.35rem, 2.8vw, 2rem);
+      font-size: clamp(1.45rem, 3.1vw, 2.25rem);
       line-height: 1.36;
-      color: #0f2f4a;
+      color: var(--science-quote);
+      font-style: italic;
+      border-left: 4px solid var(--accent);
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.08), transparent 60%);
     }
 
     .pull-quote small {
@@ -255,22 +826,222 @@
       margin-top: 10px;
       font-family: "Source Sans 3", sans-serif;
       font-size: 0.86rem;
-      color: var(--muted);
+      color: var(--science-muted);
       letter-spacing: 0.04em;
       text-transform: uppercase;
       font-weight: 700;
+      font-style: normal;
+    }
+
+    .mindmap-figure {
+      margin: 8px 0 10px;
+      border: 1px solid var(--science-line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(8, 13, 28, 0.28);
+    }
+
+    .mindmap-canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: transparent;
+    }
+
+    .mindmap-canvas text {
+      text-rendering: geometricPrecision;
+    }
+
+    .mindmap-figure figcaption {
+      margin: 0;
+      padding: 9px 12px;
+      font-size: 0.86rem;
+      color: var(--science-muted);
+      border-top: 1px solid var(--science-line);
+      background: rgba(148, 163, 184, 0.04);
+    }
+
+    .step-transition {
+      border: 1px dashed var(--science-line);
+      border-radius: 14px;
+      padding: 14px;
+      background: linear-gradient(160deg, rgba(34, 211, 238, 0.06), rgba(124, 58, 237, 0.08));
+      display: grid;
+      gap: 12px;
+    }
+
+    .transition-text {
+      margin: 0;
+      font-size: 1.03rem;
+      line-height: 1.72;
+      color: var(--science-text);
+    }
+
+    .transition-art {
+      margin: 0;
+      border: 1px solid var(--science-line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(8, 13, 28, 0.26);
+    }
+
+    .transition-art svg {
+      width: 100%;
+      height: 150px;
+      display: block;
+    }
+
+    .transition-art figcaption {
+      margin: 0;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      color: var(--science-muted);
+      border-top: 1px solid var(--science-line);
+    }
+
+    .concept {
+      display: inline;
+      padding: 0.05em 0.3em;
+      border-radius: 0.35em;
+      background: var(--science-concept-bg);
+      border: 1px solid var(--science-concept-border);
+      color: var(--science-concept-text);
+      font-weight: 700;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    .comparison {
+      position: relative;
+      z-index: 1;
+      max-width: var(--max);
+      margin: 8px auto 0;
+      padding: 0 16px 6px;
+    }
+
+    .comparison-shell {
+      border: 1px solid var(--science-line);
+      border-radius: 18px;
+      background: linear-gradient(165deg, var(--science-panel), var(--science-panel-soft));
+      padding: 18px;
+    }
+
+    html[data-theme="light"] .comparison-shell {
+      background: linear-gradient(165deg, rgba(255, 255, 255, 0.99), rgba(247, 250, 255, 0.98));
+      border-color: rgba(148, 163, 184, 0.3);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .comparison-shell h2 {
+      font-size: clamp(1.3rem, 2.6vw, 1.95rem);
+      margin-bottom: 6px;
+    }
+
+    .comparison-shell p {
+      margin: 0 0 14px;
+      color: var(--science-muted);
+    }
+
+    .comparison-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 6px;
+      border: 1px solid var(--science-line);
+      border-radius: 999px;
+      background: rgba(8, 13, 28, 0.26);
+    }
+
+    .comparison-mode {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--chart-muted);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .comparison-mode:hover {
+      color: var(--science-text);
+    }
+
+    .comparison-mode.is-active {
+      border-color: var(--chart-accent);
+      color: var(--chart-accent);
+      background: var(--chart-band);
+    }
+
+    .comparison-chart-shell {
+      position: relative;
+      border: 1px solid var(--science-line);
+      border-radius: 14px;
+      background: rgba(8, 13, 28, 0.3);
+      overflow: hidden;
+    }
+
+    html[data-theme="light"] .mindmap-figure,
+    html[data-theme="light"] .transition-art,
+    html[data-theme="light"] .comparison-controls {
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    html[data-theme="light"] .comparison-chart-shell {
+      background: #ffffff;
+      border-color: rgba(148, 163, 184, 0.28);
+    }
+
+    .comparison-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: transparent;
+      cursor: crosshair;
+    }
+
+    .comparison-tooltip {
+      position: absolute;
+      z-index: 3;
+      min-width: 156px;
+      border: 1px solid var(--science-line-strong);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: var(--chart-tip-bg);
+      color: var(--science-text);
+      box-shadow: 0 10px 20px rgba(2, 6, 23, 0.2);
+      font-size: 0.78rem;
+      line-height: 1.4;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+    }
+
+    .comparison-tooltip .tip-k {
+      color: var(--chart-muted);
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .comparison-tooltip .tip-row + .tip-row {
+      margin-top: 3px;
     }
 
     .citations {
+      position: relative;
+      z-index: 1;
       max-width: var(--max);
       margin: 10px auto 0;
       padding: 10px 16px 30px;
     }
 
     .citations-shell {
-      border: 1px solid var(--line);
+      border: 1px solid var(--science-line);
       border-radius: 18px;
-      background: var(--panel);
+      background: linear-gradient(165deg, var(--science-panel), var(--science-panel-soft));
       padding: 18px;
     }
 
@@ -281,7 +1052,7 @@
 
     .citations-shell p {
       margin: 0 0 14px;
-      color: var(--muted);
+      color: var(--science-muted);
     }
 
     .citations-shell ol {
@@ -292,22 +1063,24 @@
     }
 
     .citations-shell li {
-      color: #1e293b;
+      color: var(--science-text);
       font-size: 0.93rem;
       line-height: 1.5;
     }
 
     .cta {
+      position: relative;
+      z-index: 1;
       max-width: var(--max);
       margin: 6px auto 56px;
       padding: 0 16px;
     }
 
     .cta-shell {
-      border: 1px solid #ced9e5;
+      border: 1px solid var(--science-cta-border);
       border-radius: 18px;
       padding: 22px;
-      background: linear-gradient(155deg, #f7fbff, #ffffff);
+      background: linear-gradient(155deg, var(--science-panel), var(--science-subpanel));
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -322,7 +1095,7 @@
 
     .cta-shell p {
       margin: 0;
-      color: var(--muted);
+      color: var(--science-muted);
     }
 
     .cta-actions {
@@ -345,19 +1118,63 @@
     }
 
     .btn-primary {
-      background: var(--cta);
-      color: var(--cta-text);
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #ffffff;
+      border-color: transparent;
     }
 
     .btn-soft {
-      border-color: #c9d8e8;
-      background: #ffffff;
-      color: #0f172a;
+      border-color: var(--science-line-strong);
+      background: var(--science-btn-soft-bg);
+      color: var(--science-text);
     }
 
-    @media (max-width: 900px) {
-      .cols {
-        grid-template-columns: 1fr;
+    :root {
+      --science-box-glow: 0 0 0 1px rgba(56, 189, 248, 0.34), 0 0 18px rgba(56, 189, 248, 0.2);
+    }
+
+    html[data-theme="light"] {
+      --science-box-glow: 0 0 0 1px rgba(37, 99, 235, 0.2), 0 0 14px rgba(37, 99, 235, 0.12);
+    }
+
+    :is(.step-shell, .subpanel, .paper-detail, .mindmap-figure, .transition-art, .comparison-shell, .comparison-chart-shell, .citations-shell, .cta-shell, .reading-rail-card, .step-transition, .preface) {
+      box-shadow: var(--science-box-glow);
+    }
+
+    @media (max-width: 980px) {
+      .step-shell { grid-template-columns: 1fr; }
+      .margin-notes {
+        position: static;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        justify-items: start;
+      }
+      .margin-title { grid-column: 1 / -1; }
+      .cols { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 1180px) {
+      .reading-rail { display: none; }
+    }
+
+    @media (max-width: 700px) {
+      .top-links { gap: 8px; }
+      .top-links a { font-size: 0.86rem; }
+      .paper-detail summary {
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+      }
+      .paper-summary-main {
+        font-size: 0.82rem;
+      }
+      .paper-summary-main::after,
+      .paper-summary-ref {
+        display: none;
+      }
+    }
+
+    @media (max-width: 900px), (pointer: coarse) {
+      body {
+        background-attachment: scroll, scroll, scroll, scroll;
       }
     }
   </style>
@@ -367,30 +1184,55 @@
     <div class="topbar-inner">
       <a class="brand" href="/index.html">
         <img src="/assets/quizall-icon.svg" alt="QuizAll" />
-        <span>QuizAll Science</span>
+        <span id="brandText">QuizAll Science</span>
       </a>
       <nav class="top-links" aria-label="Science page links">
-        <a href="/create.html">App Workspace</a>
-        <a href="/index.html" class="cta-mini">Open QuizAll</a>
+        <a href="/create.html" id="topLinkWorkspace">App Workspace</a>
+        <a href="/index.html" class="cta-mini" id="topLinkOpen">Open QuizAll</a>
       </nav>
     </div>
   </header>
 
+  <aside class="reading-rail" aria-label="Stage navigation">
+    <nav class="stage-nav" id="stageNav">
+      <p class="stage-nav-title" id="stageNavTitle">Stage Navigation</p>
+    </nav>
+  </aside>
+
   <section class="hero">
-    <span class="kicker">Research Foundation</span>
-    <h1>A 6-step learning pipeline grounded in the most replicated findings in cognitive science.</h1>
-    <p>
+    <span class="kicker" id="heroKicker">Research Foundation</span>
+    <h1 id="heroTitle">A 6-step learning pipeline grounded in the most replicated findings in cognitive science.</h1>
+    <p class="hero-byline" id="heroByline">By Ming (Tiger) Yang</p>
+    <p id="heroSummary">
       QuizAll operationalizes peer-reviewed evidence from top journals into concrete learning actions: from schema activation and retrieval practice to transfer and spaced repetition.
     </p>
+    <blockquote class="preface">
+      <p id="prefaceQuote">"学习不是信息的堆积，而是认知的重构。QuizAll 的核心逻辑并非凭空而来，而是植根于认知心理学数十年的实证研究。本文将揭示这 6 个关键步骤如何协同工作，将瞬时记忆转化为永久技能。"</p>
+    </blockquote>
     <div class="journals" id="journalList"></div>
   </section>
 
   <main class="pipeline" id="pipeline"></main>
 
+  <section class="comparison" id="comparison">
+    <div class="comparison-shell">
+      <h2 id="comparisonTitle">Cramming vs QuizAll Science Method</h2>
+      <p id="comparisonIntro">Traditional cramming decays fast after a short peak. QuizAll's six-step method repeatedly re-activates memory traces and flattens forgetting over time.</p>
+      <div class="comparison-controls" role="tablist" aria-label="Dataset mode">
+        <button class="comparison-mode is-active" id="modeTheory" data-chart-mode="theory" type="button">Theoretical Prediction</button>
+        <button class="comparison-mode" id="modeActual" data-chart-mode="actual" type="button">Actual User Data</button>
+      </div>
+      <div class="comparison-chart-shell" id="comparisonChartShell">
+        <svg class="comparison-svg" id="comparisonChart" viewBox="0 0 980 470" role="img" aria-label="Forgetting curve comparison"></svg>
+        <div class="comparison-tooltip" id="comparisonTooltip" hidden></div>
+      </div>
+    </div>
+  </section>
+
   <section class="citations" id="all-citations">
     <div class="citations-shell">
-      <h2>Full Citation Index (33)</h2>
-      <p>Peer-reviewed references from the QuizAll Research Foundation v2 source.</p>
+      <h2 id="citationsTitle">Full Citation Index (33)</h2>
+      <p id="citationsIntro">Peer-reviewed references from the QuizAll Research Foundation v2 source.</p>
       <ol id="fullCitationList"></ol>
     </div>
   </section>
@@ -398,82 +1240,871 @@
   <section class="cta">
     <div class="cta-shell">
       <div>
-        <h3>Use The Science In Your Next Session</h3>
-        <p>Return to QuizAll and activate the steps through your own project workflow.</p>
+        <h3 id="ctaTitle">Use The Science In Your Next Session</h3>
+        <p id="ctaBody">Return to QuizAll and activate the steps through your own project workflow.</p>
       </div>
       <div class="cta-actions">
-        <a class="btn btn-primary" href="/create.html">Open Exam Prep Workspace</a>
-        <a class="btn btn-soft" href="/index.html">Back to Dashboard</a>
+        <a class="btn btn-primary" href="/create.html" id="ctaPrimary">Open Exam Prep Workspace</a>
+        <a class="btn btn-soft" href="/index.html" id="ctaSecondary">Back to Dashboard</a>
       </div>
     </div>
   </section>
 
   <script src="/lib/scienceData.js"></script>
+  <script src="/lib/scienceLocale.js"></script>
+  <script src="/lib/navUserBar.js"></script>
   <script>
     (function () {
-      const scienceData = window.quizallScienceData;
+      var THEME_KEY = "theme";
+      var prefersDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+      function resolveTheme(rawTheme) {
+        if (rawTheme === "auto") {
+          return prefersDark && prefersDark.matches ? "dark" : "light";
+        }
+        return rawTheme === "light" ? "light" : "dark";
+      }
+
+      function applyThemeFromStorage() {
+        var saved = localStorage.getItem(THEME_KEY) || "dark";
+        var resolved = resolveTheme(saved);
+        document.documentElement.setAttribute("data-theme", resolved);
+      }
+
+      applyThemeFromStorage();
+
+      if (prefersDark && prefersDark.addEventListener) {
+        prefersDark.addEventListener("change", function () {
+          if ((localStorage.getItem(THEME_KEY) || "dark") === "auto") {
+            applyThemeFromStorage();
+          }
+        });
+      }
+
+      window.addEventListener("storage", function (event) {
+        if (event.key === THEME_KEY) applyThemeFromStorage();
+        if (event.key === "locale") window.location.reload();
+      });
+
+      document.addEventListener("themechange", applyThemeFromStorage);
+
+      var scienceData = window.quizallScienceData;
       if (!scienceData) return;
 
-      const journalsEl = document.getElementById("journalList");
-      const pipelineEl = document.getElementById("pipeline");
-      const citationEl = document.getElementById("fullCitationList");
+      var localeApi = window.quizallScienceLocale || null;
+      var currentLocale = localeApi && typeof localeApi.resolveLocale === "function"
+        ? localeApi.resolveLocale(localStorage.getItem("locale") || navigator.language || "en")
+        : "en";
+      var copy = localeApi && typeof localeApi.getCopy === "function" ? localeApi.getCopy(currentLocale) : {};
+
+      document.documentElement.lang = currentLocale;
+      document.documentElement.dir = currentLocale === "ar" ? "rtl" : "ltr";
+
+      function text(id, value) {
+        var el = document.getElementById(id);
+        if (el && typeof value === "string" && value) el.textContent = value;
+      }
+
+      text("brandText", copy.brand);
+      text("topLinkWorkspace", copy.navWorkspace);
+      text("topLinkOpen", copy.navOpen);
+      text("heroKicker", copy.kicker);
+      text("heroTitle", copy.heroTitle);
+      text("heroByline", copy.byline);
+      text("heroSummary", copy.heroSummary);
+      text("prefaceQuote", copy.preface);
+      text("comparisonTitle", copy.comparisonTitle);
+      text("comparisonIntro", copy.comparisonIntro);
+      text("chartTime", copy.chartTime);
+      text("chartRetention", copy.chartRetention);
+      text("chartTag1", copy.chartTag1);
+      text("chartTag2", copy.chartTag2);
+      text("chartTag3", copy.chartTag3);
+      text("chartLabelCramming", copy.chartLabelCramming);
+      text("chartLabelMethod", copy.chartLabelMethod);
+      text("modeTheory", copy.chartModeTheory);
+      text("modeActual", copy.chartModeActual);
+      text("stageNavTitle", copy.railStage || "Current Stage");
+      text("citationsTitle", copy.citationsTitle);
+      text("citationsIntro", copy.citationsIntro);
+      text("ctaTitle", copy.ctaTitle);
+      text("ctaBody", copy.ctaBody);
+      text("ctaPrimary", copy.ctaPrimary);
+      text("ctaSecondary", copy.ctaSecondary);
+      if (copy.pageTitle) document.title = copy.pageTitle;
+
+      var journalsEl = document.getElementById("journalList");
+      var pipelineEl = document.getElementById("pipeline");
+      var citationEl = document.getElementById("fullCitationList");
+      var stageNavEl = document.getElementById("stageNav");
+
+      var transitionMap = copy.transitions || {};
+      var whyMap = copy.whyMap || {};
+
+      var conceptRegexList = [
+        /Desirable difficulties/gi,
+        /Testing effect/gi,
+        /Generation effect/gi,
+        /Cognitive load/gi,
+        /Zone of Proximal Development/gi,
+        /\bZPD\b/g,
+        /\bFlow\b/g,
+        /Spaced retrieval/gi,
+        /Spaced repetition/gi,
+        /Transfer-appropriate processing/gi
+      ];
+
+      function formatTemplate(template, context) {
+        return String(template || "").replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, function (_, key) {
+          return context && context[key] != null ? String(context[key]) : "";
+        });
+      }
+
+      function safeText(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function highlightConcepts(textValue) {
+        var output = String(textValue);
+        conceptRegexList.forEach(function (regex) {
+          output = output.replace(regex, function (match) {
+            return '<span class="concept">' + match + '</span>';
+          });
+        });
+        return output;
+      }
+
+      function buildAbstract(step, citation, index) {
+        var core = step.keyFindings[index % step.keyFindings.length];
+        var template = copy.abstractTemplate ||
+          "This paper reinforces the {{title}} stage by emphasizing: {{core}} In QuizAll, this evidence is operationalized through the action pattern \"{{tagline}}\".";
+        return formatTemplate(template, {
+          title: step.title,
+          core: core,
+          tagline: step.tagline,
+          citation: citation
+        });
+      }
+
+      function buildTransitionArt(step, idx) {
+        var accent = step.color && step.color.accent ? step.color.accent : "#22d3ee";
+        var hue = (idx * 53) % 360;
+        return (
+          '<svg viewBox="0 0 980 220" aria-hidden="true" focusable="false">' +
+            '<defs>' +
+              '<linearGradient id="bg' + idx + '" x1="0" y1="0" x2="1" y2="1">' +
+                '<stop offset="0" style="stop-color:var(--transition-art-bg);" />' +
+                '<stop offset="1" style="stop-color:var(--transition-art-overlay);" />' +
+              '</linearGradient>' +
+              '<linearGradient id="g' + idx + '" x1="0" y1="0" x2="1" y2="1">' +
+                '<stop offset="0" stop-color="' + accent + '" stop-opacity="0.9" />' +
+                '<stop offset="1" stop-color="hsl(' + hue + ', 85%, 62%)" stop-opacity="0.68" />' +
+              '</linearGradient>' +
+            '</defs>' +
+            '<rect x="0" y="0" width="980" height="220" fill="url(#bg' + idx + ')" />' +
+            '<rect x="0" y="0" width="980" height="220" fill="url(#g' + idx + ')" opacity="0.12" />' +
+            '<g stroke="url(#g' + idx + ')" stroke-width="2.2" fill="none" opacity="0.92">' +
+              '<path d="M30 170 C160 70, 320 85, 460 126 C590 164, 760 160, 950 60" />' +
+              '<path d="M40 140 C180 38, 340 48, 500 100 C670 154, 810 130, 940 24" opacity="0.62" />' +
+            '</g>' +
+            '<g fill="url(#g' + idx + ')" opacity="0.9">' +
+              '<circle cx="140" cy="120" r="8.4" />' +
+              '<circle cx="360" cy="102" r="8.4" />' +
+              '<circle cx="620" cy="145" r="8.4" />' +
+              '<circle cx="860" cy="84" r="8.4" />' +
+            '</g>' +
+          '</svg>'
+        );
+      }
+
+      function buildMindmapFigure() {
+        function esc(value) {
+          return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function hexToRgba(hex, alpha) {
+          var clean = String(hex || "").replace("#", "");
+          if (clean.length === 3) {
+            clean = clean.split("").map(function (c) { return c + c; }).join("");
+          }
+          if (!/^[0-9a-fA-F]{6}$/.test(clean)) return "rgba(34,211,238," + alpha + ")";
+          var r = parseInt(clean.slice(0, 2), 16);
+          var g = parseInt(clean.slice(2, 4), 16);
+          var b = parseInt(clean.slice(4, 6), 16);
+          return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+        }
+
+        function readNode(mapNodes, key, fallbackTitle, fallbackKeywords) {
+          var node = mapNodes && mapNodes[key] ? mapNodes[key] : {};
+          var keywords = Array.isArray(node.keywords) && node.keywords.length ? node.keywords.slice(0, 2) : fallbackKeywords;
+          return {
+            title: node.title || fallbackTitle,
+            keywords: keywords
+          };
+        }
+
+        function renderRulerIcon(x, y, color) {
+          return (
+            '<g transform="translate(' + x + ',' + y + ')" fill="none" stroke="' + color + '" stroke-width="1.8">' +
+              '<rect x="0" y="0" width="24" height="14" rx="2.5" />' +
+              '<line x1="4" y1="4" x2="4" y2="10" />' +
+              '<line x1="8" y1="6" x2="8" y2="10" />' +
+              '<line x1="12" y1="4" x2="12" y2="10" />' +
+              '<line x1="16" y1="6" x2="16" y2="10" />' +
+              '<line x1="20" y1="4" x2="20" y2="10" />' +
+            '</g>'
+          );
+        }
+
+        function renderClockIcon(x, y, color) {
+          return (
+            '<g transform="translate(' + x + ',' + y + ')" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round">' +
+              '<circle cx="9" cy="9" r="8" />' +
+              '<line x1="9" y1="9" x2="9" y2="4.5" />' +
+              '<line x1="9" y1="9" x2="12.5" y2="11.5" />' +
+            '</g>'
+          );
+        }
+
+        function renderNode(spec) {
+          var textX = spec.x + 18;
+          var lineOneY = spec.y + 74;
+          var lineTwoY = spec.y + 96;
+          var icon = "";
+          if (spec.icon === "ruler") icon = renderRulerIcon(spec.x + spec.w - 40, spec.y + 12, spec.color);
+          if (spec.icon === "clock") icon = renderClockIcon(spec.x + spec.w - 34, spec.y + 10, spec.color);
+          return (
+            '<g>' +
+              '<rect x="' + spec.x + '" y="' + spec.y + '" width="' + spec.w + '" height="' + spec.h + '" rx="16" fill="' + hexToRgba(spec.color, 0.16) + '" stroke="' + spec.color + '" stroke-width="2.1" />' +
+              '<text x="' + (spec.x + 18) + '" y="' + (spec.y + 28) + '" class="mm-step">' + esc(spec.stepLabel) + '</text>' +
+              '<text x="' + textX + '" y="' + (spec.y + 54) + '" class="mm-node-title">' + esc(spec.title) + '</text>' +
+              '<text x="' + textX + '" y="' + lineOneY + '" class="mm-key">' + esc(spec.key1) + '</text>' +
+              '<text x="' + textX + '" y="' + lineTwoY + '" class="mm-key">' + esc(spec.key2) + '</text>' +
+              icon +
+            '</g>'
+          );
+        }
+
+        function renderWhyLabel(x, y, textValue) {
+          var width = Math.max(180, Math.min(360, String(textValue || "").length * 7.1 + 22));
+          return (
+            '<g transform="translate(' + x + ',' + y + ')">' +
+              '<rect x="0" y="0" width="' + width + '" height="28" rx="9" class="mm-why-badge" />' +
+              '<text x="10" y="19" class="mm-why-text">' + esc(textValue) + '</text>' +
+            '</g>'
+          );
+        }
+
+        var map = copy.mindmap || {};
+        var boundaries = map.boundaries || {};
+        var nodes = map.nodes || {};
+        var why = map.why || {};
+        var stepWord = copy.stepWord || "Step";
+
+        var schemaNode = readNode(nodes, "schema", "Schema Activation", ["Prior Knowledge", "Cognitive Load"]);
+        var retrievalNode = readNode(nodes, "retrieval", "Active Retrieval", ["Testing Effect", "Generation"]);
+        var difficultyNode = readNode(nodes, "difficulty", "Desirable Difficulties", ["Effortful Recall", "Durable Memory"]);
+        var zpdNode = readNode(nodes, "zpd", "ZPD Calibration", ["Challenge-Skill Fit", "Flow Zone"]);
+        var spacedNode = readNode(nodes, "spaced", "Spaced Repetition", ["Forgetting Curve", "Timing Control"]);
+        var feedbackNode = readNode(nodes, "feedback", "Feedback Loop", ["Error Signals", "Model Update"]);
+
+        var palette = {
+          schema: "#0f766e",
+          retrieval: "#1d4ed8",
+          difficulty: "#d97706",
+          zpd: "#7c3aed",
+          spaced: "#047857",
+          feedback: "#e11d48"
+        };
+
+        var svg =
+          '<svg class="mindmap-canvas" viewBox="0 0 1400 860" role="img" aria-label="' + esc(map.title || "QuizAll Research Foundation mindmap") + '">' +
+            '<defs>' +
+              '<pattern id="mm-grid" width="30" height="30" patternUnits="userSpaceOnUse">' +
+                '<path d="M30 0 H0 V30" fill="none" stroke="rgba(148,163,184,0.17)" stroke-width="1" />' +
+              '</pattern>' +
+              '<marker id="mm-arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">' +
+                '<path d="M0,0 L10,6 L0,12 z" fill="rgba(148,163,184,0.85)" />' +
+              '</marker>' +
+              '<marker id="mm-arrow-cyan" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">' +
+                '<path d="M0,0 L10,6 L0,12 z" fill="#67e8f9" />' +
+              '</marker>' +
+              '<style>' +
+                '.mm-title{font:700 36px "Source Serif 4", Georgia, serif; fill:var(--science-text); letter-spacing:-0.01em;}' +
+                '.mm-track{font:700 16px "Source Sans 3", sans-serif; fill:var(--science-muted); letter-spacing:0.04em; text-transform:uppercase;}' +
+                '.mm-boundary{fill:rgba(148,163,184,0.045); stroke:rgba(148,163,184,0.55); stroke-width:1.6; stroke-dasharray:7 6;}' +
+                '.mm-boundary-title{font:700 14px "Source Sans 3", sans-serif; fill:var(--science-text); letter-spacing:0.03em; text-transform:uppercase;}' +
+                '.mm-boundary-sub{font:600 12px "Source Sans 3", sans-serif; fill:var(--science-muted);}' +
+                '.mm-center{fill:var(--science-panel); stroke:rgba(148,163,184,0.62); stroke-width:2;}' +
+                '.mm-center-main{font:700 31px "Source Serif 4", Georgia, serif; fill:var(--science-text); text-anchor:middle;}' +
+                '.mm-center-sub{font:700 13px "Source Sans 3", sans-serif; fill:var(--science-muted); text-anchor:middle; letter-spacing:0.07em; text-transform:uppercase;}' +
+                '.mm-step{font:700 11px "Source Sans 3", sans-serif; fill:var(--science-muted); letter-spacing:0.1em; text-transform:uppercase;}' +
+                '.mm-node-title{font:700 24px "Source Serif 4", Georgia, serif; fill:var(--science-text);}' +
+                '.mm-key{font:600 13px "Source Sans 3", sans-serif; fill:var(--science-muted);}' +
+                '.mm-link{stroke:rgba(148,163,184,0.9); stroke-width:2.4; fill:none; marker-end:url(#mm-arrow);}' +
+                '.mm-link-dashed{stroke:#67e8f9; stroke-width:2.2; fill:none; stroke-dasharray:8 7; marker-end:url(#mm-arrow-cyan);}' +
+                '.mm-why-badge{fill:var(--science-btn-soft-bg); stroke:var(--science-line-strong); stroke-width:1.2;}' +
+                '.mm-why-text{font:700 12px "Source Sans 3", sans-serif; fill:#67e8f9;}' +
+              '</style>' +
+            '</defs>' +
+            '<rect x="0" y="0" width="1400" height="860" fill="url(#mm-grid)" opacity="0.74" />' +
+            '<text x="700" y="68" class="mm-track" text-anchor="middle">' + esc(map.path || "First Principles -> Operational Details") + '</text>' +
+            '<circle cx="700" cy="166" r="92" class="mm-center" />' +
+            '<text x="700" y="156" class="mm-center-main">' + esc(map.title || "QuizAll Research Foundation") + '</text>' +
+            '<text x="700" y="186" class="mm-center-sub">' + esc(map.mece || "MECE 6-Step Architecture") + '</text>' +
+
+            '<rect x="100" y="272" width="400" height="432" rx="18" class="mm-boundary" />' +
+            '<rect x="500" y="272" width="400" height="432" rx="18" class="mm-boundary" />' +
+            '<rect x="900" y="272" width="400" height="432" rx="18" class="mm-boundary" />' +
+
+            '<text x="120" y="296" class="mm-boundary-title">' + esc((boundaries.a && boundaries.a.title) || "Input & Encoding Boundary") + '</text>' +
+            '<text x="120" y="314" class="mm-boundary-sub">' + esc((boundaries.a && boundaries.a.subtitle) || "Structure -> Retrieval") + '</text>' +
+            '<text x="520" y="296" class="mm-boundary-title">' + esc((boundaries.b && boundaries.b.title) || "Optimization Boundary") + '</text>' +
+            '<text x="520" y="314" class="mm-boundary-sub">' + esc((boundaries.b && boundaries.b.subtitle) || "Difficulty -> ZPD") + '</text>' +
+            '<text x="920" y="296" class="mm-boundary-title">' + esc((boundaries.c && boundaries.c.title) || "Consolidation Boundary") + '</text>' +
+            '<text x="920" y="314" class="mm-boundary-sub">' + esc((boundaries.c && boundaries.c.subtitle) || "Spacing -> Feedback") + '</text>' +
+
+            '<path class="mm-link" d="M636 230 C560 258, 430 286, 300 320" />' +
+            '<path class="mm-link" d="M700 258 L700 320" />' +
+            '<path class="mm-link" d="M764 230 C840 258, 970 286, 1100 320" />' +
+            '<path class="mm-link" d="M300 440 L300 520" />' +
+            '<path class="mm-link" d="M700 440 L700 520" />' +
+            '<path class="mm-link" d="M1100 440 L1100 520" />' +
+
+            renderNode({
+              x: 140, y: 320, w: 320, h: 120, color: palette.schema,
+              stepLabel: stepWord + " 01", title: schemaNode.title, key1: schemaNode.keywords[0], key2: schemaNode.keywords[1]
+            }) +
+            renderNode({
+              x: 140, y: 520, w: 320, h: 120, color: palette.retrieval,
+              stepLabel: stepWord + " 02", title: retrievalNode.title, key1: retrievalNode.keywords[0], key2: retrievalNode.keywords[1]
+            }) +
+            renderNode({
+              x: 540, y: 320, w: 320, h: 120, color: palette.difficulty,
+              stepLabel: stepWord + " 03", title: difficultyNode.title, key1: difficultyNode.keywords[0], key2: difficultyNode.keywords[1]
+            }) +
+            renderNode({
+              x: 540, y: 520, w: 320, h: 120, color: palette.zpd, icon: "ruler",
+              stepLabel: stepWord + " 04", title: zpdNode.title, key1: zpdNode.keywords[0], key2: zpdNode.keywords[1]
+            }) +
+            renderNode({
+              x: 940, y: 320, w: 320, h: 120, color: palette.spaced, icon: "clock",
+              stepLabel: stepWord + " 05", title: spacedNode.title, key1: spacedNode.keywords[0], key2: spacedNode.keywords[1]
+            }) +
+            renderNode({
+              x: 940, y: 520, w: 320, h: 120, color: palette.feedback,
+              stepLabel: stepWord + " 06", title: feedbackNode.title, key1: feedbackNode.keywords[0], key2: feedbackNode.keywords[1]
+            }) +
+
+            '<path class="mm-link-dashed" d="M228 522 C66 494, 72 334, 230 338" />' +
+            '<path class="mm-link-dashed" d="M860 382 C962 420, 962 564, 860 602" />' +
+            '<path class="mm-link-dashed" d="M1014 520 C866 494, 870 332, 1018 340" />' +
+
+            renderWhyLabel(46, 458, (why.retrieveToSchema || "Why: retrieval errors refine schema")) +
+            renderWhyLabel(898, 458, (why.difficultyToZpd || "Why: productive difficulty calibrates challenge")) +
+            renderWhyLabel(846, 270, (why.feedbackToSpaced || "Why: feedback schedules next review")) +
+          '</svg>';
+
+        var figure = document.createElement("figure");
+        figure.className = "mindmap-figure";
+        figure.innerHTML =
+          svg +
+          '<figcaption>' + (copy.mindmapCaption || "Mindmap view: one cognitive loop, six coordinated learning stages.") + '</figcaption>';
+        return figure;
+      }
+
+      function buildTransitionBlock(step, idx) {
+        var transition = transitionMap[step.id];
+        if (!transition) return null;
+        var node = document.createElement("section");
+        node.className = "step-transition";
+        node.innerHTML =
+          '<p class="transition-text">' + highlightConcepts(transition.text) + '</p>' +
+          '<figure class="transition-art">' +
+            buildTransitionArt(step, idx) +
+            '<figcaption>' + transition.caption + '</figcaption>' +
+          '</figure>';
+        return node;
+      }
+
+      function renderComparisonChart() {
+        var chartSvg = document.getElementById("comparisonChart");
+        var chartShell = document.getElementById("comparisonChartShell");
+        var tooltipEl = document.getElementById("comparisonTooltip");
+        if (!chartSvg || !chartShell || !tooltipEl) return;
+
+        var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-chart-mode]"));
+        var chartState = { mode: "theory" };
+        var view = { width: 980, height: 470, left: 88, right: 38, top: 42, bottom: 62 };
+        var xAxisStart = view.left;
+        var xAxisEnd = view.width - view.right;
+        var yAxisTop = view.top;
+        var yAxisBottom = view.height - view.bottom;
+        var times = [1, 3, 7, 14, 30, 60];
+        var xTicks = [1, 7, 30, 60];
+        var yTicks = [0.9, 0.7, 0.5, 0.3];
+        var threshold = 0.66;
+
+        var datasets = {
+          theory: {
+            quizall: [0.86, 0.74, 0.63, 0.60, 0.56, 0.53],
+            cramming: [0.89, 0.70, 0.47, 0.34, 0.24, 0.18],
+            spread: [0.05, 0.045, 0.04, 0.04, 0.035, 0.03]
+          },
+          actual: {
+            quizall: [0.84, 0.73, 0.66, 0.63, 0.59, 0.56],
+            cramming: [0.87, 0.69, 0.52, 0.39, 0.30, 0.23],
+            spread: [0.055, 0.05, 0.045, 0.04, 0.04, 0.035]
+          }
+        };
+
+        function clamp(value, min, max) {
+          return Math.max(min, Math.min(max, value));
+        }
+
+        function n(value) {
+          return Number(value).toFixed(2);
+        }
+
+        function esc(value) {
+          return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function splitLine(value, maxChars) {
+          var textValue = String(value || "");
+          if (textValue.length <= maxChars) return [textValue];
+          var words = textValue.split(" ");
+          if (words.length <= 1) {
+            return [textValue.slice(0, maxChars), textValue.slice(maxChars)];
+          }
+          var first = "";
+          var second = "";
+          words.forEach(function (word) {
+            if ((first + " " + word).trim().length <= maxChars) {
+              first = (first + " " + word).trim();
+            } else {
+              second = (second + " " + word).trim();
+            }
+          });
+          return [first || textValue.slice(0, maxChars), second || textValue.slice(maxChars)];
+        }
+
+        function xFor(timeValue) {
+          var minT = times[0];
+          var maxT = times[times.length - 1];
+          var ratio = (Math.log(timeValue) - Math.log(minT)) / (Math.log(maxT) - Math.log(minT));
+          return xAxisStart + ratio * (xAxisEnd - xAxisStart);
+        }
+
+        function yFor(retentionValue) {
+          var minR = 0.1;
+          var maxR = 0.95;
+          var ratio = (retentionValue - minR) / (maxR - minR);
+          return yAxisBottom - ratio * (yAxisBottom - yAxisTop);
+        }
+
+        function smoothPath(points) {
+          if (!points.length) return "";
+          var d = "M " + n(points[0].x) + " " + n(points[0].y);
+          for (var i = 1; i < points.length; i += 1) {
+            var prev = points[i - 1];
+            var curr = points[i];
+            var c1x = prev.x + (curr.x - prev.x) * 0.38;
+            var c1y = prev.y;
+            var c2x = prev.x + (curr.x - prev.x) * 0.62;
+            var c2y = curr.y;
+            d += " C " + n(c1x) + " " + n(c1y) + ", " + n(c2x) + " " + n(c2y) + ", " + n(curr.x) + " " + n(curr.y);
+          }
+          return d;
+        }
+
+        function buildPoints(values) {
+          return times.map(function (timeValue, idx) {
+            return {
+              x: xFor(timeValue),
+              y: yFor(values[idx]),
+              t: timeValue,
+              v: values[idx]
+            };
+          });
+        }
+
+        function buildBandPath(midPoints, spreadValues) {
+          var upper = midPoints.map(function (point, idx) {
+            return { x: point.x, y: yFor(clamp(point.v + spreadValues[idx], 0.1, 0.95)) };
+          });
+          var lower = midPoints.map(function (point, idx) {
+            return { x: point.x, y: yFor(clamp(point.v - spreadValues[idx], 0.1, 0.95)) };
+          });
+          var d = smoothPath(upper);
+          for (var i = lower.length - 1; i >= 0; i -= 1) {
+            d += " L " + n(lower[i].x) + " " + n(lower[i].y);
+          }
+          d += " Z";
+          return d;
+        }
+
+        function formatPercent(value) {
+          return Math.round(value * 100) + "%";
+        }
+
+        function render(mode) {
+          chartState.mode = mode;
+          var active = datasets[mode] || datasets.theory;
+          var quizPoints = buildPoints(active.quizall);
+          var crammingPoints = buildPoints(active.cramming);
+          var bandPath = buildBandPath(quizPoints, active.spread);
+          var quizPath = smoothPath(quizPoints);
+          var crammingPath = smoothPath(crammingPoints);
+          var thresholdY = yFor(threshold);
+          var calloutAnchor = quizPoints[3];
+          var calloutX = clamp(calloutAnchor.x + 24, xAxisStart + 10, xAxisEnd - 260);
+          var calloutY = clamp(calloutAnchor.y - 102, yAxisTop + 12, yAxisBottom - 42);
+          var calloutLines = splitLine(copy.chartCalloutStep06 || "Step 06 intervention flattens the forgetting slope.", 44);
+          var calloutWidth = Math.min(320, Math.max(200, Math.max(calloutLines[0].length, (calloutLines[1] || "").length) * 7 + 20));
+
+          chartSvg.innerHTML =
+            '<style>' +
+              '.chart-axis{stroke:var(--chart-axis);stroke-width:1.2;}' +
+              '.chart-grid{stroke:var(--chart-grid);stroke-width:1;}' +
+              '.chart-tick{font:600 12px "Source Sans 3", sans-serif;fill:var(--chart-muted);}' +
+              '.chart-axis-label{font:700 13px "Source Sans 3", sans-serif;fill:var(--chart-ink);}' +
+              '.chart-math{font:700 12px "Source Sans 3", sans-serif;fill:var(--chart-ink);opacity:0.82;}' +
+              '.chart-band{fill:var(--chart-band);stroke:none;}' +
+              '.chart-line-quiz{fill:none;stroke:var(--chart-accent);stroke-width:4.2;stroke-linecap:round;stroke-linejoin:round;}' +
+              '.chart-line-cram{fill:none;stroke:rgba(124,130,141,0.86);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;}' +
+              '.chart-point-quiz{fill:var(--chart-accent);stroke:rgba(255,255,255,0.75);stroke-width:1.5;}' +
+              '.chart-label-quiz{font:700 14px "Source Sans 3", sans-serif;fill:var(--chart-accent);}' +
+              '.chart-label-cram{font:700 14px "Source Sans 3", sans-serif;fill:rgba(124,130,141,0.94);}' +
+              '.chart-threshold{stroke:rgba(148,163,184,0.45);stroke-width:1.3;stroke-dasharray:7 6;}' +
+              '.chart-callout-line{stroke:var(--chart-accent);stroke-width:1.6;stroke-dasharray:5 5;fill:none;}' +
+              '.chart-callout-box{fill:var(--chart-band);stroke:var(--chart-accent);stroke-width:1.1;}' +
+              '.chart-callout-text{font:700 12px "Source Sans 3", sans-serif;fill:var(--chart-accent);}' +
+              '.chart-cross{stroke:var(--chart-accent);stroke-opacity:0.62;stroke-width:1;stroke-dasharray:4 4;}' +
+              '.chart-focus-quiz{fill:var(--chart-accent);stroke:rgba(255,255,255,0.9);stroke-width:1.6;}' +
+              '.chart-focus-cram{fill:rgba(124,130,141,0.9);stroke:rgba(255,255,255,0.9);stroke-width:1.6;}' +
+            '</style>' +
+            '<rect x="0" y="0" width="' + view.width + '" height="' + view.height + '" fill="transparent" />' +
+            yTicks.map(function (tick) {
+              var y = yFor(tick);
+              return '<line class="chart-grid" x1="' + n(xAxisStart) + '" y1="' + n(y) + '" x2="' + n(xAxisEnd) + '" y2="' + n(y) + '" />';
+            }).join("") +
+            '<line class="chart-axis" x1="' + n(xAxisStart) + '" y1="' + n(yAxisTop) + '" x2="' + n(xAxisStart) + '" y2="' + n(yAxisBottom) + '" />' +
+            '<line class="chart-axis" x1="' + n(xAxisStart) + '" y1="' + n(yAxisBottom) + '" x2="' + n(xAxisEnd) + '" y2="' + n(yAxisBottom) + '" />' +
+            xTicks.map(function (tick) {
+              var x = xFor(tick);
+              return (
+                '<line class="chart-axis" x1="' + n(x) + '" y1="' + n(yAxisBottom) + '" x2="' + n(x) + '" y2="' + n(yAxisBottom + 5) + '" />' +
+                '<text class="chart-tick" x="' + n(x) + '" y="' + n(yAxisBottom + 22) + '" text-anchor="middle">' + tick + '</text>'
+              );
+            }).join("") +
+            yTicks.map(function (tick) {
+              var y = yFor(tick);
+              return '<text class="chart-tick" x="' + n(xAxisStart - 12) + '" y="' + n(y + 4) + '" text-anchor="end">' + Math.round(tick * 100) + '%</text>';
+            }).join("") +
+            '<line class="chart-threshold" x1="' + n(xAxisStart) + '" y1="' + n(thresholdY) + '" x2="' + n(xAxisEnd) + '" y2="' + n(thresholdY) + '" />' +
+            '<text class="chart-math" x="' + n(xAxisStart + 10) + '" y="' + n(thresholdY - 8) + '">' + esc(copy.chartThresholdLabel || "i+1 threshold") + '</text>' +
+            '<text class="chart-math" x="' + n(xAxisStart - 56) + '" y="' + n(yAxisTop + 8) + '">' + esc(copy.chartDeltaLabel || "ΔRetention") + '</text>' +
+            '<text class="chart-math" x="' + n(xAxisEnd - 128) + '" y="' + n(yAxisBottom + 38) + '">' + esc(copy.chartLogLabel || "log(t)") + '</text>' +
+            '<path class="chart-band" d="' + bandPath + '" />' +
+            '<path class="chart-line-cram" d="' + crammingPath + '" />' +
+            '<path class="chart-line-quiz" d="' + quizPath + '" />' +
+            [2, 3, 4].map(function (idx) {
+              var point = quizPoints[idx];
+              return '<circle class="chart-point-quiz" cx="' + n(point.x) + '" cy="' + n(point.y) + '" r="5.2" />';
+            }).join("") +
+            '<text class="chart-label-quiz" x="' + n(quizPoints[quizPoints.length - 1].x - 10) + '" y="' + n(quizPoints[quizPoints.length - 1].y - 12) + '" text-anchor="end">' + esc(copy.chartSeriesQuizall || "QuizAll Spaced Retrieval") + '</text>' +
+            '<text class="chart-label-cram" x="' + n(crammingPoints[crammingPoints.length - 1].x - 10) + '" y="' + n(crammingPoints[crammingPoints.length - 1].y - 12) + '" text-anchor="end">' + esc(copy.chartSeriesCramming || "Traditional Cramming") + '</text>' +
+            '<path class="chart-callout-line" d="M ' + n(calloutAnchor.x) + ' ' + n(calloutAnchor.y) + ' C ' + n(calloutAnchor.x + 10) + ' ' + n(calloutAnchor.y - 42) + ', ' + n(calloutX - 12) + ' ' + n(calloutY + 10) + ', ' + n(calloutX) + ' ' + n(calloutY + 10) + '" />' +
+            '<g transform="translate(' + n(calloutX) + ',' + n(calloutY - 6) + ')">' +
+              '<rect class="chart-callout-box" x="0" y="0" width="' + n(calloutWidth) + '" height="' + (calloutLines[1] ? "38" : "24") + '" rx="8" />' +
+              '<text class="chart-callout-text" x="9" y="16">' + esc(calloutLines[0]) + '</text>' +
+              (calloutLines[1] ? '<text class="chart-callout-text" x="9" y="30">' + esc(calloutLines[1]) + '</text>' : '') +
+            '</g>' +
+            '<g id="chartCrosshair" visibility="hidden">' +
+              '<line id="chartCrossV" class="chart-cross" x1="0" y1="' + n(yAxisTop) + '" x2="0" y2="' + n(yAxisBottom) + '" />' +
+              '<line id="chartCrossH" class="chart-cross" x1="' + n(xAxisStart) + '" y1="0" x2="' + n(xAxisEnd) + '" y2="0" />' +
+              '<circle id="chartFocusQuiz" class="chart-focus-quiz" cx="0" cy="0" r="5.8" />' +
+              '<circle id="chartFocusCram" class="chart-focus-cram" cx="0" cy="0" r="5.2" />' +
+            '</g>';
+
+          var crosshair = chartSvg.querySelector("#chartCrosshair");
+          var crossV = chartSvg.querySelector("#chartCrossV");
+          var crossH = chartSvg.querySelector("#chartCrossH");
+          var focusQuiz = chartSvg.querySelector("#chartFocusQuiz");
+          var focusCram = chartSvg.querySelector("#chartFocusCram");
+
+          function hideTooltip() {
+            crosshair.setAttribute("visibility", "hidden");
+            tooltipEl.hidden = true;
+          }
+
+          chartSvg.onmouseleave = hideTooltip;
+          chartSvg.onmousemove = function (event) {
+            var rect = chartSvg.getBoundingClientRect();
+            var localX = (event.clientX - rect.left) * (view.width / rect.width);
+            var nearest = 0;
+            var minDist = Infinity;
+            for (var i = 0; i < quizPoints.length; i += 1) {
+              var dist = Math.abs(localX - quizPoints[i].x);
+              if (dist < minDist) {
+                minDist = dist;
+                nearest = i;
+              }
+            }
+
+            var quizPoint = quizPoints[nearest];
+            var cramPoint = crammingPoints[nearest];
+            crosshair.setAttribute("visibility", "visible");
+            crossV.setAttribute("x1", n(quizPoint.x));
+            crossV.setAttribute("x2", n(quizPoint.x));
+            crossH.setAttribute("y1", n(quizPoint.y));
+            crossH.setAttribute("y2", n(quizPoint.y));
+            focusQuiz.setAttribute("cx", n(quizPoint.x));
+            focusQuiz.setAttribute("cy", n(quizPoint.y));
+            focusCram.setAttribute("cx", n(cramPoint.x));
+            focusCram.setAttribute("cy", n(cramPoint.y));
+
+            var shellRect = chartShell.getBoundingClientRect();
+            var tipLeft = (quizPoint.x / view.width) * shellRect.width + 14;
+            var tipTop = (Math.min(quizPoint.y, cramPoint.y) / view.height) * shellRect.height - 10;
+            tipLeft = clamp(tipLeft, 8, shellRect.width - 180);
+            tipTop = clamp(tipTop, 8, shellRect.height - 92);
+            tooltipEl.style.left = tipLeft + "px";
+            tooltipEl.style.top = tipTop + "px";
+            tooltipEl.hidden = false;
+            tooltipEl.innerHTML =
+              '<div class="tip-row"><span class="tip-k">' + esc(copy.chartHoverTime || "Time") + '</span>' + times[nearest] + esc(copy.chartTimeUnit || "d") + '</div>' +
+              '<div class="tip-row"><span class="tip-k">' + esc(copy.chartHoverQuizall || "QuizAll") + '</span>' + formatPercent(active.quizall[nearest]) + '</div>' +
+              '<div class="tip-row"><span class="tip-k">' + esc(copy.chartHoverCramming || "Cramming") + '</span>' + formatPercent(active.cramming[nearest]) + '</div>';
+          };
+        }
+
+        modeButtons.forEach(function (button) {
+          button.addEventListener("click", function () {
+            var mode = button.getAttribute("data-chart-mode");
+            modeButtons.forEach(function (btn) {
+              btn.classList.toggle("is-active", btn === button);
+            });
+            render(mode || "theory");
+          });
+        });
+
+        render(chartState.mode);
+      }
 
       scienceData.journals.forEach(function (journal) {
-        const span = document.createElement("span");
+        var span = document.createElement("span");
         span.className = "journal";
         span.textContent = journal;
         journalsEl.appendChild(span);
       });
 
-      scienceData.steps.forEach(function (step) {
-        const section = document.createElement("article");
+      renderComparisonChart();
+
+      var localizedSteps = scienceData.steps.map(function (step) {
+        if (localeApi && typeof localeApi.localizeStep === "function") {
+          return localeApi.localizeStep(step, currentLocale);
+        }
+        return Object.assign({}, step);
+      });
+
+      var renderedSteps = [];
+      var stageLinks = [];
+
+      function stagePrefix() {
+        return copy.stepWord || "Stage";
+      }
+
+      function renderStageNavigation() {
+        if (!stageNavEl) return;
+        var titleLabel = copy.railStage || "Current Stage";
+        var head = '<p class="stage-nav-title">' + safeText(titleLabel) + '</p>';
+        var links = localizedSteps.map(function (step, idx) {
+          return (
+            '<a class="stage-link" href="#' + step.id + '" data-step-target="' + step.id + '" data-step-index="' + idx + '">' +
+              '<span class="stage-link-index">' + (idx + 1) + '</span>' +
+              '<span class="stage-link-text">' +
+                '<span class="stage-link-main">' + safeText(stagePrefix()) + ' ' + (idx + 1) + '</span>' +
+                '<span class="stage-link-sub">' + safeText(step.title) + '</span>' +
+              '</span>' +
+            '</a>'
+          );
+        }).join("");
+        stageNavEl.innerHTML = head + links;
+        stageLinks = Array.prototype.slice.call(stageNavEl.querySelectorAll(".stage-link"));
+        stageLinks.forEach(function (link) {
+          link.addEventListener("click", function (event) {
+            event.preventDefault();
+            var targetId = link.getAttribute("data-step-target");
+            var target = targetId ? document.getElementById(targetId) : null;
+            if (!target) return;
+            var offsetTop = target.getBoundingClientRect().top + window.scrollY - 90;
+            window.scrollTo({ top: offsetTop, behavior: "smooth" });
+          });
+        });
+      }
+
+      localizedSteps.forEach(function (step, idx) {
+        var section = document.createElement("article");
         section.className = "step";
         section.id = step.id;
+        section.setAttribute("data-step-number", step.number);
+        section.setAttribute("data-step-title", step.title);
+
+        var marginChips = step.citations.map(function (_, citationIndex) {
+          return '<span class="margin-chip">[' + (citationIndex + 1) + ']</span>';
+        }).join("");
+
+        var stepAccent = step.color && step.color.accent ? step.color.accent : "#22d3ee";
+        var whyLead = whyMap[step.id] || copy.whyFallback || "This stage raises durable retention by making the learner do effortful, structured cognitive work.";
+        var whySupport = formatTemplate(copy.whySupportTemplate || "Operational cue: Step {{step}} applies \"{{tagline}}\" in the workflow, so this mechanism is trained through action.", {
+          step: step.number,
+          title: step.title,
+          tagline: step.tagline
+        });
+        var whySignal = formatTemplate(copy.whySignalLabel || "Workflow activation", {
+          step: step.number,
+          title: step.title,
+          tagline: step.tagline
+        });
+
+        var deepDiveItems = step.citations.map(function (citation, citationIndex) {
+          var marker = citationIndex + 1 < 10 ? "0" + (citationIndex + 1) : String(citationIndex + 1);
+          return (
+            '<details class="paper-detail" style="--paper-accent:' + stepAccent + ';">' +
+              '<summary>' +
+                '<span class="paper-summary-index">' + marker + '</span>' +
+                '<span class="paper-summary-main">' + (copy.expandCoreConclusion || "Expand Core Conclusion") + '</span>' +
+                '<span class="paper-summary-ref">[' + (citationIndex + 1) + ']</span>' +
+                '<span class="paper-summary-icon" aria-hidden="true"></span>' +
+              '</summary>' +
+              '<p>' + highlightConcepts(buildAbstract(step, citation, citationIndex)) + '</p>' +
+              '<p class="paper-citation">' + citation + '</p>' +
+            '</details>'
+          );
+        }).join("");
 
         section.innerHTML =
-          '<div class="step-head">' +
-            '<div>' +
-              '<div class="step-kicker" style="color:' + step.color.accent + ';">STEP ' + step.number + '</div>' +
-              '<h2>' + step.title + '</h2>' +
-              '<div class="step-tagline">' + step.tagline + '</div>' +
+          '<div class="step-shell">' +
+            '<div class="step-main">' +
+              '<div class="step-head">' +
+                '<div>' +
+                  '<div class="step-kicker" style="color:' + step.color.accent + ';">' + (copy.stepWord || "Step") + ' ' + step.number + '</div>' +
+                  '<h2>' + step.title + '</h2>' +
+                  '<div class="step-tagline">' + step.tagline + '</div>' +
+                '</div>' +
+                '<a class="step-link" href="#' + step.id + '">' + (copy.stepLinkPrefix || "Link #") + step.number + '</a>' +
+              '</div>' +
+              '<p class="step-desc">' + highlightConcepts(step.description) + '</p>' +
+              '<div class="cols">' +
+                '<section class="subpanel findings-panel">' +
+                  '<h3>' + (copy.keyFindingsTitle || "Key Findings") + '</h3>' +
+                  '<ul>' +
+                    step.keyFindings.map(function (finding) {
+                      return '<li>' + highlightConcepts(finding) + '</li>';
+                    }).join("") +
+                  '</ul>' +
+                  '<aside class="why-box">' +
+                    '<h4>' + (copy.whyTitle || "The Why") + '</h4>' +
+                    '<p class="why-main">' + whyLead + '</p>' +
+                    '<p class="why-support">' + highlightConcepts(whySupport) + '</p>' +
+                    '<div class="why-signal">' +
+                      '<span class="why-signal-bars" aria-hidden="true"><i></i><i></i><i></i></span>' +
+                      '<span class="why-signal-text">' + highlightConcepts(whySignal) + '</span>' +
+                    '</div>' +
+                  '</aside>' +
+                '</section>' +
+                '<section class="subpanel citations-panel">' +
+                  '<h3>' + (copy.citationsSectionTitle || "Citations") + '</h3>' +
+                  '<ol>' +
+                    step.citations.map(function (citation) {
+                      return '<li>' + citation + '</li>';
+                    }).join("") +
+                  '</ol>' +
+                '</section>' +
+              '</div>' +
+              '<section class="deep-dive">' +
+                '<p class="deep-dive-kicker">' + (copy.deepDiveKicker || "Core takeaways shown above. Click to expand detailed paper abstracts.") + '</p>' +
+                deepDiveItems +
+              '</section>' +
             '</div>' +
-            '<a class="step-link" href="#' + step.id + '">Link #' + step.number + '</a>' +
-          '</div>' +
-          '<p class="step-desc">' + step.description + '</p>' +
-          '<div class="cols">' +
-            '<section class="subpanel">' +
-              '<h3>Key Findings</h3>' +
-              '<ul>' +
-                step.keyFindings.map(function (finding) {
-                  return '<li>' + finding + '</li>';
-                }).join("") +
-              '</ul>' +
-            '</section>' +
-            '<section class="subpanel">' +
-              '<h3>Citations</h3>' +
-              '<ol>' +
-                step.citations.map(function (citation) {
-                  return '<li>' + citation + '</li>';
-                }).join("") +
-              '</ol>' +
-            '</section>' +
+            '<aside class="margin-notes" aria-label="Citation markers">' +
+              '<div class="margin-title">' + (copy.refsTitle || "Refs") + '</div>' +
+              marginChips +
+            '</aside>' +
           '</div>';
 
         pipelineEl.appendChild(section);
+        renderedSteps.push(section);
+
+        if (step.id === "step01") {
+          pipelineEl.appendChild(buildMindmapFigure());
+        }
 
         if (step.quote) {
-          const quote = document.createElement("blockquote");
+          var quote = document.createElement("blockquote");
           quote.className = "pull-quote";
-          quote.innerHTML = '"' + step.quote + '"<small>STEP ' + step.number + ' notable quote</small>';
+          quote.innerHTML = '"' + step.quote + '"<small>' + (copy.stepWord || "Step") + ' ' + step.number + ' ' + (copy.quoteSuffix || "notable quote") + '</small>';
           pipelineEl.appendChild(quote);
         }
+
+        var transitionNode = buildTransitionBlock(step, idx);
+        if (transitionNode) pipelineEl.appendChild(transitionNode);
       });
 
+      renderStageNavigation();
+
       scienceData.fullCitations.forEach(function (citation) {
-        const li = document.createElement("li");
+        var li = document.createElement("li");
         li.textContent = citation;
         citationEl.appendChild(li);
       });
+
+      function getStepAnchorY(stepNode) {
+        var rect = stepNode.getBoundingClientRect();
+        return rect.top + window.scrollY;
+      }
+
+      function updateProgress() {
+        if (!renderedSteps.length) return;
+        var viewportAnchor = window.innerHeight * 0.32;
+
+        var bestIdx = 0;
+        var bestDist = Infinity;
+        renderedSteps.forEach(function (node, idx) {
+          var dist = Math.abs(node.getBoundingClientRect().top - viewportAnchor);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestIdx = idx;
+          }
+        });
+        stageLinks.forEach(function (link, idx) {
+          link.classList.toggle("is-active", idx === bestIdx);
+          if (idx === bestIdx) {
+            link.setAttribute("aria-current", "true");
+          } else {
+            link.removeAttribute("aria-current");
+          }
+        });
+      }
+
+      window.addEventListener("scroll", updateProgress, { passive: true });
+      window.addEventListener("resize", updateProgress);
+      updateProgress();
     })();
   </script>
 </body>

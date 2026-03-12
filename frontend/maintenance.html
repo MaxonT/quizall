@@ -51,6 +51,27 @@
       opacity: 0.4;
     }
 
+    body::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.16;
+      background:
+        radial-gradient(circle, rgba(186, 230, 253, 0.62) 0 1px, transparent 1.9px),
+        radial-gradient(circle, rgba(125, 211, 252, 0.55) 0 1px, transparent 1.9px),
+        radial-gradient(circle, rgba(167, 139, 250, 0.42) 0 1.2px, transparent 2.1px);
+      background-size: 220px 220px, 280px 280px, 340px 340px;
+      background-position: 0 0, 110px 90px, 70px 140px;
+      animation: maintenanceParticleRise 95s linear infinite;
+    }
+
+    @keyframes maintenanceParticleRise {
+      from { background-position: 0 0, 110px 90px, 70px 140px; }
+      to { background-position: 0 -220px, 110px -190px, 70px -200px; }
+    }
+
     /* 科技网格背景 */
     .grid-bg {
       position: absolute;
@@ -61,7 +82,7 @@
       background-image: 
         linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-      background-size: 50px 50px;
+      background-size: 140px 140px;
       z-index: 0;
       mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
       -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);

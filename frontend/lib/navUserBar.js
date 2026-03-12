@@ -311,86 +311,68 @@
 
     window.__quizallCursorFxInitialized = true;
     const body = document.body;
-    const glow = document.createElement("div");
-    const trailDots = [];
-    const trailDotCount = 6;
-    glow.className = "qa-cursor-glow";
-    glow.setAttribute("aria-hidden", "true");
-    body.appendChild(glow);
-    for (let i = 0; i < trailDotCount; i += 1) {
-      const dot = document.createElement("div");
-      dot.className = "qa-cursor-tail";
-      dot.style.setProperty("--qa-tail-index", String(i));
-      dot.setAttribute("aria-hidden", "true");
-      body.appendChild(dot);
-      trailDots.push(dot);
+    document.querySelectorAll(".qa-cursor-glow,.qa-cursor-ring,.qa-cursor-tail").forEach((node) => node.remove());
+    body.classList.remove("qa-cursor-mode-type", "qa-cursor-pressing", "qa-cursor-active");
+    let currentMode = "normal";
+    body.classList.add("qa-cursor-enabled", "qa-cursor-mode-normal");
+
+    function setMode(mode) {
+      if (mode === currentMode) return;
+      currentMode = mode;
+      body.classList.toggle("qa-cursor-mode-normal", mode === "normal");
+      body.classList.toggle("qa-cursor-mode-click", mode === "click");
+      body.classList.toggle("qa-cursor-mode-select", mode === "select");
     }
 
-    let raf = 0;
-    let cursorX = -9999;
-    let cursorY = -9999;
-    const trailPoints = [];
-    let effectEnabled = false;
-
-    function isDarkTheme() {
-      return (document.documentElement.getAttribute("data-theme") || "dark") === "dark";
+    function isSelectTarget(target) {
+      if (!(target instanceof Element)) return false;
+      return !!target.closest("input:not([type='checkbox']):not([type='radio']):not([type='button']):not([type='submit']), textarea, [contenteditable='true'], [contenteditable=''], [data-cursor='select']");
     }
 
-    function syncThemeState() {
-      effectEnabled = isDarkTheme();
-      body.classList.toggle("qa-cursor-enabled", effectEnabled);
-      if (!effectEnabled) resetCursorState();
-      queuePaint();
+    function isClickableTarget(target) {
+      if (!(target instanceof Element)) return false;
+      const clickable = target.closest("[data-cursor='click'],a[href],button,summary,label[for],select,[role='button'],[tabindex]:not([tabindex='-1'])");
+      if (!clickable) return false;
+      return !clickable.matches("[disabled],[aria-disabled='true']");
     }
 
-    function paint() {
-      raf = 0;
-      body.style.setProperty("--qa-cursor-x", `${cursorX}px`);
-      body.style.setProperty("--qa-cursor-y", `${cursorY}px`);
-      const active = effectEnabled && body.classList.contains("qa-cursor-active");
-      glow.style.opacity = active ? "0.95" : "0";
-      trailDots.forEach((dot, index) => {
-        const point = trailPoints[Math.min(index * 2, trailPoints.length - 1)];
-        const x = point ? point.x : cursorX;
-        const y = point ? point.y : cursorY;
-        const scale = Math.max(0.35, 1 - index * 0.12);
-        dot.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) scale(${scale})`;
-        dot.style.opacity = active ? String(Math.max(0.08, 0.5 - index * 0.08)) : "0";
-      });
-    }
-
-    function queuePaint() {
-      if (raf) return;
-      raf = window.requestAnimationFrame(paint);
+    function updateMode(target) {
+      if (isSelectTarget(target)) {
+        setMode("select");
+        return;
+      }
+      if (isClickableTarget(target)) {
+        setMode("click");
+        return;
+      }
+      setMode("normal");
     }
 
     window.addEventListener("pointermove", (event) => {
       if (event.pointerType && event.pointerType !== "mouse") return;
-      if (!effectEnabled) return;
-      cursorX = event.clientX;
-      cursorY = event.clientY;
-      body.classList.add("qa-cursor-active");
-      trailPoints.unshift({ x: cursorX, y: cursorY });
-      if (trailPoints.length > 18) trailPoints.length = 18;
-      queuePaint();
+      updateMode(event.target);
     }, { passive: true });
 
     window.addEventListener("pointerdown", (event) => {
       if (event.pointerType && event.pointerType !== "mouse") return;
-      if (!effectEnabled) return;
-      body.classList.add("qa-cursor-pressing");
+      setMode("click");
     });
 
     window.addEventListener("pointerup", (event) => {
-      body.classList.remove("qa-cursor-pressing");
+      if (event && event.target) updateMode(event.target);
+    });
+
+    document.addEventListener("focusin", (event) => {
+      updateMode(event.target);
+    });
+
+    document.addEventListener("focusout", () => {
+      setMode("normal");
     });
 
     function resetCursorState() {
+      setMode("normal");
       body.classList.remove("qa-cursor-active", "qa-cursor-pressing");
-      cursorX = -9999;
-      cursorY = -9999;
-      trailPoints.length = 0;
-      queuePaint();
     }
 
     window.addEventListener("blur", () => {
@@ -406,52 +388,35 @@
       resetCursorState();
     });
 
-    document.addEventListener("themechange", syncThemeState);
-    const observer = new MutationObserver(syncThemeState);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-
     if (finePointer.addEventListener) {
       finePointer.addEventListener("change", (event) => {
         if (!event.matches) {
-          effectEnabled = false;
           body.classList.remove("qa-cursor-enabled");
           resetCursorState();
           return;
         }
-        syncThemeState();
+        body.classList.add("qa-cursor-enabled");
+        updateMode(document.activeElement || document.body);
       });
     }
 
     if (reducedMotion.addEventListener) {
       reducedMotion.addEventListener("change", (event) => {
         if (event.matches) {
-          effectEnabled = false;
           body.classList.remove("qa-cursor-enabled");
           resetCursorState();
           return;
         }
-        syncThemeState();
+        body.classList.add("qa-cursor-enabled");
+        updateMode(document.activeElement || document.body);
       });
     }
 
-    syncThemeState();
+    updateMode(document.activeElement || document.body);
   }
 
   function init() {
-    // Disable custom cursor FX and ensure system cursor is used.
-    if (document.body) {
-      document.body.classList.remove(
-        "qa-cursor-enabled",
-        "qa-cursor-active",
-        "qa-cursor-pressing",
-        "qa-cursor-mode-normal",
-        "qa-cursor-mode-click",
-        "qa-cursor-mode-type"
-      );
-      document.body.style.removeProperty("--qa-cursor-x");
-      document.body.style.removeProperty("--qa-cursor-y");
-      document.querySelectorAll(".qa-cursor-glow,.qa-cursor-ring,.qa-cursor-tail").forEach((node) => node.remove());
-    }
+    initCursorFx();
     initThemeSelect();
     initAdaptiveNav();
 
