@@ -481,6 +481,10 @@
     .inner-map-branch.compact .inner-map-branch-label {
       font-size: 12px;
       margin-bottom: 0;
+      max-width: 126px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .inner-map-child {
@@ -2655,7 +2659,7 @@
         const cx = W / 2;
         const cy = H / 2;
         const scale = Math.min(W / 1120, H / 760, 1);
-        const branchRadius = Math.min(W, H) * 0.32;
+        const branchRadius = Math.min(W, H) * (roots.length > 6 ? 0.38 : 0.32);
         const ns = 'http://www.w3.org/2000/svg';
         let activeBranchPosition = null;
 
@@ -2677,7 +2681,8 @@
 
         roots.forEach(function (branch, bi) {
           const angle = -140 + (bi * (360 / Math.max(roots.length, 1)));
-          const bPos = polarToXY(cx, cy, angle, branchRadius * scale);
+          const ringJitter = roots.length > 6 ? (bi % 2 === 0 ? -18 : 18) : 0;
+          const bPos = polarToXY(cx, cy, angle, branchRadius * scale + ringJitter);
           const isActive = state.innerMapActiveBranch === branch.id;
 
           const mainLine = document.createElementNS(ns, 'path');
@@ -2713,15 +2718,56 @@
           });
           stage.appendChild(branchNode);
 
+          const childLayout = [];
+          const activeArc = Math.min(178, 84 + branch.children.length * 16);
+          const compactArc = Math.max(18, Math.min(52, branch.children.length * 10));
+          const activeRadius = Math.max(175, Math.min(300, 170 + branch.children.length * 18));
+          const compactRadius = Math.max(90, 114 * scale);
+          const spread = isActive ? activeArc : compactArc;
+          const radius = isActive ? activeRadius : compactRadius;
+
           branch.children.forEach(function (child, ci) {
-            const spread = Math.max(24, Math.min(72, branch.children.length * 14));
             const offset = branch.children.length === 1 ? 0 : (-spread / 2 + (spread / (branch.children.length - 1)) * ci);
-            const cPos = polarToXY(bPos.x, bPos.y, angle + offset, Math.max(96, 122 * scale));
-            const childText = compactText(child.text || 'Subtopic', 70);
-            const childDesc = child.source ? ('Source: ' + child.source) : compactText(child.fallback || '', 120);
+            const cPos = polarToXY(bPos.x, bPos.y, angle + offset, radius);
+            childLayout.push({
+              child: child,
+              ci: ci,
+              x: cPos.x,
+              y: cPos.y
+            });
+          });
+
+          if (isActive && childLayout.length > 1) {
+            const minDistance = 132;
+            for (let loop = 0; loop < 5; loop++) {
+              for (let i = 0; i < childLayout.length; i++) {
+                for (let j = i + 1; j < childLayout.length; j++) {
+                  const a = childLayout[i];
+                  const b = childLayout[j];
+                  const dx = b.x - a.x;
+                  const dy = b.y - a.y;
+                  const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+                  if (dist >= minDistance) continue;
+                  const push = (minDistance - dist) / 2;
+                  const nx = dx / dist;
+                  const ny = dy / dist;
+                  a.x -= nx * push;
+                  a.y -= ny * push;
+                  b.x += nx * push;
+                  b.y += ny * push;
+                }
+              }
+            }
+          }
+
+          childLayout.forEach(function (entry) {
+            const childText = compactText(entry.child.text || 'Subtopic', isActive ? 52 : 26);
+            const childDesc = entry.child.source
+              ? compactText('Source: ' + entry.child.source, 95)
+              : compactText(entry.child.fallback || '', 110);
 
             const childLine = document.createElementNS(ns, 'path');
-            childLine.setAttribute('d', makeCurvedPath(bPos.x, bPos.y, cPos.x, cPos.y));
+            childLine.setAttribute('d', makeCurvedPath(bPos.x, bPos.y, entry.x, entry.y));
             childLine.setAttribute('stroke', branch.color);
             childLine.setAttribute('stroke-width', isActive ? '1' : '0.9');
             childLine.setAttribute('fill', 'none');
@@ -2730,9 +2776,9 @@
 
             const childNode = document.createElement('div');
             childNode.className = 'inner-map-child' + (isActive ? ' visible' : ' compact');
-            childNode.style.left = cPos.x + 'px';
-            childNode.style.top = cPos.y + 'px';
-            childNode.style.animationDelay = (bi * 0.1 + ci * 0.08 + 0.2) + 's';
+            childNode.style.left = entry.x + 'px';
+            childNode.style.top = entry.y + 'px';
+            childNode.style.animationDelay = (bi * 0.1 + entry.ci * 0.08 + 0.2) + 's';
             if (isActive) {
               childNode.style.background = branch.color + '0d';
               childNode.style.borderColor = branch.color + '60';
