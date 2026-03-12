@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Science Template</title>
+  <meta name="description" content="Science page template with editorial research layout." />
+  <script>
+    (function () {
+      var key = "theme";
+      var saved = localStorage.getItem(key) || "dark";
+      var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+      var theme = saved === "auto" ? (mq && mq.matches ? "dark" : "light") : saved;
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <link rel="stylesheet" href="./science-page.template.css" />
+</head>
+<body>
+  <header class="science-topbar">
+    <div class="science-topbar-inner">
+      <a class="science-brand" href="/index.html">
+        <span class="science-brand-dot" aria-hidden="true"></span>
+        <span id="scienceBrandText">Science</span>
+      </a>
+      <nav class="science-top-links">
+        <a id="scienceLinkWorkspace" href="/create.html">Workspace</a>
+        <a id="scienceLinkBack" class="science-link-cta" href="/index.html">Open App</a>
+      </nav>
+    </div>
+  </header>
+
+  <aside class="science-stage-rail" aria-label="Stage navigation">
+    <nav class="science-stage-nav" id="scienceStageNav">
+      <p class="science-stage-nav-title" id="scienceStageNavTitle">Stage Navigation</p>
+    </nav>
+  </aside>
+
+  <section class="science-hero">
+    <span class="science-kicker" id="scienceKicker">Research Foundation</span>
+    <h1 id="scienceHeroTitle">A 6-step learning pipeline grounded in cognitive science.</h1>
+    <p class="science-byline" id="scienceByline">By Ming (Tiger) Yang</p>
+    <p class="science-summary" id="scienceSummary">
+      Template summary text. Replace with your product's research narrative.
+    </p>
+    <blockquote class="science-preface">
+      <p id="sciencePreface">
+        "Learning is not information accumulation, but cognitive reconstruction."
+      </p>
+    </blockquote>
+    <div class="science-journal-list" id="scienceJournalList"></div>
+  </section>
+
+  <main class="science-pipeline" id="sciencePipeline"></main>
+
+  <section class="science-comparison">
+    <div class="science-comparison-shell">
+      <h2 id="scienceComparisonTitle">Cramming vs Science Method</h2>
+      <p id="scienceComparisonIntro">Comparison intro copy.</p>
+      <div class="science-comparison-controls" role="tablist" aria-label="Dataset mode">
+        <button type="button" class="science-chart-mode is-active" data-chart-mode="theory" id="scienceChartModeTheory">Theoretical Prediction</button>
+        <button type="button" class="science-chart-mode" data-chart-mode="actual" id="scienceChartModeActual">Actual User Data</button>
+      </div>
+      <div class="science-chart-shell" id="scienceChartShell">
+        <svg class="science-chart-svg" id="scienceChartSvg" viewBox="0 0 980 470" role="img" aria-label="Forgetting curve comparison"></svg>
+        <div class="science-chart-tooltip" id="scienceChartTooltip" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="science-citations">
+    <div class="science-citations-shell">
+      <h2 id="scienceCitationsTitle">Full Citation Index</h2>
+      <p id="scienceCitationsIntro">All references listed below.</p>
+      <ol id="scienceCitationList"></ol>
+    </div>
+  </section>
+
+  <section class="science-cta">
+    <div class="science-cta-shell">
+      <div>
+        <h3 id="scienceCtaTitle">Use this science in your next study session</h3>
+        <p id="scienceCtaBody">Return to your app and activate the pipeline.</p>
+      </div>
+      <div class="science-cta-actions">
+        <a id="scienceCtaPrimary" class="science-btn science-btn-primary" href="/create.html">Open Workspace</a>
+        <a id="scienceCtaSecondary" class="science-btn science-btn-soft" href="/index.html">Back to Dashboard</a>
+      </div>
+    </div>
+  </section>
+
+  <script src="./science-data.template.js"></script>
+  <script src="./science-page.template.js"></script>
+</body>
+</html>
+
