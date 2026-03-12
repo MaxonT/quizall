@@ -225,6 +225,31 @@ select:-webkit-autofill:focus {
   color: #ffffff;
 }
 
+/* === Global Custom Cursor (all pages, including /science) === */
+body.qa-cursor-enabled {
+  cursor: url("assets/cursors/qa-cursor-normal.svg") 3 3, auto !important;
+}
+
+body.qa-cursor-enabled * {
+  cursor: url("assets/cursors/qa-cursor-normal.svg") 3 3, auto !important;
+}
+
+body.qa-cursor-enabled.qa-cursor-mode-click,
+body.qa-cursor-enabled.qa-cursor-mode-click * {
+  cursor: url("assets/cursors/qa-cursor-click.svg") 7 3, pointer !important;
+}
+
+body.qa-cursor-enabled.qa-cursor-mode-select,
+body.qa-cursor-enabled.qa-cursor-mode-select * {
+  cursor: url("assets/cursors/qa-cursor-select.svg") 9 9, text !important;
+}
+
+@media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+  body.qa-cursor-enabled,
+  body.qa-cursor-enabled * {
+    cursor: auto !important;
+  }
+}
 
 
 
