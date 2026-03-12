@@ -214,6 +214,20 @@ function parseCorrectIndex(correctAnswer, options = []) {
   return 0;
 }
 
+function buildQuestionTip(type) {
+  const normalized = normalizeType(type || "multiple_choice");
+  if (normalized === "multiple_choice") {
+    return "Tip: Eliminate two weak options first, then choose the best-supported answer from the source.";
+  }
+  if (normalized === "true_false") {
+    return "Tip: If one keyword makes the statement inaccurate, mark False and justify it with one source detail.";
+  }
+  if (normalized === "fill_in_the_blank") {
+    return "Tip: Use the exact course terminology; short and precise answers score best.";
+  }
+  return "Tip: Structure your response as definition -> key mechanism -> one concrete example.";
+}
+
 function normalizeQuestion(rawQuestion, allowedTypes, fallbackTopic, fallbackSource) {
   const q = rawQuestion || {};
   let type = normalizeType(q.type || q.question_type || "multiple_choice");
@@ -245,6 +259,7 @@ function normalizeQuestion(rawQuestion, allowedTypes, fallbackTopic, fallbackSou
     options,
     correct_answer: correctAnswer,
     explanation: normalizeWhitespace(q.explanation || ""),
+    tip: normalizeWhitespace(q.tip || q.hint || q.strategy || buildQuestionTip(type)),
     difficulty: normalizeDifficulty(q.difficulty),
     bloom_level: normalizeBloom(q.bloom_level || q.bloomLevel),
     topic_node: normalizeWhitespace(q.topic_node || q.topic || fallbackTopic || "General"),
@@ -664,6 +679,7 @@ function buildQuizPrompt(content, analysis, types, numQuestions, sourcePack) {
       '  "options": ["A", "B", "C", "D"] for multiple_choice only; otherwise null,',
       '  "correct_answer": "string or option index for multiple_choice",',
       '  "explanation": "brief explanation",',
+      '  "tip": "one concise solving tip for learners",',
       '  "difficulty": "easy" | "medium" | "hard",',
       '  "bloom_level": "remember" | "understand" | "apply" | "analyze" | "evaluate" | "create",',
       '  "topic_node": "topic label",',

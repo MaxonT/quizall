@@ -125,6 +125,15 @@
       line-height: 1.55;
     }
 
+    .q-tip {
+      margin: 8px 0 0;
+      font-size: 0.86rem;
+      line-height: 1.5;
+      color: var(--muted);
+      border-left: 2px solid rgba(34, 211, 238, 0.52);
+      padding-left: 10px;
+    }
+
     .answers {
       margin-top: 11px;
       display: grid;
@@ -314,6 +323,20 @@
       return raw || 'multiple_choice';
     }
 
+    function buildQuestionTip(type) {
+      const normalized = normalizeType(type);
+      if (normalized === 'multiple_choice') {
+        return 'Tip: eliminate weak options first, then pick the choice best supported by your materials.';
+      }
+      if (normalized === 'true_false') {
+        return 'Tip: one wrong keyword makes the statement false; verify absolute words carefully.';
+      }
+      if (normalized === 'fill_in_the_blank') {
+        return 'Tip: use the exact course term; concise and precise wording works best.';
+      }
+      return 'Tip: answer with structure: definition, key mechanism, and one concrete example.';
+    }
+
     function normalizeQuestion(question) {
       const type = normalizeType(question.type);
       let options = null;
@@ -342,6 +365,7 @@
         options: options,
         correct_answer: correct,
         explanation: String(question.explanation || '').trim(),
+        tip: String(question.tip || question.hint || '').trim() || buildQuestionTip(type),
         source_reference: String(question.source_reference || question.source || 'Project materials').trim(),
         topic_node: String(question.topic_node || question.topic || 'General').trim(),
         difficulty: String(question.difficulty || 'medium').trim(),
@@ -416,6 +440,7 @@
             '<span class="q-tag">' + escapeHtml(question.difficulty || 'medium') + '</span>' +
           '</div>' +
           '<p class="q-text">' + escapeHtml(question.question) + '</p>' +
+          '<p class="q-tip">💡 ' + escapeHtml(question.tip || buildQuestionTip(question.type)) + '</p>' +
           '<div class="answers">' + optionsHtml + '</div>' +
           '<div class="source-block" data-source-for="' + index + '">Source: ' + escapeHtml(question.source_reference) + '</div>';
 
@@ -498,6 +523,7 @@
           userAnswer: answer,
           isCorrect: isCorrect,
           explanation: question.explanation,
+          tip: question.tip,
           source_reference: question.source_reference,
           topic_node: question.topic_node,
           difficulty: question.difficulty,
