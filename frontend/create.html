@@ -302,10 +302,10 @@
       justify-content: flex-end;
     }
 
-    .mindmap-viz-picker {
+    .mindmap-viz-label {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      margin-right: 2px;
       font-size: 0.76rem;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -313,13 +313,44 @@
       font-weight: 700;
     }
 
-    .mindmap-viz-picker .select {
-      width: auto;
-      min-width: 220px;
-      padding: 8px 10px;
-      font-size: 0.82rem;
-      text-transform: none;
-      letter-spacing: normal;
+    .mindmap-viz-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.3);
+      background: rgba(8, 12, 28, 0.75);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .mindmap-viz-btn {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease;
+      white-space: nowrap;
+    }
+
+    .mindmap-viz-btn:hover {
+      color: #e2e8f0;
+      transform: translateY(-1px);
+    }
+
+    .mindmap-viz-btn.active {
+      color: #ecfeff;
+      border-color: rgba(34,211,238,0.42);
+      background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(139,92,246,0.22));
+      box-shadow: 0 8px 18px rgba(34,211,238,0.12);
+    }
+
+    .mindmap-fullscreen-btn {
+      min-width: 110px;
     }
 
     .mindmap-tree {
@@ -387,6 +418,7 @@
       transform: translate(-50%, -50%);
       padding: 10px 16px;
       min-width: 120px;
+      max-width: 230px;
       border-radius: 12px;
       text-align: center;
       cursor: pointer;
@@ -407,6 +439,8 @@
       font-size: 15px;
       font-weight: 600;
       margin-bottom: 3px;
+      line-height: 1.22;
+      word-break: break-word;
     }
 
     .inner-map-branch-sub {
@@ -414,6 +448,7 @@
       color: #9a96a8;
       font-style: italic;
       font-family: 'Cormorant Garamond', serif;
+      line-height: 1.3;
     }
 
     .inner-map-child {
@@ -421,6 +456,7 @@
       transform: translate(-50%, -50%);
       padding: 6px 10px;
       min-width: 130px;
+      max-width: 245px;
       border-radius: 8px;
       text-align: center;
       border: 1px solid transparent;
@@ -440,6 +476,8 @@
       font-weight: 500;
       color: #e8e6e3;
       margin-bottom: 2px;
+      line-height: 1.26;
+      word-break: break-word;
     }
 
     .inner-map-child-desc {
@@ -520,6 +558,7 @@
       background-image:
         radial-gradient(ellipse at 20% 10%, rgba(232,201,122,0.04) 0%, transparent 50%),
         radial-gradient(ellipse at 80% 80%, rgba(122,184,232,0.04) 0%, transparent 50%);
+      overflow: auto;
     }
 
     .strategy-mm[data-theme="light"] {
@@ -933,13 +972,14 @@
         justify-content: flex-start;
       }
 
-      .mindmap-viz-picker {
+      .mindmap-viz-switch {
         width: 100%;
+        flex-wrap: wrap;
       }
 
-      .mindmap-viz-picker .select {
-        min-width: 0;
-        width: 100%;
+      .mindmap-viz-btn {
+        flex: 1 1 calc(50% - 6px);
+        text-align: center;
       }
 
       .inner-map-canvas {
@@ -950,6 +990,37 @@
         position: static;
         margin-bottom: 16px;
       }
+    }
+
+    .mindmap-shell:fullscreen,
+    .mindmap-shell:-webkit-full-screen {
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      margin: 0;
+      border-radius: 0;
+      padding: 16px;
+      overflow: hidden;
+      z-index: 9999;
+    }
+
+    .mindmap-shell:fullscreen .mindmap-tree,
+    .mindmap-shell:-webkit-full-screen .mindmap-tree {
+      max-height: calc(100vh - 190px);
+      overflow: auto;
+      padding-right: 8px;
+    }
+
+    .mindmap-shell:fullscreen .inner-map-canvas,
+    .mindmap-shell:-webkit-full-screen .inner-map-canvas {
+      height: calc(100vh - 190px);
+    }
+
+    .mindmap-shell:fullscreen .strategy-mm,
+    .mindmap-shell:-webkit-full-screen .strategy-mm {
+      min-height: calc(100vh - 190px);
+      max-height: calc(100vh - 190px);
     }
 
     .mind-node {
@@ -1510,6 +1581,27 @@
       color: #475569;
     }
 
+    html[data-theme="light"] .mindmap-viz-label {
+      color: #475569;
+    }
+
+    html[data-theme="light"] .mindmap-viz-switch {
+      border-color: rgba(148,163,184,0.42);
+      background: rgba(255,255,255,0.94);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.88);
+    }
+
+    html[data-theme="light"] .mindmap-viz-btn {
+      color: #64748b;
+    }
+
+    html[data-theme="light"] .mindmap-viz-btn.active {
+      color: #0f172a;
+      border-color: rgba(14,165,183,0.46);
+      background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(129,140,248,0.18));
+      box-shadow: 0 8px 16px rgba(15,23,42,0.1);
+    }
+
     html[data-theme="light"] .mind-node {
       border-color: rgba(148,163,184,0.36);
       background: rgba(255,255,255,0.94);
@@ -1785,14 +1877,13 @@
               <div class="mindmap-meta" id="mindmapMeta"></div>
             </div>
             <div class="row mindmap-head-controls">
-              <label class="mindmap-viz-picker">
-                Visualization
-                <select id="mindmapVisualizationSelect" class="select">
-                  <option value="classic">Classic Mindmap</option>
-                  <option value="inner_map">我的内心地图 Style</option>
-                  <option value="strategy">Strategy Style</option>
-                </select>
-              </label>
+              <span class="mindmap-viz-label">Visualization</span>
+              <div id="mindmapVizSwitch" class="mindmap-viz-switch" role="tablist" aria-label="Mindmap visualization modes">
+                <button type="button" class="mindmap-viz-btn" data-viz="classic">Precision Tree</button>
+                <button type="button" class="mindmap-viz-btn" data-viz="inner_map">Inner Constellation</button>
+                <button type="button" class="mindmap-viz-btn" data-viz="strategy">Strategic Compass</button>
+              </div>
+              <button class="btn btn-soft mindmap-fullscreen-btn" id="mindmapFullscreenBtn" type="button">Fullscreen</button>
               <button class="btn btn-soft" id="addRootNodeBtn" type="button">+ Root Node</button>
               <button class="btn btn-primary" id="saveMindmapBtn" type="button">Save Mindmap</button>
             </div>
@@ -1971,7 +2062,8 @@
       mindmapMeta: document.getElementById('mindmapMeta'),
       mindmapTree: document.getElementById('mindmapTree'),
       mindmapAltView: document.getElementById('mindmapAltView'),
-      mindmapVisualizationSelect: document.getElementById('mindmapVisualizationSelect'),
+      mindmapVizSwitch: document.getElementById('mindmapVizSwitch'),
+      mindmapFullscreenBtn: document.getElementById('mindmapFullscreenBtn'),
       addRootNodeBtn: document.getElementById('addRootNodeBtn'),
       saveMindmapBtn: document.getElementById('saveMindmapBtn'),
 
@@ -2009,9 +2101,6 @@
 
     els.emailTemplate.value = DEFAULT_EMAIL_TEMPLATE;
     state.mindmapVisualization = sanitizeMindmapVisualization(state.mindmapVisualization);
-    if (els.mindmapVisualizationSelect) {
-      els.mindmapVisualizationSelect.value = state.mindmapVisualization;
-    }
 
     function setStatus(message, type) {
       els.statusMessage.textContent = message;
@@ -2358,6 +2447,13 @@
       return String(node.children[0].text || 'Add key details here.');
     }
 
+    function compactText(text, maxLength) {
+      const clean = String(text || '').replace(/\s+/g, ' ').trim();
+      if (!clean) return '';
+      if (clean.length <= maxLength) return clean;
+      return clean.slice(0, Math.max(0, maxLength - 1)) + '…';
+    }
+
     function countLeaves(node) {
       if (!node || !Array.isArray(node.children) || !node.children.length) return 1;
       return node.children.reduce(function (sum, child) {
@@ -2385,6 +2481,28 @@
       return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
     }
 
+    function renderMindmapVizSwitch() {
+      if (!els.mindmapVizSwitch) return;
+      els.mindmapVizSwitch.querySelectorAll('[data-viz]').forEach(function (button) {
+        const isActive = button.getAttribute('data-viz') === state.mindmapVisualization;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+    }
+
+    function getMindmapFullscreenElement() {
+      return document.fullscreenElement || document.webkitFullscreenElement || null;
+    }
+
+    function isMindmapFullscreen() {
+      return getMindmapFullscreenElement() === els.mindmapShell;
+    }
+
+    function updateMindmapFullscreenButton() {
+      if (!els.mindmapFullscreenBtn) return;
+      els.mindmapFullscreenBtn.textContent = isMindmapFullscreen() ? 'Exit Fullscreen' : 'Fullscreen';
+    }
+
     function showClassicMindmap(mindmap) {
       els.mindmapTree.style.display = '';
       els.mindmapAltView.style.display = 'none';
@@ -2398,13 +2516,29 @@
 
     function showInnerMapMindmap(mindmap) {
       const palette = ['#b06bce', '#6b8cce', '#ce6b6b', '#6bce8a', '#c9a55a', '#7a89ff'];
+      const maxChildrenPerBranch = 6;
       const roots = (Array.isArray(mindmap.nodes) ? mindmap.nodes : []).map(function (node, index) {
+        const children = Array.isArray(node.children) ? node.children : [];
+        const visibleChildren = children.slice(0, maxChildrenPerBranch).map(function (child) {
+          return {
+            text: compactText(child.text || 'Subtopic', 56),
+            source: child.source || null,
+            fallback: getNodeDescription(child)
+          };
+        });
+        if (children.length > maxChildrenPerBranch) {
+          visibleChildren.push({
+            text: '+' + String(children.length - maxChildrenPerBranch) + ' more topics',
+            source: null,
+            fallback: 'Open Precision Tree for full editing view.'
+          });
+        }
         return {
           id: node.id || ('root_' + index),
-          label: String(node.text || ('Topic ' + (index + 1))),
+          label: compactText(node.text || ('Topic ' + (index + 1)), 42),
           sublabel: getNodeStatusLabel(node),
           color: palette[index % palette.length],
-          children: Array.isArray(node.children) ? node.children : []
+          children: visibleChildren
         };
       });
 
@@ -2504,8 +2638,8 @@
             const spread = Math.max(22, Math.min(90, branch.children.length * 20));
             const offset = branch.children.length === 1 ? 0 : (-spread / 2 + (spread / (branch.children.length - 1)) * ci);
             const cPos = polarToXY(bPos.x, bPos.y, angle + offset, Math.max(130, 150 * scale));
-            const childText = String(child.text || 'Subtopic');
-            const childDesc = child.source ? ('Source: ' + child.source) : getNodeDescription(child);
+            const childText = compactText(child.text || 'Subtopic', 70);
+            const childDesc = child.source ? ('Source: ' + child.source) : compactText(child.fallback || '', 120);
 
             const childLine = document.createElementNS(ns, 'path');
             childLine.setAttribute('d', makeCurvedPath(bPos.x, bPos.y, cPos.x, cPos.y));
@@ -2658,9 +2792,8 @@
       }
 
       state.mindmapVisualization = sanitizeMindmapVisualization(state.mindmapVisualization);
-      if (els.mindmapVisualizationSelect) {
-        els.mindmapVisualizationSelect.value = state.mindmapVisualization;
-      }
+      renderMindmapVizSwitch();
+      updateMindmapFullscreenButton();
 
       els.mindmapShell.style.display = '';
       els.mindmapTitle.textContent = mindmap.title || 'ExamTopics Mindmap';
@@ -3250,9 +3383,11 @@
       }
     });
 
-    if (els.mindmapVisualizationSelect) {
-      els.mindmapVisualizationSelect.addEventListener('change', function () {
-        state.mindmapVisualization = sanitizeMindmapVisualization(els.mindmapVisualizationSelect.value);
+    if (els.mindmapVizSwitch) {
+      els.mindmapVizSwitch.addEventListener('click', function (event) {
+        const button = event.target.closest('[data-viz]');
+        if (!button) return;
+        state.mindmapVisualization = sanitizeMindmapVisualization(button.getAttribute('data-viz'));
         localStorage.setItem(MINDMAP_VISUALIZATION_KEY, state.mindmapVisualization);
         if (state.mindmapVisualization !== 'inner_map') {
           state.innerMapActiveBranch = null;
@@ -3260,6 +3395,34 @@
         renderMindmap();
       });
     }
+
+    if (els.mindmapFullscreenBtn) {
+      els.mindmapFullscreenBtn.addEventListener('click', async function () {
+        try {
+          if (isMindmapFullscreen()) {
+            if (document.exitFullscreen) await document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            return;
+          }
+          if (els.mindmapShell.requestFullscreen) await els.mindmapShell.requestFullscreen();
+          else if (els.mindmapShell.webkitRequestFullscreen) els.mindmapShell.webkitRequestFullscreen();
+        } catch (err) {
+          console.warn('[create] fullscreen unavailable:', err);
+        } finally {
+          updateMindmapFullscreenButton();
+          renderMindmap();
+        }
+      });
+    }
+
+    document.addEventListener('fullscreenchange', function () {
+      updateMindmapFullscreenButton();
+      renderMindmap();
+    });
+    document.addEventListener('webkitfullscreenchange', function () {
+      updateMindmapFullscreenButton();
+      renderMindmap();
+    });
 
     els.typeToggles.addEventListener('click', function (event) {
       const button = event.target.closest('[data-type]');
@@ -3320,6 +3483,8 @@
     renderPendingFiles();
     renderSavedFiles();
     drawAnalytics();
+    renderMindmapVizSwitch();
+    updateMindmapFullscreenButton();
     setProjectTab('quiz', { silentBadge: true });
     if (els.projectScienceGrid) {
       els.projectScienceGrid.innerHTML = '<p class="empty-text">Select a project to view science activation.</p>';
