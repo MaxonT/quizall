@@ -20,6 +20,238 @@
       padding: 0;
       display: grid;
       gap: 22px;
+      grid-template-columns: 170px minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .workspace-stage {
+      min-width: 0;
+      display: grid;
+      gap: 22px;
+    }
+
+    .journey-rail {
+      position: sticky;
+      top: 100px;
+      align-self: start;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(11,18,38,0.8), rgba(7,12,28,0.86));
+      padding: 14px 10px;
+      display: grid;
+      gap: 9px;
+      box-shadow: 0 12px 24px rgba(2, 8, 23, 0.26);
+      overflow: hidden;
+    }
+
+    .journey-line {
+      position: absolute;
+      left: 30px;
+      top: 16px;
+      bottom: 16px;
+      width: 2px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(34,211,238,0.18), rgba(139,92,246,0.44), rgba(52,211,153,0.24));
+      box-shadow: 0 0 14px rgba(34,211,238,0.24);
+      pointer-events: none;
+    }
+
+    .journey-node {
+      position: relative;
+      z-index: 1;
+      border: 1px solid rgba(148,163,184,0.28);
+      border-radius: 11px;
+      background: rgba(9, 14, 30, 0.72);
+      color: var(--muted);
+      padding: 8px 8px 8px 10px;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      font: inherit;
+      cursor: pointer;
+      transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+
+    .journey-node:hover {
+      border-color: rgba(34,211,238,0.52);
+      color: #d8f9ff;
+      transform: translateY(-1px);
+    }
+
+    .journey-node.is-active {
+      border-color: rgba(34,211,238,0.66);
+      color: #e9fbff;
+      background: linear-gradient(135deg, rgba(14,165,183,0.24), rgba(109,40,217,0.24));
+      box-shadow: 0 0 0 1px rgba(34,211,238,0.22), 0 10px 18px rgba(34,211,238,0.16);
+    }
+
+    .journey-node.is-complete {
+      border-color: rgba(52,211,153,0.44);
+      background: linear-gradient(135deg, rgba(16,185,129,0.18), rgba(6,182,212,0.12));
+      color: #a7f3d0;
+    }
+
+    .journey-node.is-energizing {
+      animation: journeyPulse 1s ease;
+    }
+
+    .journey-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.32);
+      background: rgba(15,23,42,0.72);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.73rem;
+      line-height: 1;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .journey-node.is-active .journey-dot {
+      border-color: rgba(34,211,238,0.72);
+      box-shadow: 0 0 14px rgba(34,211,238,0.35);
+    }
+
+    .journey-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+      min-width: 0;
+    }
+
+    .workspace-context {
+      position: sticky;
+      top: 62px;
+      z-index: 18;
+      border: 1px solid rgba(148,163,184,0.24);
+      border-radius: 13px;
+      background: linear-gradient(180deg, rgba(8,13,30,0.88), rgba(11,17,37,0.84));
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      backdrop-filter: blur(8px);
+    }
+
+    #workspaceContextProject {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #d8f9ff;
+      letter-spacing: 0.01em;
+    }
+
+    #workspaceContextMeta {
+      font-size: 0.79rem;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .journey-section {
+      scroll-margin-top: 140px;
+      transition: opacity .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+
+    .journey-section.is-spotlight {
+      border-color: rgba(34,211,238,0.46);
+      box-shadow: 0 0 0 1px rgba(34,211,238,0.22), 0 18px 36px rgba(2,8,23,0.34);
+    }
+
+    .step-summary {
+      border: 1px solid rgba(148,163,184,0.28);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: linear-gradient(135deg, rgba(11,24,43,0.8), rgba(12,20,38,0.78));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .step-summary strong {
+      display: block;
+      color: #d7f9ff;
+      font-size: 0.88rem;
+    }
+
+    .step-summary p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .mission-progress {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mission-progress-track {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(148,163,184,0.22);
+      overflow: hidden;
+    }
+
+    .mission-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #22d3ee, #8b5cf6, #34d399);
+      box-shadow: 0 0 14px rgba(34,211,238,0.36);
+      transition: width .28s ease;
+    }
+
+    .module-todo-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .module-todo-item {
+      border: 1px solid rgba(148,163,184,0.22);
+      border-radius: 12px;
+      background: rgba(9,14,30,0.72);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .module-todo-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin: 0;
+    }
+
+    .module-todo-meta {
+      margin: 4px 0 0;
+      font-size: 0.79rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .module-todo-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    @keyframes journeyPulse {
+      0% { box-shadow: 0 0 0 0 rgba(34,211,238,0.5); }
+      100% { box-shadow: 0 0 0 12px rgba(34,211,238,0); }
     }
 
     .hero {
@@ -1733,6 +1965,74 @@
       box-shadow: 0 10px 22px rgba(15,23,42,0.08);
     }
 
+    html[data-theme="light"] .journey-rail {
+      border-color: rgba(148,163,184,0.35);
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,248,253,0.94));
+      box-shadow: 0 10px 22px rgba(15,23,42,0.08);
+    }
+
+    html[data-theme="light"] .journey-line {
+      background: linear-gradient(180deg, rgba(14,165,183,0.2), rgba(99,102,241,0.34), rgba(16,185,129,0.22));
+      box-shadow: 0 0 10px rgba(14,165,183,0.16);
+    }
+
+    html[data-theme="light"] .journey-node {
+      border-color: rgba(148,163,184,0.42);
+      background: rgba(255,255,255,0.9);
+      color: #475569;
+    }
+
+    html[data-theme="light"] .journey-node.is-active {
+      border-color: rgba(59,130,246,0.4);
+      background: linear-gradient(135deg, rgba(59,130,246,0.16), rgba(129,140,248,0.16));
+      color: #0f172a;
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.16), 0 10px 18px rgba(59,130,246,0.12);
+    }
+
+    html[data-theme="light"] .journey-node.is-complete {
+      border-color: rgba(16,185,129,0.36);
+      background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(14,165,233,0.1));
+      color: #065f46;
+    }
+
+    html[data-theme="light"] .journey-dot {
+      border-color: rgba(148,163,184,0.4);
+      background: rgba(255,255,255,0.96);
+    }
+
+    html[data-theme="light"] .workspace-context {
+      border-color: rgba(148,163,184,0.34);
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(247,250,255,0.94));
+      box-shadow: 0 10px 20px rgba(15,23,42,0.08);
+    }
+
+    html[data-theme="light"] #workspaceContextProject {
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .journey-section.is-spotlight {
+      border-color: rgba(59,130,246,0.38);
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.16), 0 18px 30px rgba(15,23,42,0.12);
+    }
+
+    html[data-theme="light"] .step-summary {
+      border-color: rgba(148,163,184,0.34);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(243,248,255,0.92));
+    }
+
+    html[data-theme="light"] .step-summary strong {
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .module-todo-item {
+      border-color: rgba(148,163,184,0.3);
+      background: rgba(255,255,255,0.9);
+    }
+
+    html[data-theme="light"] .module-todo-title {
+      color: #0f172a;
+    }
+
     html[data-theme="light"] .workflow-item {
       border-color: rgba(148,163,184,0.42);
       background: rgba(255,255,255,0.94);
@@ -1819,6 +2119,26 @@
       .workspace {
         width: calc(100% - 28px);
         gap: 18px;
+        grid-template-columns: 1fr;
+      }
+      .workspace-stage { gap: 18px; }
+      .journey-rail {
+        position: static;
+        top: auto;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+      }
+      .journey-line { display: none; }
+      .journey-node {
+        min-width: 148px;
+      }
+      .workspace-context {
+        position: static;
+      }
+      #workspaceContextMeta {
+        white-space: normal;
+        text-align: left;
       }
     }
   </style>
@@ -1845,6 +2165,36 @@
   </header>
 
   <main class="workspace">
+    <aside class="journey-rail" id="journeyRail" aria-label="Learning Journey Rail">
+      <div class="journey-line"></div>
+      <button type="button" class="journey-node is-active" data-journey-target="step01">
+        <span class="journey-dot">🚀</span>
+        <span class="journey-label">Project Scope</span>
+      </button>
+      <button type="button" class="journey-node" data-journey-target="step02">
+        <span class="journey-dot">📤</span>
+        <span class="journey-label">Upload Materials</span>
+      </button>
+      <button type="button" class="journey-node" data-journey-target="step03">
+        <span class="journey-dot">🎯</span>
+        <span class="journey-label">Collect Topics</span>
+      </button>
+      <button type="button" class="journey-node" data-journey-target="step04">
+        <span class="journey-dot">🧠</span>
+        <span class="journey-label">Mindmap + Quiz</span>
+      </button>
+      <button type="button" class="journey-node" data-journey-target="step05">
+        <span class="journey-dot">📊</span>
+        <span class="journey-label">Analytics</span>
+      </button>
+    </aside>
+
+    <div class="workspace-stage">
+    <section class="workspace-context" id="workspaceContextBar">
+      <div id="workspaceContextProject">No active project selected</div>
+      <div id="workspaceContextMeta">Exam date: — · User: —</div>
+    </section>
+
     <section class="hero">
       <span class="muted-pill">Exam Prep v2</span>
       <h1>Project-based exam prep, with editable ExamTopics mindmap.</h1>
@@ -1859,7 +2209,7 @@
       <span class="workflow-item"><b>5</b> Analytics</span>
     </section>
 
-    <section class="card card-elevated card-project">
+    <section class="card card-elevated card-project journey-section is-spotlight" id="journeyStep01" data-journey-step="step01">
       <div class="card-head">
         <span class="card-step">Step 1</span>
         <div class="card-head-copy">
@@ -1896,7 +2246,7 @@
       </div>
     </section>
 
-    <section class="card card-elevated card-upload">
+    <section class="card card-elevated card-upload journey-section" id="journeyStep02" data-journey-step="step02">
       <div class="card-head">
         <span class="card-step">Step 2</span>
         <div class="card-head-copy">
@@ -1905,6 +2255,14 @@
         </div>
       </div>
       <div class="upload-shell">
+        <div id="uploadSummary" class="step-summary" style="display:none;">
+          <div>
+            <strong id="uploadSummaryTitle">Saved 0 materials</strong>
+            <p id="uploadSummaryText">This step is completed. Expand if you want to add or manage files.</p>
+          </div>
+          <button class="btn btn-soft" id="uploadToggleBtn" type="button">Expand</button>
+        </div>
+        <div id="uploadDetails">
         <div id="dropzone" class="dropzone" role="button" tabindex="0">
           <strong>Drop files here or click to upload</strong>
           <small>PDF, DOCX, TXT, MD, CSV, JSON</small>
@@ -1924,10 +2282,11 @@
             <div id="savedFiles" class="saved-list"></div>
           </div>
         </div>
+        </div>
       </div>
     </section>
 
-    <section class="card card-elevated card-prep">
+    <section class="card card-elevated card-prep journey-section" id="journeyStep03" data-journey-step="step03">
       <div class="card-head">
         <span class="card-step">Step 3</span>
         <div class="card-head-copy">
@@ -1983,6 +2342,23 @@
       </div>
     </section>
 
+    <section class="card card-elevated card-mission journey-section" id="journeyMissionCard" data-journey-step="step04" style="display:none;">
+      <div class="card-head">
+        <span class="card-step">Mission</span>
+        <div class="card-head-copy">
+          <h2>Module Training Todo</h2>
+          <p class="card-sub">Auto-generated from your current mindmap. Complete each module quiz to clear tasks and advance progress.</p>
+        </div>
+      </div>
+      <div class="mission-progress">
+        <div id="moduleProgressText">0 / 0 modules completed</div>
+        <div class="mission-progress-track">
+          <div id="moduleProgressFill" class="mission-progress-fill"></div>
+        </div>
+      </div>
+      <div id="moduleTodoList" class="module-todo-list"></div>
+    </section>
+
     <section class="card card-elevated">
       <div class="card-head">
         <span class="card-step">Step 4-6</span>
@@ -1999,7 +2375,7 @@
     </section>
 
     <div class="project-tab-panel active" data-project-panel="quiz">
-      <section class="card card-elevated card-session">
+      <section class="card card-elevated card-session journey-section" id="journeyStep04" data-journey-step="step04">
         <div class="card-head">
           <span class="card-step">Step 4</span>
           <div class="card-head-copy">
@@ -2035,7 +2411,7 @@
     </div>
 
     <div class="project-tab-panel" data-project-panel="analytics">
-      <section class="card card-elevated card-analytics">
+      <section class="card card-elevated card-analytics journey-section" id="journeyStep05" data-journey-step="step05">
         <div class="card-head">
           <span class="card-step">Step 5</span>
           <div class="card-head-copy">
@@ -2074,6 +2450,7 @@
     </div>
 
     <div id="statusMessage" class="status workspace-status">Ready.</div>
+    </div>
   </main>
 
   <div class="modal" id="newProjectModal">
@@ -2107,6 +2484,8 @@
     const token = window.authGuard.getToken();
     const MINDMAP_VISUALIZATION_KEY = 'quizall.mindmap.visualization';
     const STRATEGY_THEME_MODE_KEY = 'quizall.mindmap.strategy.theme';
+    const MODULE_MISSION_KEY_PREFIX = 'quizall.moduleMission.';
+    const ACTIVE_MODULE_QUIZ_KEY = 'quizall.activeModuleQuiz';
 
     const state = {
       projects: [],
@@ -2121,10 +2500,17 @@
       mindmapVisualization: localStorage.getItem(MINDMAP_VISUALIZATION_KEY) || 'classic',
       strategyThemeMode: localStorage.getItem(STRATEGY_THEME_MODE_KEY) || 'system',
       innerMapActiveBranch: null,
+      uploadCollapsed: false,
+      uploadManualExpanded: false,
+      moduleMission: null,
       busy: false,
     };
 
     const els = {
+      journeyRail: document.getElementById('journeyRail'),
+      workspaceContextProject: document.getElementById('workspaceContextProject'),
+      workspaceContextMeta: document.getElementById('workspaceContextMeta'),
+
       projectSelect: document.getElementById('projectSelect'),
       refreshProjectsBtn: document.getElementById('refreshProjectsBtn'),
       newProjectBtn: document.getElementById('newProjectBtn'),
@@ -2139,6 +2525,11 @@
       saveFilesBtn: document.getElementById('saveFilesBtn'),
       pendingFiles: document.getElementById('pendingFiles'),
       savedFiles: document.getElementById('savedFiles'),
+      uploadSummary: document.getElementById('uploadSummary'),
+      uploadSummaryTitle: document.getElementById('uploadSummaryTitle'),
+      uploadSummaryText: document.getElementById('uploadSummaryText'),
+      uploadToggleBtn: document.getElementById('uploadToggleBtn'),
+      uploadDetails: document.getElementById('uploadDetails'),
 
       topicsInput: document.getElementById('topicsInput'),
       emailTemplate: document.getElementById('emailTemplate'),
@@ -2156,6 +2547,10 @@
       addRootNodeBtn: document.getElementById('addRootNodeBtn'),
       saveMindmapBtn: document.getElementById('saveMindmapBtn'),
       deleteMindmapBtn: document.getElementById('deleteMindmapBtn'),
+      journeyMissionCard: document.getElementById('journeyMissionCard'),
+      moduleProgressText: document.getElementById('moduleProgressText'),
+      moduleProgressFill: document.getElementById('moduleProgressFill'),
+      moduleTodoList: document.getElementById('moduleTodoList'),
 
       typeToggles: document.getElementById('typeToggles'),
       numToggles: document.getElementById('numToggles'),
@@ -2236,6 +2631,193 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function safeJsonParse(value, fallback) {
+      try {
+        if (!value) return fallback;
+        return JSON.parse(value);
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    function getEmailFromToken(rawToken) {
+      if (!rawToken || typeof rawToken !== 'string') return '';
+      const parts = rawToken.split('.');
+      if (parts.length < 2) return '';
+      try {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        return typeof payload.email === 'string' ? payload.email : '';
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function normalizeKey(text) {
+      return normalizeWhitespace(String(text || '')).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+
+    function getMissionStorageKey(projectId) {
+      return MODULE_MISSION_KEY_PREFIX + String(projectId || '');
+    }
+
+    function extractModuleSummary(node) {
+      const children = Array.isArray(node && node.children) ? node.children : [];
+      return children.slice(0, 3).map(function (child) {
+        return normalizeWhitespace(child.text || '');
+      }).filter(Boolean).join(' · ');
+    }
+
+    function computeMindmapSignature(mindmap) {
+      if (!mindmap || !Array.isArray(mindmap.nodes)) return '';
+      return mindmap.nodes.map(function (node, index) {
+        const title = normalizeWhitespace(node.text || ('module_' + index));
+        const childCount = Array.isArray(node.children) ? node.children.length : 0;
+        return normalizeKey(title) + ':' + childCount;
+      }).join('|');
+    }
+
+    function buildMissionFromMindmap(mindmap) {
+      const nodes = Array.isArray(mindmap && mindmap.nodes) ? mindmap.nodes : [];
+      return nodes.map(function (node, index) {
+        const title = normalizeWhitespace(node.text || ('Module ' + (index + 1))) || ('Module ' + (index + 1));
+        const moduleKey = normalizeKey(title + '-' + index);
+        const summary = extractModuleSummary(node) || 'Practice this module with retrieval-focused questions.';
+        return {
+          moduleKey: moduleKey,
+          nodeId: node.id || null,
+          title: title,
+          summary: summary,
+          done: false,
+          completedAt: null,
+        };
+      });
+    }
+
+    function readMission(projectId) {
+      if (!projectId) return null;
+      return safeJsonParse(localStorage.getItem(getMissionStorageKey(projectId)), null);
+    }
+
+    function writeMission(projectId, mission) {
+      if (!projectId || !mission) return;
+      localStorage.setItem(getMissionStorageKey(projectId), JSON.stringify(mission));
+    }
+
+    function ensureMissionFromMindmap() {
+      const projectId = state.selectedProjectId;
+      const mindmap = state.mindmap;
+      if (!projectId || !mindmap || !Array.isArray(mindmap.nodes) || !mindmap.nodes.length) {
+        state.moduleMission = null;
+        renderModuleMission();
+        return;
+      }
+
+      const signature = computeMindmapSignature(mindmap);
+      const existing = readMission(projectId);
+      if (!existing || existing.signature !== signature || !Array.isArray(existing.items)) {
+        const previousDone = new Map();
+        if (existing && Array.isArray(existing.items)) {
+          existing.items.forEach(function (item) {
+            previousDone.set(item.moduleKey, !!item.done);
+          });
+        }
+
+        const items = buildMissionFromMindmap(mindmap).map(function (item) {
+          if (previousDone.get(item.moduleKey)) {
+            item.done = true;
+          }
+          return item;
+        });
+
+        state.moduleMission = {
+          signature: signature,
+          projectId: projectId,
+          generatedAt: new Date().toISOString(),
+          items: items,
+        };
+        writeMission(projectId, state.moduleMission);
+      } else {
+        state.moduleMission = existing;
+      }
+
+      renderModuleMission();
+    }
+
+    function markMissionModuleComplete(projectId, moduleKey) {
+      if (!projectId || !moduleKey) return;
+      const mission = readMission(projectId);
+      if (!mission || !Array.isArray(mission.items)) return;
+      let changed = false;
+      mission.items.forEach(function (item) {
+        if (item.moduleKey === moduleKey && !item.done) {
+          item.done = true;
+          item.completedAt = new Date().toISOString();
+          changed = true;
+        }
+      });
+      if (changed) writeMission(projectId, mission);
+    }
+
+    function consumeCompletedModuleFromSession() {
+      const payload = safeJsonParse(sessionStorage.getItem(ACTIVE_MODULE_QUIZ_KEY), null);
+      if (!payload || !payload.projectId || !payload.moduleKey) return;
+      const lastResult = safeJsonParse(sessionStorage.getItem('quizall.lastResult'), null);
+      if (payload.completed === true) {
+        markMissionModuleComplete(payload.projectId, payload.moduleKey);
+      } else if (lastResult && lastResult.projectId && String(lastResult.projectId) === String(payload.projectId)) {
+        markMissionModuleComplete(payload.projectId, payload.moduleKey);
+      }
+      sessionStorage.removeItem(ACTIVE_MODULE_QUIZ_KEY);
+    }
+
+    function setUploadCollapsed(collapsed) {
+      state.uploadCollapsed = !!collapsed;
+      if (!els.uploadSummary || !els.uploadDetails || !els.uploadToggleBtn) return;
+      els.uploadSummary.style.display = state.uploadCollapsed ? '' : 'none';
+      els.uploadDetails.style.display = state.uploadCollapsed ? 'none' : '';
+      els.uploadToggleBtn.textContent = state.uploadCollapsed ? 'Expand' : 'Collapse';
+    }
+
+    function refreshUploadCollapse() {
+      const savedCount = Array.isArray(state.projectDetail && state.projectDetail.files) ? state.projectDetail.files.length : 0;
+      if (els.uploadSummaryTitle) {
+        els.uploadSummaryTitle.textContent = 'Saved ' + savedCount + ' material' + (savedCount === 1 ? '' : 's');
+      }
+      if (els.uploadSummaryText) {
+        els.uploadSummaryText.textContent = savedCount
+          ? 'This step is completed. Expand if you want to add or manage files.'
+          : 'No saved materials yet. Upload files to continue your study pipeline.';
+      }
+
+      if (!savedCount) {
+        state.uploadManualExpanded = false;
+        setUploadCollapsed(false);
+        return;
+      }
+      if (state.uploadManualExpanded) {
+        setUploadCollapsed(false);
+        return;
+      }
+      setUploadCollapsed(true);
+    }
+
+    function updateWorkspaceContext() {
+      const detail = state.projectDetail;
+      const project = detail && detail.project ? detail.project : null;
+      const email = getEmailFromToken(token) || 'User';
+      if (!project) {
+        if (els.workspaceContextProject) els.workspaceContextProject.textContent = 'No active project selected';
+        if (els.workspaceContextMeta) els.workspaceContextMeta.textContent = 'Exam date: — · User: ' + email;
+        return;
+      }
+      if (els.workspaceContextProject) {
+        els.workspaceContextProject.textContent = project.name || 'Active project';
+      }
+      if (els.workspaceContextMeta) {
+        els.workspaceContextMeta.textContent = 'Exam date: ' + (project.examDate || 'TBD') + ' · User: ' + email;
+      }
     }
 
     function formatBytes(bytes) {
@@ -2506,6 +3088,111 @@
       if (tab === 'analytics') {
         drawAnalytics();
       }
+
+      if (state.selectedProjectId) {
+        if (tab === 'analytics') {
+          activateJourneyStep('step05');
+        } else if (tab === 'quiz') {
+          activateJourneyStep('step04');
+        }
+      }
+    }
+
+    function getJourneySection(stepId) {
+      return document.querySelector('[data-journey-step="' + stepId + '"]');
+    }
+
+    function activateJourneyStep(stepId, options) {
+      const opts = options || {};
+      const rail = els.journeyRail;
+      if (rail) {
+        rail.querySelectorAll('.journey-node').forEach(function (node) {
+          const isActive = node.getAttribute('data-journey-target') === stepId;
+          node.classList.toggle('is-active', isActive);
+          if (opts.energy && isActive) {
+            node.classList.remove('is-energizing');
+            void node.offsetWidth;
+            node.classList.add('is-energizing');
+          }
+        });
+      }
+
+      document.querySelectorAll('.journey-section').forEach(function (section) {
+        section.classList.toggle('is-spotlight', section.getAttribute('data-journey-step') === stepId);
+      });
+    }
+
+    function getStepCompletionMap() {
+      const files = Array.isArray(state.projectDetail && state.projectDetail.files) ? state.projectDetail.files : [];
+      const hasFiles = files.length > 0;
+      const hasTopics = normalizeWhitespace(els.topicsInput && els.topicsInput.value || '').length >= 10;
+      const hasMindmap = !!(state.mindmap && Array.isArray(state.mindmap.nodes) && state.mindmap.nodes.length);
+      const trend = Array.isArray(state.projectDetail && state.projectDetail.analytics && state.projectDetail.analytics.trend)
+        ? state.projectDetail.analytics.trend
+        : [];
+      return {
+        step01: !!state.selectedProjectId,
+        step02: hasFiles,
+        step03: hasTopics || hasMindmap,
+        step04: hasMindmap,
+        step05: trend.length > 0,
+      };
+    }
+
+    function refreshJourneyCompletion() {
+      const completion = getStepCompletionMap();
+      if (!els.journeyRail) return;
+      els.journeyRail.querySelectorAll('.journey-node').forEach(function (node) {
+        const target = node.getAttribute('data-journey-target');
+        node.classList.toggle('is-complete', !!completion[target]);
+      });
+    }
+
+    function scrollToJourneyStep(stepId) {
+      if (stepId === 'step05') {
+        setProjectTab('analytics');
+      } else if (stepId === 'step04') {
+        setProjectTab('quiz', { silentBadge: true });
+      }
+      const section = getJourneySection(stepId);
+      if (!section) return;
+      const offsetTop = section.getBoundingClientRect().top + window.scrollY - 96;
+      window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+      activateJourneyStep(stepId);
+    }
+
+    function setupJourneyRail() {
+      if (!els.journeyRail) return;
+      els.journeyRail.addEventListener('click', function (event) {
+        const node = event.target.closest('[data-journey-target]');
+        if (!node) return;
+        const target = node.getAttribute('data-journey-target');
+        if (!target) return;
+        scrollToJourneyStep(target);
+      });
+
+      window.addEventListener('scroll', function () {
+        const sections = Array.prototype.slice.call(document.querySelectorAll('.journey-section[data-journey-step]'))
+          .filter(function (section) {
+            if (section.closest('.project-tab-panel') && !section.closest('.project-tab-panel').classList.contains('active')) {
+              return false;
+            }
+            return true;
+          });
+        if (!sections.length) return;
+        const anchor = window.innerHeight * 0.28;
+        let best = sections[0];
+        let bestDist = Math.abs(sections[0].getBoundingClientRect().top - anchor);
+        sections.forEach(function (section) {
+          const dist = Math.abs(section.getBoundingClientRect().top - anchor);
+          if (dist < bestDist) {
+            best = section;
+            bestDist = dist;
+          }
+        });
+        const step = best.getAttribute('data-journey-step');
+        if (step) activateJourneyStep(step);
+      }, { passive: true });
     }
 
     function findNode(id, nodes, parentInfo) {
@@ -2982,6 +3669,113 @@
       showStrategyMindmap(mindmap);
     }
 
+    function renderModuleMission() {
+      const mission = state.moduleMission;
+      if (!els.journeyMissionCard || !els.moduleTodoList || !els.moduleProgressText || !els.moduleProgressFill) return;
+      if (!mission || !Array.isArray(mission.items) || !mission.items.length) {
+        els.journeyMissionCard.style.display = 'none';
+        els.moduleTodoList.innerHTML = '';
+        els.moduleProgressText.textContent = '0 / 0 modules completed';
+        els.moduleProgressFill.style.width = '0%';
+        return;
+      }
+
+      els.journeyMissionCard.style.display = '';
+      const total = mission.items.length;
+      const done = mission.items.filter(function (item) { return !!item.done; }).length;
+      const pending = mission.items.filter(function (item) { return !item.done; });
+      const percent = total ? Math.round((done / total) * 100) : 0;
+      els.moduleProgressText.textContent = done + ' / ' + total + ' modules completed';
+      els.moduleProgressFill.style.width = percent + '%';
+
+      if (!pending.length) {
+        els.moduleTodoList.innerHTML = '<p class="empty-text">All module tasks are completed. Great momentum — regenerate mindmap anytime for a new mission set.</p>';
+        return;
+      }
+
+      els.moduleTodoList.innerHTML = pending.map(function (item, index) {
+        return (
+          '<div class="module-todo-item">' +
+            '<div class="list-main">' +
+              '<p class="module-todo-title">Module ' + (index + 1) + ': ' + escapeHtml(item.title) + '</p>' +
+              '<p class="module-todo-meta">' + escapeHtml(item.summary || 'Practice this module with focused quiz questions.') + '</p>' +
+            '</div>' +
+            '<div class="module-todo-actions">' +
+              '<button type="button" class="btn btn-primary" data-module-quiz="' + item.moduleKey + '">Practice Module Quiz</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    async function startModuleQuiz(moduleKey) {
+      if (!state.selectedProjectId) {
+        throw new Error('Select a project first.');
+      }
+      const mission = state.moduleMission;
+      if (!mission || !Array.isArray(mission.items)) {
+        throw new Error('Generate a mindmap first to build module tasks.');
+      }
+      const target = mission.items.find(function (item) {
+        return item.moduleKey === moduleKey && !item.done;
+      });
+      if (!target) {
+        throw new Error('Module task not available.');
+      }
+
+      const rootNode = state.mindmap && Array.isArray(state.mindmap.nodes)
+        ? state.mindmap.nodes.find(function (node, idx) {
+            return normalizeKey((node.text || '') + '-' + idx) === target.moduleKey;
+          })
+        : null;
+      const nodeChildren = Array.isArray(rootNode && rootNode.children) ? rootNode.children : [];
+      const moduleContent = [
+        target.title,
+        nodeChildren.slice(0, 8).map(function (child) { return normalizeWhitespace(child.text || ''); }).filter(Boolean).join('\n')
+      ].filter(Boolean).join('\n');
+
+      setStatus('Generating dedicated module quiz for "' + target.title + '"...');
+      const response = await api('/api/quiz/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: state.selectedProjectId,
+          examTopics: target.title,
+          content: moduleContent || target.title,
+          types: Array.from(state.selectedTypes.size ? state.selectedTypes : new Set(['free_response'])),
+          numQuestions: state.numQuestions,
+        }),
+      });
+
+      if (!Array.isArray(response.quiz) || !response.quiz.length) {
+        throw new Error('Module quiz generation returned no questions.');
+      }
+
+      const quizPayload = {
+        project: response.project || (state.projectDetail && state.projectDetail.project) || null,
+        projectId: state.selectedProjectId,
+        subject: (target.title || 'Module') + ' · Focus Quiz',
+        topics: response.analysis && Array.isArray(response.analysis.topics) ? response.analysis.topics : [target.title],
+        generatedAt: new Date().toISOString(),
+        questions: response.quiz,
+        sourcePack: response.sources || [],
+        meta: Object.assign({}, response.meta || {}, {
+          moduleMission: {
+            moduleKey: target.moduleKey,
+            moduleTitle: target.title
+          }
+        }),
+      };
+
+      sessionStorage.setItem('quizall.currentQuiz', JSON.stringify(quizPayload));
+      sessionStorage.setItem(ACTIVE_MODULE_QUIZ_KEY, JSON.stringify({
+        projectId: state.selectedProjectId,
+        moduleKey: target.moduleKey,
+        moduleTitle: target.title
+      }));
+      window.location.href = 'quiz.html';
+    }
+
     function renderMindNode(node, depth) {
       const wrapper = document.createElement('div');
       wrapper.className = 'mind-node status-' + (node.status || 'gray');
@@ -3037,11 +3831,15 @@
         await loadProjectDetail(state.selectedProjectId);
       } else {
         renderSummary();
+        updateWorkspaceContext();
         renderPendingFiles();
         renderSavedFiles();
+        refreshUploadCollapse();
         drawAnalytics();
         renderOutlineCandidates([]);
         renderMindmap();
+        ensureMissionFromMindmap();
+        refreshJourneyCompletion();
         if (els.projectScienceGrid) els.projectScienceGrid.innerHTML = '<p class="empty-text">Select a project to view science activation.</p>';
         if (els.projectScienceNotes) els.projectScienceNotes.innerHTML = '';
         setStatus('No project yet. Create your first project.', 'success');
@@ -3051,6 +3849,7 @@
     async function loadProjectDetail(projectId) {
       if (!projectId) return;
       setStatus('Loading project details...');
+      consumeCompletedModuleFromSession();
       const data = await api('/api/quiz/projects/' + encodeURIComponent(projectId));
       state.projectDetail = data;
       state.selectedProjectId = projectId;
@@ -3063,12 +3862,16 @@
       }
       renderProjectSelect();
       renderSummary();
+      updateWorkspaceContext();
       renderPendingFiles();
       renderSavedFiles();
+      refreshUploadCollapse();
       drawAnalytics();
       renderMindmap();
+      ensureMissionFromMindmap();
       renderOutlineCandidates([]);
       syncProjectScienceFlagsFromDetail();
+      refreshJourneyCompletion();
       renderProjectScience();
       setProjectTab(state.currentProjectTab || 'quiz', { silentBadge: true });
       setStatus('Project ready. Continue with exam prep.', 'success');
@@ -3200,6 +4003,9 @@
         window.quizallScience.markProjectFlags(state.selectedProjectId, { filesUploaded: true });
         window.quizallScience.showBadge('files_uploaded');
       }
+      refreshJourneyCompletion();
+      activateJourneyStep('step03', { energy: true });
+      scrollToJourneyStep('step03');
       setStatus('Saved ' + result.files.length + ' files to project.', 'success');
       return result;
     }
@@ -3215,6 +4021,7 @@
         state.selectedOutlineFileId = null;
       }
       await loadProjectDetail(state.selectedProjectId);
+      refreshJourneyCompletion();
       setStatus('File deleted from project.', 'success');
     }
 
@@ -3266,6 +4073,11 @@
         window.quizallScience.markProjectFlags(state.selectedProjectId, { mindmapGenerated: true });
         window.quizallScience.showBadge('mindmap_generated');
       }
+      ensureMissionFromMindmap();
+      refreshJourneyCompletion();
+      activateJourneyStep('step04', { energy: true });
+      setProjectTab('quiz', { silentBadge: true });
+      scrollToJourneyStep('step04');
       renderProjectScience();
       setStatus('ExamTopics mindmap generated. You can now edit nodes.', 'success');
     }
@@ -3286,6 +4098,8 @@
       });
 
       setStatus('Mindmap saved.', 'success');
+      ensureMissionFromMindmap();
+      refreshJourneyCompletion();
     }
 
     async function deleteMindmap() {
@@ -3300,7 +4114,9 @@
       if (window.quizallScience && state.selectedProjectId) {
         window.quizallScience.markProjectFlags(state.selectedProjectId, { mindmapGenerated: false });
       }
+      localStorage.removeItem(getMissionStorageKey(state.selectedProjectId));
       await loadProjectDetail(state.selectedProjectId);
+      refreshJourneyCompletion();
       setStatus('Mindmap deleted. You can regenerate anytime.', 'success');
     }
 
@@ -3328,6 +4144,8 @@
         state.selectedProjectId = data.project.id;
         await loadProjectDetail(data.project.id);
       }
+      activateJourneyStep('step02', { energy: true });
+      scrollToJourneyStep('step02');
       setStatus('Project created.', 'success');
     }
 
@@ -3376,6 +4194,7 @@
         meta: response.meta || {},
       };
 
+      sessionStorage.removeItem(ACTIVE_MODULE_QUIZ_KEY);
       sessionStorage.setItem('quizall.currentQuiz', JSON.stringify(quizPayload));
       window.location.href = 'quiz.html';
     }
@@ -3412,6 +4231,13 @@
       renderPendingFiles();
     });
 
+    if (els.uploadToggleBtn) {
+      els.uploadToggleBtn.addEventListener('click', function () {
+        state.uploadManualExpanded = state.uploadCollapsed;
+        setUploadCollapsed(!state.uploadCollapsed);
+      });
+    }
+
     els.savedFiles.addEventListener('click', async function (event) {
       const fileId = event.target.getAttribute('data-delete-file');
       if (!fileId) return;
@@ -3428,10 +4254,30 @@
       }
     });
 
+    if (els.moduleTodoList) {
+      els.moduleTodoList.addEventListener('click', async function (event) {
+        const moduleKey = event.target.getAttribute('data-module-quiz');
+        if (!moduleKey) return;
+        if (state.busy) return;
+        setBusy(true);
+        try {
+          await startModuleQuiz(moduleKey);
+        } catch (err) {
+          setStatus(err.message || 'Failed to start module quiz.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      });
+    }
+
     els.clearPendingBtn.addEventListener('click', function () {
       state.pendingFiles = [];
       renderPendingFiles();
       setStatus('Pending files cleared.');
+    });
+
+    els.topicsInput.addEventListener('input', function () {
+      refreshJourneyCompletion();
     });
 
     els.saveFilesBtn.addEventListener('click', async function () {
@@ -3715,9 +4561,15 @@
 
     renderPendingFiles();
     renderSavedFiles();
+    refreshUploadCollapse();
+    updateWorkspaceContext();
     drawAnalytics();
     renderMindmapVizSwitch();
     updateMindmapFullscreenButton();
+    setupJourneyRail();
+    renderModuleMission();
+    refreshJourneyCompletion();
+    activateJourneyStep('step01');
     setProjectTab('quiz', { silentBadge: true });
     if (els.projectScienceGrid) {
       els.projectScienceGrid.innerHTML = '<p class="empty-text">Select a project to view science activation.</p>';

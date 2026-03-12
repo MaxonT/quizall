@@ -398,6 +398,8 @@
   <script src="lib/scienceCommon.js"></script>
   <script>
   (function () {
+    const ACTIVE_MODULE_QUIZ_KEY = 'quizall.activeModuleQuiz';
+    const MODULE_MISSION_KEY_PREFIX = 'quizall.moduleMission.';
     const stored = sessionStorage.getItem('quizall.currentQuiz');
     if (!stored) {
       window.location.href = 'create.html';
@@ -448,6 +450,45 @@
       confirmBackBtn: document.getElementById('confirmBackBtn'),
       confirmSubmitBtn: document.getElementById('confirmSubmitBtn'),
     };
+
+    function safeJsonParse(value, fallback) {
+      try {
+        if (!value) return fallback;
+        return JSON.parse(value);
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    function markModuleMissionDoneFromSession() {
+      const payload = safeJsonParse(sessionStorage.getItem(ACTIVE_MODULE_QUIZ_KEY), null);
+      if (!payload || !payload.projectId || !payload.moduleKey) return;
+      if (quiz.projectId && String(quiz.projectId) !== String(payload.projectId)) return;
+
+      const missionKey = MODULE_MISSION_KEY_PREFIX + String(payload.projectId);
+      const mission = safeJsonParse(localStorage.getItem(missionKey), null);
+      if (mission && Array.isArray(mission.items)) {
+        let changed = false;
+        mission.items.forEach(function (item) {
+          if (item.moduleKey === payload.moduleKey && !item.done) {
+            item.done = true;
+            item.completedAt = new Date().toISOString();
+            changed = true;
+          }
+        });
+        if (changed) {
+          localStorage.setItem(missionKey, JSON.stringify(mission));
+        }
+      }
+
+      sessionStorage.setItem(ACTIVE_MODULE_QUIZ_KEY, JSON.stringify({
+        projectId: payload.projectId,
+        moduleKey: payload.moduleKey,
+        moduleTitle: payload.moduleTitle || '',
+        completed: true,
+        completedAt: new Date().toISOString(),
+      }));
+    }
 
     function formatClock(totalSeconds) {
       const safe = Math.max(0, Number(totalSeconds) || 0);
@@ -774,6 +815,7 @@
           stepId: 'step03'
         });
       }
+      markModuleMissionDoneFromSession();
 
       const authToken = (window.authGuard && window.authGuard.getToken && window.authGuard.getToken()) || localStorage.getItem('quizall.token');
       if (authToken) {
