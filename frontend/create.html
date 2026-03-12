@@ -15,61 +15,11 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" />
   <style>
     .workspace {
-      width: min(1320px, calc(100% - clamp(84px, 12vw, 220px)));
+      width: min(1180px, calc(100% - clamp(96px, 14vw, 260px)));
       margin: 34px auto 84px;
       padding: 0;
       display: grid;
       gap: 22px;
-    }
-
-    .workspace-layout {
-      display: grid;
-      grid-template-columns: minmax(280px, 0.9fr) minmax(560px, 1.45fr) minmax(300px, 0.95fr);
-      gap: 18px;
-      align-items: start;
-    }
-
-    .workspace-left-rail,
-    .workspace-center-stage,
-    .workspace-right-rail {
-      display: grid;
-      gap: 14px;
-      align-content: start;
-      min-width: 0;
-    }
-
-    .workspace-left-rail .project-grid,
-    .workspace-left-rail .asset-lists {
-      grid-template-columns: 1fr;
-    }
-
-    .workspace-left-rail .stats {
-      grid-template-columns: 1fr;
-    }
-
-    .workspace-center-stage .card-prep {
-      min-height: 620px;
-    }
-
-    .workspace-center-stage .project-tab-panel[data-project-panel="quiz"] {
-      display: block !important;
-    }
-
-    .workspace-right-rail .project-tab-panel:not(.active) {
-      display: none;
-    }
-
-    .workspace-right-rail .project-tab-panel.active {
-      display: block;
-    }
-
-    .workspace-right-rail .card-analytics,
-    .workspace-right-rail .card-science {
-      min-height: 320px;
-    }
-
-    .workspace-right-rail #statusMessage {
-      margin-top: 2px;
     }
 
     .hero {
@@ -1829,31 +1779,6 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.92);
     }
 
-    @media (max-width: 1280px) {
-      .workspace {
-        width: min(1180px, calc(100% - clamp(56px, 9vw, 128px)));
-      }
-
-      .workspace-layout {
-        grid-template-columns: minmax(260px, 0.96fr) minmax(0, 1.3fr);
-      }
-
-      .workspace-right-rail {
-        grid-column: 1 / -1;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .workspace-right-rail > .card,
-      .workspace-right-rail > .project-tab-panel,
-      .workspace-right-rail > #statusMessage {
-        min-width: 0;
-      }
-
-      .workspace-right-rail > #statusMessage {
-        grid-column: 1 / -1;
-      }
-    }
-
     @media (max-width: 980px) {
       .project-grid { grid-template-columns: 1fr; }
       .stats { grid-template-columns: 1fr; }
@@ -1864,13 +1789,6 @@
       .workspace {
         width: calc(100% - 28px);
         gap: 18px;
-      }
-      .workspace-layout {
-        grid-template-columns: 1fr;
-      }
-      .workspace-right-rail {
-        grid-column: auto;
-        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -1911,8 +1829,6 @@
       <span class="workflow-item"><b>5</b> Analytics</span>
     </section>
 
-    <div class="workspace-layout">
-    <div class="workspace-left-rail">
     <section class="card card-elevated card-project">
       <div class="card-head">
         <span class="card-step">Step 1</span>
@@ -1980,9 +1896,7 @@
         </div>
       </div>
     </section>
-    </div>
 
-    <div class="workspace-center-stage">
     <section class="card card-elevated card-prep">
       <div class="card-head">
         <span class="card-step">Step 3</span>
@@ -2038,6 +1952,21 @@
       </div>
     </section>
 
+    <section class="card card-elevated">
+      <div class="card-head">
+        <span class="card-step">Step 4-6</span>
+        <div class="card-head-copy">
+          <h2>Project Tabs</h2>
+          <p class="card-sub">Switch between quiz, analytics, and your contextual science journey for this project.</p>
+        </div>
+      </div>
+      <div id="projectDetailTabs" class="project-detail-tabs">
+        <button type="button" class="project-tab-btn active" data-project-tab="quiz">Quiz Session</button>
+        <button type="button" class="project-tab-btn" data-project-tab="analytics">Analytics</button>
+        <button type="button" class="project-tab-btn" data-project-tab="science">Science</button>
+      </div>
+    </section>
+
     <div class="project-tab-panel active" data-project-panel="quiz">
       <section class="card card-elevated card-session">
         <div class="card-head">
@@ -2073,23 +2002,6 @@
         </div>
       </section>
     </div>
-    </div>
-
-    <aside class="workspace-right-rail">
-    <section class="card card-elevated card-tabs">
-      <div class="card-head">
-        <span class="card-step">Step 4-6</span>
-        <div class="card-head-copy">
-          <h2>Project Tabs</h2>
-          <p class="card-sub">Switch between quiz, analytics, and your contextual science journey for this project.</p>
-        </div>
-      </div>
-      <div id="projectDetailTabs" class="project-detail-tabs">
-        <button type="button" class="project-tab-btn active" data-project-tab="quiz">Quiz Session</button>
-        <button type="button" class="project-tab-btn" data-project-tab="analytics">Analytics</button>
-        <button type="button" class="project-tab-btn" data-project-tab="science">Science</button>
-      </div>
-    </section>
 
     <div class="project-tab-panel" data-project-panel="analytics">
       <section class="card card-elevated card-analytics">
@@ -2131,8 +2043,6 @@
     </div>
 
     <div id="statusMessage" class="status workspace-status">Ready.</div>
-    </aside>
-    </div>
   </main>
 
   <div class="modal" id="newProjectModal">
@@ -2540,12 +2450,7 @@
 
       if (els.projectPanels && els.projectPanels.length) {
         els.projectPanels.forEach(function (panel) {
-          const panelType = panel.getAttribute('data-project-panel');
-          if (panelType === 'quiz') {
-            panel.classList.add('active');
-            return;
-          }
-          panel.classList.toggle('active', panelType === tab);
+          panel.classList.toggle('active', panel.getAttribute('data-project-panel') === tab);
         });
       }
 
