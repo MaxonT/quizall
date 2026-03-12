@@ -25,7 +25,7 @@
       <div class="navlinks">
         <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
         <a href="create.html" data-i18n="nav.create">Exam Prep Workspace</a>
-        <a href="/science" class="nav-science-link" data-i18n="nav.science">Science</a>
+        <a href="/science/index.html" class="nav-science-link" data-i18n="nav.science">Science</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="settings.html" class="active" data-i18n="nav.account">Account</a>
       </div>
@@ -174,15 +174,9 @@
       <button id="logoutBtn" class="account-logout hidden">Log out</button>
     </section>
 
-    <section class="settings-panel settings-panel--env">
-      <h2>Environment & models</h2>
-      <div id="envSummary" class="settings-summary"></div>
-      <dl id="modelList" class="settings-dl"></dl>
-    </section>
-
-    <section class="settings-panel settings-panel--features">
-      <h2>Features</h2>
-      <ul id="featuresList" class="settings-features"></ul>
+    <section class="settings-panel settings-panel--science-map">
+      <h2>QuizAll 6-Step Research Mindmap</h2>
+      <div id="scienceMindmap" class="settings-science-map-host"></div>
     </section>
 
     <section class="settings-panel settings-panel--raw">
@@ -197,6 +191,8 @@
   </main>
 
   <script src="core.js"></script>
+  <script src="lib/scienceData.js"></script>
+  <script src="lib/scienceLocale.js"></script>
   <script src="settings.js"></script>
   <script src="lib/redeemBubble.js" defer></script>
 </body>

@@ -7,6 +7,15 @@
   <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
   <!-- Theme Manager - Must load before CSS -->
   <script src="lib/themeManager.js"></script>
+  <script>
+    (function () {
+      var path = window.location.pathname || "";
+      if (path === "/science" || path === "/science/") {
+        var target = "/science/index.html" + (window.location.hash || "");
+        window.location.replace(target);
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="style.css" />
   <style>
     .not-found-container {

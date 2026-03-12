@@ -11,6 +11,7 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
   const envSummaryEl = document.getElementById("envSummary");
   const modelListEl = document.getElementById("modelList");
   const featuresListEl = document.getElementById("featuresList");
+  const scienceMindmapEl = document.getElementById("scienceMindmap");
   const rawSettingsEl = document.getElementById("rawSettings");
   const logEl = document.getElementById("settingsLog");
   const authStatusEl = document.getElementById("authStatus");
@@ -356,6 +357,176 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
   }
 
+  function esc(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function hexToRgba(hex, alpha) {
+    var color = String(hex || "").replace("#", "");
+    if (color.length === 3) color = color.split("").map(function (ch) { return ch + ch; }).join("");
+    var r = parseInt(color.slice(0, 2), 16) || 0;
+    var g = parseInt(color.slice(2, 4), 16) || 0;
+    var b = parseInt(color.slice(4, 6), 16) || 0;
+    return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+  }
+
+  function readNode(nodes, key, fallbackTitle, fallbackKeywords) {
+    var src = (nodes && nodes[key]) || {};
+    var keywords = Array.isArray(src.keywords) ? src.keywords.slice(0, 2) : [];
+    while (keywords.length < 2) keywords.push(fallbackKeywords[keywords.length] || "");
+    return {
+      title: src.title || fallbackTitle,
+      keywords: keywords
+    };
+  }
+
+  function renderScienceMindmap() {
+    if (!scienceMindmapEl || !window.quizallScienceData || !window.quizallScienceLocale) return;
+    var locale = window.quizallScienceLocale.resolveLocale();
+    var copy = window.quizallScienceLocale.getCopy(locale);
+
+    var map = copy.mindmap || {};
+    var boundaries = map.boundaries || {};
+    var nodes = map.nodes || {};
+    var why = map.why || {};
+    var stepWord = copy.stepWord || "Step";
+
+    var schemaNode = readNode(nodes, "schema", "Schema Activation", ["Prior Knowledge", "Cognitive Load"]);
+    var retrievalNode = readNode(nodes, "retrieval", "Active Retrieval", ["Testing Effect", "Generation"]);
+    var difficultyNode = readNode(nodes, "difficulty", "Desirable Difficulties", ["Effortful Recall", "Durable Memory"]);
+    var zpdNode = readNode(nodes, "zpd", "ZPD Calibration", ["Challenge-Skill Fit", "Flow Zone"]);
+    var spacedNode = readNode(nodes, "spaced", "Spaced Repetition", ["Forgetting Curve", "Timing Control"]);
+    var feedbackNode = readNode(nodes, "feedback", "Feedback Loop", ["Error Signals", "Model Update"]);
+
+    var palette = {
+      schema: "#0f766e",
+      retrieval: "#1d4ed8",
+      difficulty: "#d97706",
+      zpd: "#7c3aed",
+      spaced: "#047857",
+      feedback: "#e11d48"
+    };
+
+    function renderRulerIcon(x, y, color) {
+      return (
+        '<g transform="translate(' + x + ',' + y + ')" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round">' +
+          '<rect x="0.9" y="0.9" width="22.2" height="12.2" rx="2" />' +
+          '<line x1="4" y1="4" x2="4" y2="10" />' +
+          '<line x1="8" y1="6" x2="8" y2="10" />' +
+          '<line x1="12" y1="4" x2="12" y2="10" />' +
+          '<line x1="16" y1="6" x2="16" y2="10" />' +
+          '<line x1="20" y1="4" x2="20" y2="10" />' +
+        '</g>'
+      );
+    }
+
+    function renderClockIcon(x, y, color) {
+      return (
+        '<g transform="translate(' + x + ',' + y + ')" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round">' +
+          '<circle cx="9" cy="9" r="8" />' +
+          '<line x1="9" y1="9" x2="9" y2="4.5" />' +
+          '<line x1="9" y1="9" x2="12.5" y2="11.5" />' +
+        '</g>'
+      );
+    }
+
+    function renderNode(spec) {
+      var icon = "";
+      if (spec.icon === "ruler") icon = renderRulerIcon(spec.x + spec.w - 40, spec.y + 12, spec.color);
+      if (spec.icon === "clock") icon = renderClockIcon(spec.x + spec.w - 34, spec.y + 10, spec.color);
+      return (
+        '<g>' +
+          '<rect x="' + spec.x + '" y="' + spec.y + '" width="' + spec.w + '" height="' + spec.h + '" rx="16" fill="' + hexToRgba(spec.color, 0.16) + '" stroke="' + spec.color + '" stroke-width="2.1" />' +
+          '<text x="' + (spec.x + 18) + '" y="' + (spec.y + 28) + '" class="mm-step">' + esc(spec.stepLabel) + '</text>' +
+          '<text x="' + (spec.x + 18) + '" y="' + (spec.y + 54) + '" class="mm-node-title">' + esc(spec.title) + '</text>' +
+          '<text x="' + (spec.x + 18) + '" y="' + (spec.y + 74) + '" class="mm-key">' + esc(spec.key1) + '</text>' +
+          '<text x="' + (spec.x + 18) + '" y="' + (spec.y + 96) + '" class="mm-key">' + esc(spec.key2) + '</text>' +
+          icon +
+        '</g>'
+      );
+    }
+
+    function renderWhyLabel(x, y, textValue) {
+      var width = Math.max(180, Math.min(360, String(textValue || "").length * 7.1 + 22));
+      return (
+        '<g transform="translate(' + x + ',' + y + ')">' +
+          '<rect x="0" y="0" width="' + width + '" height="28" rx="9" class="mm-why-badge" />' +
+          '<text x="10" y="19" class="mm-why-text">' + esc(textValue) + '</text>' +
+        '</g>'
+      );
+    }
+
+    var svg =
+      '<svg class="mindmap-canvas" viewBox="0 0 1400 860" role="img" aria-label="' + esc(map.title || "QuizAll Research Foundation mindmap") + '">' +
+        '<defs>' +
+          '<pattern id="settings-mm-grid" width="30" height="30" patternUnits="userSpaceOnUse">' +
+            '<path d="M30 0 H0 V30" fill="none" stroke="rgba(148,163,184,0.17)" stroke-width="1" />' +
+          '</pattern>' +
+          '<marker id="settings-mm-arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">' +
+            '<path d="M0,0 L10,6 L0,12 z" fill="rgba(148,163,184,0.85)" />' +
+          '</marker>' +
+          '<marker id="settings-mm-arrow-cyan" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">' +
+            '<path d="M0,0 L10,6 L0,12 z" fill="#67e8f9" />' +
+          '</marker>' +
+          '<style>' +
+            '.mm-track{font:700 16px "Source Sans 3", sans-serif; fill:var(--science-muted); letter-spacing:0.04em; text-transform:uppercase;}' +
+            '.mm-boundary{fill:rgba(148,163,184,0.045); stroke:rgba(148,163,184,0.55); stroke-width:1.6; stroke-dasharray:7 6;}' +
+            '.mm-boundary-title{font:700 14px "Source Sans 3", sans-serif; fill:var(--science-text); letter-spacing:0.03em; text-transform:uppercase;}' +
+            '.mm-boundary-sub{font:600 12px "Source Sans 3", sans-serif; fill:var(--science-muted);}' +
+            '.mm-center{fill:var(--science-panel); stroke:rgba(148,163,184,0.62); stroke-width:2;}' +
+            '.mm-center-main{font:700 31px "Source Serif 4", Georgia, serif; fill:var(--science-text); text-anchor:middle;}' +
+            '.mm-center-sub{font:700 13px "Source Sans 3", sans-serif; fill:var(--science-muted); text-anchor:middle; letter-spacing:0.07em; text-transform:uppercase;}' +
+            '.mm-step{font:700 11px "Source Sans 3", sans-serif; fill:var(--science-muted); letter-spacing:0.1em; text-transform:uppercase;}' +
+            '.mm-node-title{font:700 24px "Source Serif 4", Georgia, serif; fill:var(--science-text);}' +
+            '.mm-key{font:600 13px "Source Sans 3", sans-serif; fill:var(--science-muted);}' +
+            '.mm-link{stroke:rgba(148,163,184,0.9); stroke-width:2.4; fill:none; marker-end:url(#settings-mm-arrow);}' +
+            '.mm-link-dashed{stroke:#67e8f9; stroke-width:2.2; fill:none; stroke-dasharray:8 7; marker-end:url(#settings-mm-arrow-cyan);}' +
+            '.mm-why-badge{fill:var(--science-btn-soft-bg); stroke:var(--science-line-strong); stroke-width:1.2;}' +
+            '.mm-why-text{font:700 12px "Source Sans 3", sans-serif; fill:#67e8f9;}' +
+          '</style>' +
+        '</defs>' +
+        '<rect x="0" y="0" width="1400" height="860" fill="url(#settings-mm-grid)" opacity="0.74" />' +
+        '<text x="700" y="68" class="mm-track" text-anchor="middle">' + esc(map.path || "First Principles -> Operational Details") + '</text>' +
+        '<circle cx="700" cy="166" r="92" class="mm-center" />' +
+        '<text x="700" y="156" class="mm-center-main">' + esc(map.title || "QuizAll Research Foundation") + '</text>' +
+        '<text x="700" y="186" class="mm-center-sub">' + esc(map.mece || "MECE 6-Step Architecture") + '</text>' +
+        '<rect x="100" y="272" width="400" height="432" rx="18" class="mm-boundary" />' +
+        '<rect x="500" y="272" width="400" height="432" rx="18" class="mm-boundary" />' +
+        '<rect x="900" y="272" width="400" height="432" rx="18" class="mm-boundary" />' +
+        '<text x="120" y="296" class="mm-boundary-title">' + esc((boundaries.a && boundaries.a.title) || "Input & Encoding Boundary") + '</text>' +
+        '<text x="120" y="314" class="mm-boundary-sub">' + esc((boundaries.a && boundaries.a.subtitle) || "Structure -> Retrieval") + '</text>' +
+        '<text x="520" y="296" class="mm-boundary-title">' + esc((boundaries.b && boundaries.b.title) || "Optimization Boundary") + '</text>' +
+        '<text x="520" y="314" class="mm-boundary-sub">' + esc((boundaries.b && boundaries.b.subtitle) || "Difficulty -> ZPD") + '</text>' +
+        '<text x="920" y="296" class="mm-boundary-title">' + esc((boundaries.c && boundaries.c.title) || "Consolidation Boundary") + '</text>' +
+        '<text x="920" y="314" class="mm-boundary-sub">' + esc((boundaries.c && boundaries.c.subtitle) || "Spacing -> Feedback") + '</text>' +
+        '<path class="mm-link" d="M636 230 C560 258, 430 286, 300 320" />' +
+        '<path class="mm-link" d="M700 258 L700 320" />' +
+        '<path class="mm-link" d="M764 230 C840 258, 970 286, 1100 320" />' +
+        '<path class="mm-link" d="M300 440 L300 520" />' +
+        '<path class="mm-link" d="M700 440 L700 520" />' +
+        '<path class="mm-link" d="M1100 440 L1100 520" />' +
+        renderNode({ x: 140, y: 320, w: 320, h: 120, color: palette.schema, stepLabel: stepWord + " 01", title: schemaNode.title, key1: schemaNode.keywords[0], key2: schemaNode.keywords[1] }) +
+        renderNode({ x: 140, y: 520, w: 320, h: 120, color: palette.retrieval, stepLabel: stepWord + " 02", title: retrievalNode.title, key1: retrievalNode.keywords[0], key2: retrievalNode.keywords[1] }) +
+        renderNode({ x: 540, y: 320, w: 320, h: 120, color: palette.difficulty, stepLabel: stepWord + " 03", title: difficultyNode.title, key1: difficultyNode.keywords[0], key2: difficultyNode.keywords[1] }) +
+        renderNode({ x: 540, y: 520, w: 320, h: 120, color: palette.zpd, icon: "ruler", stepLabel: stepWord + " 04", title: zpdNode.title, key1: zpdNode.keywords[0], key2: zpdNode.keywords[1] }) +
+        renderNode({ x: 940, y: 320, w: 320, h: 120, color: palette.spaced, icon: "clock", stepLabel: stepWord + " 05", title: spacedNode.title, key1: spacedNode.keywords[0], key2: spacedNode.keywords[1] }) +
+        renderNode({ x: 940, y: 520, w: 320, h: 120, color: palette.feedback, stepLabel: stepWord + " 06", title: feedbackNode.title, key1: feedbackNode.keywords[0], key2: feedbackNode.keywords[1] }) +
+        '<path class="mm-link-dashed" d="M228 522 C66 494, 72 334, 230 338" />' +
+        '<path class="mm-link-dashed" d="M860 382 C962 420, 962 564, 860 602" />' +
+        '<path class="mm-link-dashed" d="M1014 520 C866 494, 870 332, 1018 340" />' +
+        renderWhyLabel(46, 458, (why.retrieveToSchema || "Why: retrieval errors refine schema")) +
+        renderWhyLabel(898, 458, (why.difficultyToZpd || "Why: productive difficulty calibrates challenge")) +
+        renderWhyLabel(846, 270, (why.feedbackToSpaced || "Why: feedback schedules next review")) +
+      '</svg>';
+
+    scienceMindmapEl.innerHTML = '<figure class="mindmap-figure">' + svg + '<figcaption>' + (copy.mindmapCaption || "Mindmap view: one cognitive loop, six coordinated learning stages.") + '</figcaption></figure>';
+  }
+
   async function loadSettings() {
     try {
       log("GET /api/settings ...");
@@ -518,6 +689,7 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
     if (rawSettingsEl) {
       rawSettingsEl.textContent = JSON.stringify(s, null, 2);
     }
+    renderScienceMindmap();
     log("Settings loaded.");
   }
 

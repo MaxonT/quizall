@@ -111,7 +111,7 @@
 
   function toScienceUrl(stepId) {
     const hash = stepId ? "#" + stepId : "";
-    return "/science" + hash;
+    return "/science/index.html" + hash;
   }
 
   function ensureModalStyles() {
