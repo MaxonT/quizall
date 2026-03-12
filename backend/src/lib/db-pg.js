@@ -551,7 +551,7 @@ export async function ensureUser(userId, email = null) {
         created_at,
         updated_at
       )
-      VALUES ($1, $2, NULL, 'free', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES (?, ?, NULL, 'free', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO NOTHING
     `, userId, userEmail);
   } catch (err) {
@@ -564,7 +564,7 @@ export async function columnExists(table, column) {
   const result = await db.get(`
     SELECT column_name 
     FROM information_schema.columns 
-    WHERE table_name = $1 AND column_name = $2
+    WHERE table_name = ? AND column_name = ?
   `, table, column);
   return !!result;
 }
@@ -576,5 +576,4 @@ export async function ensureColumn(table, column, definition) {
     await db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 }
-
 

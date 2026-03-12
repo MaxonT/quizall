@@ -1339,7 +1339,7 @@ quizRouter.post("/generate", optionalAuth, async (req, res) => {
     const sourcePackString = buildSourcePackString(rag.snippets);
     let content = typedContent;
 
-    if (!content && sourcePackString) {
+    if ((!content || content.length < CONTENT_MIN_LENGTH) && sourcePackString) {
       content = sourcePackString;
     }
 
