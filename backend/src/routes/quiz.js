@@ -1104,6 +1104,46 @@ quizRouter.post("/projects/:id/files", requireAuth, async (req, res) => {
   }
 });
 
+quizRouter.delete("/projects/:id/files/:fileId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    const fileId = normalizeWhitespace(req.params.fileId || "");
+
+    if (!fileId) {
+      return res.status(400).json({ ok: false, error: "File id is required" });
+    }
+
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: "Project not found" });
+    }
+
+    const file = await dbGet(
+      `SELECT id FROM project_files WHERE id = ? AND project_id = ? AND user_id = ? LIMIT 1`,
+      [fileId, projectId, userId]
+    );
+    if (!file) {
+      return res.status(404).json({ ok: false, error: "File not found" });
+    }
+
+    await dbRun(`DELETE FROM project_files WHERE id = ? AND project_id = ? AND user_id = ?`, [fileId, projectId, userId]);
+    await dbRun(
+      `UPDATE project_exam_prep
+       SET selected_file_id = CASE WHEN selected_file_id = ? THEN NULL ELSE selected_file_id END,
+           updated_at = ?
+       WHERE project_id = ? AND user_id = ?`,
+      [fileId, new Date().toISOString(), projectId, userId]
+    );
+    await touchProject(projectId);
+
+    return res.json({ ok: true, fileId });
+  } catch (err) {
+    console.error("[quizall] project file delete error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to delete file" });
+  }
+});
+
 quizRouter.get("/projects/:id/outline-candidates", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
@@ -1240,6 +1280,41 @@ quizRouter.put("/projects/:id/mindmap", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[quizall] mindmap save error:", err);
     return res.status(500).json({ ok: false, error: "Failed to save mindmap" });
+  }
+});
+
+quizRouter.delete("/projects/:id/mindmap", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: "Project not found" });
+    }
+
+    const existing = await dbGet(
+      `SELECT id FROM project_exam_prep WHERE project_id = ? AND user_id = ? LIMIT 1`,
+      [projectId, userId]
+    );
+    if (!existing?.id) {
+      return res.status(404).json({ ok: false, error: "Mindmap not found" });
+    }
+
+    const now = new Date().toISOString();
+    await dbRun(
+      `UPDATE project_exam_prep
+       SET mindmap_json = ?,
+           updated_at = ?
+       WHERE id = ?`,
+      ["null", now, existing.id]
+    );
+
+    await touchProject(projectId);
+
+    return res.json({ ok: true, deleted: true, updatedAt: now });
+  } catch (err) {
+    console.error("[quizall] mindmap delete error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to delete mindmap" });
   }
 });
 

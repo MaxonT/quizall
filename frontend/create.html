@@ -145,6 +145,17 @@
       background: rgba(15,24,52,0.84);
     }
 
+    .btn-danger-soft {
+      border-color: rgba(248, 113, 113, 0.4);
+      background: linear-gradient(180deg, rgba(60, 16, 23, 0.9), rgba(44, 12, 18, 0.92));
+      color: #fecaca;
+    }
+
+    .btn-danger-soft:hover {
+      border-color: rgba(252, 165, 165, 0.7);
+      box-shadow: 0 8px 16px rgba(127, 29, 29, 0.32);
+    }
+
     .muted-pill {
       display: inline-flex;
       align-items: center;
@@ -231,6 +242,14 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
+    }
+
+    .list-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .list-main {
@@ -1561,6 +1580,17 @@
       box-shadow: 0 8px 16px rgba(14,165,183,0.12);
     }
 
+    html[data-theme="light"] .btn-danger-soft {
+      border-color: rgba(248, 113, 113, 0.48);
+      background: linear-gradient(180deg, rgba(255, 241, 242, 0.96), rgba(255, 228, 230, 0.94));
+      color: #9f1239;
+    }
+
+    html[data-theme="light"] .btn-danger-soft:hover {
+      border-color: rgba(244, 63, 94, 0.5);
+      box-shadow: 0 8px 16px rgba(244, 63, 94, 0.16);
+    }
+
     html[data-theme="light"] .muted-pill {
       border-color: rgba(14,165,183,0.36);
       background: rgba(14,165,183,0.12);
@@ -1944,6 +1974,7 @@
               <button class="btn btn-soft mindmap-fullscreen-btn" id="mindmapFullscreenBtn" type="button">Fullscreen</button>
               <button class="btn btn-soft" id="addRootNodeBtn" type="button">+ Root Node</button>
               <button class="btn btn-primary" id="saveMindmapBtn" type="button">Save Mindmap</button>
+              <button class="btn btn-danger-soft" id="deleteMindmapBtn" type="button">Delete Mindmap</button>
             </div>
           </div>
           <div id="mindmapTree" class="mindmap-tree"></div>
@@ -2124,6 +2155,7 @@
       mindmapFullscreenBtn: document.getElementById('mindmapFullscreenBtn'),
       addRootNodeBtn: document.getElementById('addRootNodeBtn'),
       saveMindmapBtn: document.getElementById('saveMindmapBtn'),
+      deleteMindmapBtn: document.getElementById('deleteMindmapBtn'),
 
       typeToggles: document.getElementById('typeToggles'),
       numToggles: document.getElementById('numToggles'),
@@ -2173,8 +2205,14 @@
         els.generateMindmapBtn,
         els.generateQuizBtn,
         els.createProjectConfirmBtn,
-        els.refreshProjectsBtn
+        els.refreshProjectsBtn,
+        els.deleteMindmapBtn
       ].forEach(function (button) {
+        if (!button) return;
+        if (!value && button === els.deleteMindmapBtn) {
+          button.disabled = !(state.mindmap && Array.isArray(state.mindmap.nodes));
+          return;
+        }
         button.disabled = value;
       });
     }
@@ -2290,7 +2328,10 @@
             '<div class="list-title">' + escapeHtml(file.fileName) + '</div>' +
             '<div class="list-meta">' + formatBytes(file.contentLength || 0) + '</div>' +
           '</div>' +
-          badge +
+          '<div class="list-actions">' +
+            badge +
+            '<button class="btn btn-danger-soft" data-delete-file="' + file.id + '">Delete</button>' +
+          '</div>' +
         '</div>';
       }).join('');
     }
@@ -2380,15 +2421,12 @@
         ? state.projectDetail.analytics.trend
         : [];
 
-      const flagPatch = {};
-      if (files.length) flagPatch.filesUploaded = true;
-      if (trend.length) flagPatch.quizCompleted = true;
-      if (state.mindmap || (state.projectDetail.examPrep && state.projectDetail.examPrep.mindmap)) {
-        flagPatch.mindmapGenerated = true;
-      }
-      if (Object.keys(flagPatch).length) {
-        window.quizallScience.markProjectFlags(state.selectedProjectId, flagPatch);
-      }
+      const hasMindmap = !!(state.mindmap || (state.projectDetail.examPrep && state.projectDetail.examPrep.mindmap));
+      window.quizallScience.markProjectFlags(state.selectedProjectId, {
+        filesUploaded: files.length > 0,
+        quizCompleted: trend.length > 0,
+        mindmapGenerated: hasMindmap
+      });
     }
 
     function renderProjectScience() {
@@ -2919,6 +2957,7 @@
         els.mindmapAltView.style.display = 'none';
         els.mindmapAltView.innerHTML = '';
         state.innerMapActiveBranch = null;
+        if (els.deleteMindmapBtn) els.deleteMindmapBtn.disabled = true;
         return;
       }
 
@@ -2927,6 +2966,7 @@
       updateMindmapFullscreenButton();
 
       els.mindmapShell.style.display = '';
+      if (els.deleteMindmapBtn) els.deleteMindmapBtn.disabled = false;
       els.mindmapTitle.textContent = mindmap.title || 'ExamTopics Mindmap';
       const dateText = mindmap.generatedAt ? new Date(mindmap.generatedAt).toLocaleString() : 'just now';
       els.mindmapMeta.textContent = (mindmap.message || 'This mindmap was made specifically for your exam.') + ' · Generated ' + dateText;
@@ -3164,6 +3204,20 @@
       return result;
     }
 
+    async function deleteProjectFile(fileId) {
+      if (!state.selectedProjectId) throw new Error('Select a project first.');
+      if (!fileId) throw new Error('File id is required.');
+      setStatus('Deleting file...');
+      await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/files/' + encodeURIComponent(fileId), {
+        method: 'DELETE',
+      });
+      if (state.selectedOutlineFileId === fileId) {
+        state.selectedOutlineFileId = null;
+      }
+      await loadProjectDetail(state.selectedProjectId);
+      setStatus('File deleted from project.', 'success');
+    }
+
     async function scanOutlineCandidates() {
       if (!state.selectedProjectId) {
         throw new Error('Select a project first.');
@@ -3232,6 +3286,22 @@
       });
 
       setStatus('Mindmap saved.', 'success');
+    }
+
+    async function deleteMindmap() {
+      if (!state.selectedProjectId) throw new Error('Select a project first.');
+      if (!state.mindmap) throw new Error('No mindmap to delete.');
+      setStatus('Deleting mindmap...');
+      await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/mindmap', {
+        method: 'DELETE',
+      });
+      state.mindmap = null;
+      state.innerMapActiveBranch = null;
+      if (window.quizallScience && state.selectedProjectId) {
+        window.quizallScience.markProjectFlags(state.selectedProjectId, { mindmapGenerated: false });
+      }
+      await loadProjectDetail(state.selectedProjectId);
+      setStatus('Mindmap deleted. You can regenerate anytime.', 'success');
     }
 
     async function createProject() {
@@ -3340,6 +3410,22 @@
       if (removeIndex == null) return;
       state.pendingFiles.splice(Number(removeIndex), 1);
       renderPendingFiles();
+    });
+
+    els.savedFiles.addEventListener('click', async function (event) {
+      const fileId = event.target.getAttribute('data-delete-file');
+      if (!fileId) return;
+      if (state.busy) return;
+      const ok = window.confirm('Delete this uploaded file from the project?');
+      if (!ok) return;
+      setBusy(true);
+      try {
+        await deleteProjectFile(fileId);
+      } catch (err) {
+        setStatus(err.message || 'Failed to delete file.', 'error');
+      } finally {
+        setBusy(false);
+      }
     });
 
     els.clearPendingBtn.addEventListener('click', function () {
@@ -3513,6 +3599,22 @@
         setBusy(false);
       }
     });
+
+    if (els.deleteMindmapBtn) {
+      els.deleteMindmapBtn.addEventListener('click', async function () {
+        if (state.busy) return;
+        const ok = window.confirm('Delete current mindmap from this project?');
+        if (!ok) return;
+        setBusy(true);
+        try {
+          await deleteMindmap();
+        } catch (err) {
+          setStatus(err.message || 'Failed to delete mindmap.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      });
+    }
 
     if (els.mindmapVizSwitch) {
       els.mindmapVizSwitch.addEventListener('click', function (event) {
