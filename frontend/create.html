@@ -12,6 +12,7 @@
   <script src="lib/authGuard.js"></script>
   <script src="lib/i18next.min.js"></script>
   <script type="module" src="i18n/index.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" />
   <style>
     .workspace {
       max-width: 1120px;
@@ -297,9 +298,658 @@
       font-size: 0.8rem;
     }
 
+    .mindmap-head-controls {
+      justify-content: flex-end;
+    }
+
+    .mindmap-viz-picker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.76rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .mindmap-viz-picker .select {
+      width: auto;
+      min-width: 220px;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
     .mindmap-tree {
       display: grid;
       gap: 8px;
+    }
+
+    .mindmap-alt-view {
+      display: none;
+    }
+
+    /* My Inner Map style */
+    .mindmap-alt-view.inner-map-view {
+      display: block;
+      min-height: 560px;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      background: #0a0a0f;
+      border: 1px solid #1f1f2e;
+      font-family: 'Noto Serif SC', 'Cormorant Garamond', Georgia, serif;
+    }
+
+    .inner-map-canvas {
+      position: relative;
+      width: 100%;
+      height: 560px;
+    }
+
+    .inner-map-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .inner-map-center {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .inner-map-center-label {
+      font-size: 20px;
+      font-weight: 700;
+      color: #c9a55a;
+      letter-spacing: 3px;
+      margin-bottom: 6px;
+      text-shadow: 0 0 30px rgba(201,165,90,0.3);
+    }
+
+    .inner-map-center-sub {
+      font-size: 13px;
+      color: #9a96a8;
+      font-style: italic;
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    .inner-map-branch {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      padding: 10px 16px;
+      min-width: 120px;
+      border-radius: 12px;
+      text-align: center;
+      cursor: pointer;
+      background: #141420;
+      border: 1.5px solid #2a2a3d;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 3;
+      animation: innerMapFadeIn 0.6s ease-out backwards;
+    }
+
+    .inner-map-branch:hover,
+    .inner-map-branch.active {
+      transform: translate(-50%, -50%) scale(1.1);
+      z-index: 10;
+    }
+
+    .inner-map-branch-label {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .inner-map-branch-sub {
+      font-size: 11px;
+      color: #9a96a8;
+      font-style: italic;
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    .inner-map-child {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      padding: 6px 10px;
+      min-width: 130px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid transparent;
+      opacity: 0.45;
+      z-index: 1;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: innerMapFadeIn 0.8s ease-out backwards;
+    }
+
+    .inner-map-child.visible {
+      opacity: 1;
+      z-index: 5;
+    }
+
+    .inner-map-child-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #e8e6e3;
+      margin-bottom: 2px;
+    }
+
+    .inner-map-child-desc {
+      font-size: 11px;
+      color: #9a96a8;
+      line-height: 1.5;
+      margin-top: 4px;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.4s ease, opacity 0.3s ease;
+    }
+
+    .inner-map-child.visible .inner-map-child-desc {
+      max-height: 92px;
+      opacity: 1;
+    }
+
+    .inner-map-instruction {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: #9a96a8;
+      font-size: 12px;
+      opacity: 0.5;
+      font-style: italic;
+      font-family: 'Cormorant Garamond', serif;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    @keyframes innerMapPulse {
+      0%, 100% { r: 160; opacity: 0.12; }
+      50% { r: 180; opacity: 0.18; }
+    }
+
+    .inner-map-center-glow {
+      animation: innerMapPulse 4s ease-in-out infinite;
+    }
+
+    @keyframes innerMapFadeIn {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    /* Strategy style */
+    .mindmap-alt-view.strategy-view {
+      display: block;
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,0.24);
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .strategy-mm {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --accent1: #e8c97a;
+      --accent2: #7ab8e8;
+      --accent3: #7ae8b8;
+      --accent4: #e87a9a;
+      --text: #e8e8f0;
+      --muted: #6b6b88;
+      --toggle-bg: #1e1e2e;
+      --toggle-border: #2e2e44;
+      --toggle-text: #9090aa;
+      --toggle-active-bg: #2e2e44;
+      --toggle-active-text: #e8e8f0;
+      position: relative;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 560px;
+      padding: 40px 26px 24px;
+      background-image:
+        radial-gradient(ellipse at 20% 10%, rgba(232,201,122,0.04) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(122,184,232,0.04) 0%, transparent 50%);
+    }
+
+    .strategy-mm[data-theme="light"] {
+      --bg: #f5f4ef;
+      --surface: #ffffff;
+      --border: #e2e0d8;
+      --accent1: #b8962a;
+      --accent2: #2a72b8;
+      --accent3: #1a9e6a;
+      --accent4: #c43060;
+      --text: #1a1a26;
+      --muted: #888899;
+      --toggle-bg: #e8e6de;
+      --toggle-border: #d0cec6;
+      --toggle-text: #888899;
+      --toggle-active-bg: #ffffff;
+      --toggle-active-text: #1a1a26;
+      background-image:
+        radial-gradient(ellipse at 20% 10%, rgba(184,150,42,0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(42,114,184,0.07) 0%, transparent 50%);
+    }
+
+    .strategy-mm .theme-toggle {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      background: var(--toggle-bg);
+      border: 1px solid var(--toggle-border);
+      border-radius: 100px;
+      padding: 4px;
+      gap: 2px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+    }
+
+    .strategy-mm .theme-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--toggle-text);
+      background: transparent;
+      border: none;
+      border-radius: 100px;
+      padding: 6px 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .strategy-mm .theme-btn.active {
+      background: var(--toggle-active-bg);
+      color: var(--toggle-active-text);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.12);
+    }
+
+    .strategy-mm .max-w {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .strategy-mm .page-header {
+      text-align: center;
+      margin-bottom: 44px;
+      animation: strategyFadeUp 0.8s ease both;
+    }
+
+    .strategy-mm .eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .strategy-mm h3 {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 4.4vw, 54px);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--accent1) 0%, #fff 50%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .strategy-mm[data-theme="light"] h3 {
+      background: linear-gradient(135deg, var(--accent1) 0%, #333 50%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .strategy-mm .subtitle {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 300;
+    }
+
+    .strategy-mm .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .strategy-mm .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .strategy-mm .directions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 34px;
+      animation: strategyFadeUp 0.8s 0.1s ease both;
+    }
+
+    .strategy-mm .dir-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .strategy-mm .dir-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--card-color);
+    }
+
+    .strategy-mm .dir-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-color);
+    }
+
+    .strategy-mm .dir-badge {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--card-color);
+      background: color-mix(in srgb, var(--card-color) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--card-color) 30%, transparent);
+      padding: 3px 10px;
+      border-radius: 100px;
+      margin-bottom: 12px;
+    }
+
+    .strategy-mm .dir-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .strategy-mm .dir-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .strategy-mm .priority-stack {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 34px;
+      animation: strategyFadeUp 0.8s 0.2s ease both;
+    }
+
+    .strategy-mm .priority-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .strategy-mm .priority-row:hover {
+      border-color: var(--card-color);
+      transform: translateX(4px);
+    }
+
+    .strategy-mm .priority-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--card-color);
+      min-width: 28px;
+      line-height: 1;
+      opacity: 0.6;
+    }
+
+    .strategy-mm .priority-bar {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .strategy-mm .priority-name {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .strategy-mm .priority-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .strategy-mm .priority-fill {
+      height: 100%;
+      background: var(--card-color);
+      border-radius: 2px;
+      transition: width 1s 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .strategy-mm .priority-sub {
+      font-size: 12px;
+      color: var(--muted);
+      max-width: 320px;
+      line-height: 1.5;
+    }
+
+    .strategy-mm .alloc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 26px;
+      animation: strategyFadeUp 0.8s 0.3s ease both;
+    }
+
+    .strategy-mm .alloc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s;
+    }
+
+    .strategy-mm .alloc-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .strategy-mm .alloc-pct {
+      font-family: 'Playfair Display', serif;
+      font-size: 46px;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--card-color);
+      margin-bottom: 4px;
+    }
+
+    .strategy-mm .alloc-title {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .strategy-mm .alloc-items {
+      list-style: none;
+      display: grid;
+      gap: 7px;
+    }
+
+    .strategy-mm .alloc-item {
+      font-size: 12.5px;
+      color: var(--muted);
+      padding-left: 14px;
+      position: relative;
+      line-height: 1.5;
+    }
+
+    .strategy-mm .alloc-item::before {
+      content: '·';
+      position: absolute;
+      left: 0;
+      color: var(--card-color);
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .strategy-mm .alloc-ring {
+      position: absolute;
+      bottom: -20px;
+      right: -20px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 2px solid color-mix(in srgb, var(--card-color) 15%, transparent);
+      pointer-events: none;
+    }
+
+    .strategy-mm .alloc-ring-2 {
+      position: absolute;
+      bottom: -36px;
+      right: -36px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 1px solid color-mix(in srgb, var(--card-color) 8%, transparent);
+      pointer-events: none;
+    }
+
+    .strategy-mm .forbidden-card {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: color-mix(in srgb, #e87a7a 6%, var(--surface));
+      border: 1px solid color-mix(in srgb, #e87a7a 25%, transparent);
+      border-radius: 14px;
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+      animation: strategyFadeUp 0.8s 0.4s ease both;
+    }
+
+    .strategy-mm .forbidden-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #e87a7a, #e8b07a);
+    }
+
+    .strategy-mm .forbidden-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: color-mix(in srgb, #e87a7a 15%, transparent);
+      color: #e87a7a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .strategy-mm .forbidden-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .strategy-mm .forbidden-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: var(--text);
+    }
+
+    .strategy-mm .forbidden-reason {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .strategy-mm .forbidden-stamp {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: #e87a7a;
+      border: 1.5px solid color-mix(in srgb, #e87a7a 40%, transparent);
+      padding: 4px 10px;
+      border-radius: 4px;
+      opacity: 0.7;
+      flex-shrink: 0;
+      transform: rotate(2deg);
+      text-transform: uppercase;
+    }
+
+    @keyframes strategyFadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 900px) {
+      .mindmap-head-controls {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .mindmap-viz-picker {
+        width: 100%;
+      }
+
+      .mindmap-viz-picker .select {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .inner-map-canvas {
+        height: 500px;
+      }
+
+      .strategy-mm .theme-toggle {
+        position: static;
+        margin-bottom: 16px;
+      }
     }
 
     .mind-node {
@@ -1134,12 +1784,21 @@
               <h3 id="mindmapTitle">ExamTopics Mindmap</h3>
               <div class="mindmap-meta" id="mindmapMeta"></div>
             </div>
-            <div class="row">
+            <div class="row mindmap-head-controls">
+              <label class="mindmap-viz-picker">
+                Visualization
+                <select id="mindmapVisualizationSelect" class="select">
+                  <option value="classic">Classic Mindmap</option>
+                  <option value="inner_map">我的内心地图 Style</option>
+                  <option value="strategy">Strategy Style</option>
+                </select>
+              </label>
               <button class="btn btn-soft" id="addRootNodeBtn" type="button">+ Root Node</button>
               <button class="btn btn-primary" id="saveMindmapBtn" type="button">Save Mindmap</button>
             </div>
           </div>
           <div id="mindmapTree" class="mindmap-tree"></div>
+          <div id="mindmapAltView" class="mindmap-alt-view"></div>
         </div>
       </div>
     </section>
@@ -1266,6 +1925,8 @@
 
     const API_BASE = window.authGuard.API_BASE;
     const token = window.authGuard.getToken();
+    const MINDMAP_VISUALIZATION_KEY = 'quizall.mindmap.visualization';
+    const STRATEGY_THEME_MODE_KEY = 'quizall.mindmap.strategy.theme';
 
     const state = {
       projects: [],
@@ -1277,6 +1938,9 @@
       selectedTypes: new Set(['free_response', 'multiple_choice', 'true_false']),
       numQuestions: 10,
       currentProjectTab: 'quiz',
+      mindmapVisualization: localStorage.getItem(MINDMAP_VISUALIZATION_KEY) || 'classic',
+      strategyThemeMode: localStorage.getItem(STRATEGY_THEME_MODE_KEY) || 'system',
+      innerMapActiveBranch: null,
       busy: false,
     };
 
@@ -1306,6 +1970,8 @@
       mindmapTitle: document.getElementById('mindmapTitle'),
       mindmapMeta: document.getElementById('mindmapMeta'),
       mindmapTree: document.getElementById('mindmapTree'),
+      mindmapAltView: document.getElementById('mindmapAltView'),
+      mindmapVisualizationSelect: document.getElementById('mindmapVisualizationSelect'),
       addRootNodeBtn: document.getElementById('addRootNodeBtn'),
       saveMindmapBtn: document.getElementById('saveMindmapBtn'),
 
@@ -1342,6 +2008,10 @@
     ].join('\n');
 
     els.emailTemplate.value = DEFAULT_EMAIL_TEMPLATE;
+    state.mindmapVisualization = sanitizeMindmapVisualization(state.mindmapVisualization);
+    if (els.mindmapVisualizationSelect) {
+      els.mindmapVisualizationSelect.value = state.mindmapVisualization;
+    }
 
     function setStatus(message, type) {
       els.statusMessage.textContent = message;
@@ -1665,11 +2335,331 @@
       return null;
     }
 
+    function sanitizeMindmapVisualization(value) {
+      return value === 'inner_map' || value === 'strategy' || value === 'classic'
+        ? value
+        : 'classic';
+    }
+
+    function getNodeStatusLabel(node) {
+      const accuracy = Number(node && node.accuracy);
+      if (Number.isFinite(accuracy)) return 'Accuracy ' + Math.max(0, Math.min(100, Math.round(accuracy))) + '%';
+      const status = String((node && node.status) || 'gray').toLowerCase();
+      if (status === 'green') return 'Strong recall';
+      if (status === 'yellow') return 'Growing recall';
+      if (status === 'red') return 'Needs reinforcement';
+      return 'In progress';
+    }
+
+    function getNodeDescription(node) {
+      if (!node || !Array.isArray(node.children) || !node.children.length) {
+        return 'Add key details here.';
+      }
+      return String(node.children[0].text || 'Add key details here.');
+    }
+
+    function countLeaves(node) {
+      if (!node || !Array.isArray(node.children) || !node.children.length) return 1;
+      return node.children.reduce(function (sum, child) {
+        return sum + countLeaves(child);
+      }, 0);
+    }
+
+    function getNodeWeight(node, index) {
+      const accuracy = Number(node && node.accuracy);
+      if (Number.isFinite(accuracy)) {
+        return Math.max(15, Math.min(100, Math.round(accuracy)));
+      }
+      const status = String((node && node.status) || 'gray').toLowerCase();
+      if (status === 'green') return 82;
+      if (status === 'yellow') return 67;
+      if (status === 'red') return 46;
+      return Math.max(20, 88 - index * 9);
+    }
+
+    function getResolvedStrategyTheme() {
+      const mode = state.strategyThemeMode || 'system';
+      if (mode === 'dark' || mode === 'light') return mode;
+      const appTheme = document.documentElement.getAttribute('data-theme');
+      if (appTheme === 'light' || appTheme === 'dark') return appTheme;
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+
+    function showClassicMindmap(mindmap) {
+      els.mindmapTree.style.display = '';
+      els.mindmapAltView.style.display = 'none';
+      els.mindmapAltView.className = 'mindmap-alt-view';
+      els.mindmapAltView.innerHTML = '';
+      els.mindmapTree.innerHTML = '';
+      mindmap.nodes.forEach(function (node) {
+        els.mindmapTree.appendChild(renderMindNode(node, 0));
+      });
+    }
+
+    function showInnerMapMindmap(mindmap) {
+      const palette = ['#b06bce', '#6b8cce', '#ce6b6b', '#6bce8a', '#c9a55a', '#7a89ff'];
+      const roots = (Array.isArray(mindmap.nodes) ? mindmap.nodes : []).map(function (node, index) {
+        return {
+          id: node.id || ('root_' + index),
+          label: String(node.text || ('Topic ' + (index + 1))),
+          sublabel: getNodeStatusLabel(node),
+          color: palette[index % palette.length],
+          children: Array.isArray(node.children) ? node.children : []
+        };
+      });
+
+      els.mindmapTree.style.display = 'none';
+      els.mindmapAltView.className = 'mindmap-alt-view inner-map-view';
+      els.mindmapAltView.style.display = 'block';
+      els.mindmapAltView.innerHTML =
+        '<div class="inner-map-canvas" id="innerMapCanvas">' +
+        '<svg class="inner-map-svg" id="innerMapSvg"></svg>' +
+        '<div class="inner-map-center">' +
+        '<div class="inner-map-center-label">' + escapeHtml(mindmap.title || 'ExamTopics Mindmap') + '</div>' +
+        '<div class="inner-map-center-sub">' + escapeHtml((mindmap.examName || 'From structure to mastery')) + '</div>' +
+        '</div>' +
+        '<div class="inner-map-instruction">点击每个分支查看详情 · Click a branch to explore</div>' +
+        '</div>';
+
+      const canvas = document.getElementById('innerMapCanvas');
+      const svg = document.getElementById('innerMapSvg');
+      if (!canvas || !svg) return;
+
+      function polarToXY(cx, cy, angle, distance) {
+        const rad = (angle * Math.PI) / 180;
+        return { x: cx + Math.cos(rad) * distance, y: cy + Math.sin(rad) * distance };
+      }
+
+      function makeCurvedPath(x1, y1, x2, y2) {
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        const curvature = dist * 0.15;
+        const cx = midX + (dy / dist) * curvature;
+        const cy = midY - (dx / dist) * curvature;
+        return 'M ' + x1 + ' ' + y1 + ' Q ' + cx + ' ' + cy + ' ' + x2 + ' ' + y2;
+      }
+
+      function draw() {
+        const W = canvas.clientWidth || 960;
+        const H = canvas.clientHeight || 560;
+        const cx = W / 2;
+        const cy = H / 2;
+        const scale = Math.min(W / 1120, H / 760, 1);
+        const branchRadius = Math.min(W, H) * 0.32;
+        const ns = 'http://www.w3.org/2000/svg';
+
+        svg.innerHTML = '';
+        canvas.querySelectorAll('.inner-map-branch, .inner-map-child').forEach(function (node) {
+          node.remove();
+        });
+
+        const glow = document.createElementNS(ns, 'circle');
+        glow.setAttribute('cx', String(cx));
+        glow.setAttribute('cy', String(cy));
+        glow.setAttribute('r', String(160 * scale));
+        glow.setAttribute('fill', 'none');
+        glow.setAttribute('stroke', '#c9a55a');
+        glow.setAttribute('stroke-width', '0.5');
+        glow.setAttribute('opacity', '0.15');
+        glow.setAttribute('class', 'inner-map-center-glow');
+        svg.appendChild(glow);
+
+        roots.forEach(function (branch, bi) {
+          const angle = -140 + (bi * (360 / Math.max(roots.length, 1)));
+          const bPos = polarToXY(cx, cy, angle, branchRadius * scale);
+          const isActive = state.innerMapActiveBranch === branch.id;
+
+          const mainLine = document.createElementNS(ns, 'path');
+          mainLine.setAttribute('d', makeCurvedPath(cx, cy, bPos.x, bPos.y));
+          mainLine.setAttribute('stroke', branch.color);
+          mainLine.setAttribute('stroke-width', '1.5');
+          mainLine.setAttribute('fill', 'none');
+          mainLine.setAttribute('opacity', isActive ? '0.8' : '0.3');
+          svg.appendChild(mainLine);
+
+          const branchNode = document.createElement('div');
+          branchNode.className = 'inner-map-branch' + (isActive ? ' active' : '');
+          branchNode.style.left = bPos.x + 'px';
+          branchNode.style.top = bPos.y + 'px';
+          branchNode.style.animationDelay = (bi * 0.1) + 's';
+          if (isActive) {
+            branchNode.style.background = branch.color + '18';
+            branchNode.style.borderColor = branch.color;
+            branchNode.style.boxShadow = '0 0 25px ' + branch.color + '25';
+          }
+          branchNode.innerHTML =
+            '<div class="inner-map-branch-label" style="color:' + branch.color + ';">' + escapeHtml(branch.label) + '</div>' +
+            '<div class="inner-map-branch-sub">' + escapeHtml(branch.sublabel) + '</div>';
+          branchNode.addEventListener('click', function (event) {
+            event.stopPropagation();
+            state.innerMapActiveBranch = state.innerMapActiveBranch === branch.id ? null : branch.id;
+            draw();
+          });
+          canvas.appendChild(branchNode);
+
+          branch.children.forEach(function (child, ci) {
+            const spread = Math.max(22, Math.min(90, branch.children.length * 20));
+            const offset = branch.children.length === 1 ? 0 : (-spread / 2 + (spread / (branch.children.length - 1)) * ci);
+            const cPos = polarToXY(bPos.x, bPos.y, angle + offset, Math.max(130, 150 * scale));
+            const childText = String(child.text || 'Subtopic');
+            const childDesc = child.source ? ('Source: ' + child.source) : getNodeDescription(child);
+
+            const childLine = document.createElementNS(ns, 'path');
+            childLine.setAttribute('d', makeCurvedPath(bPos.x, bPos.y, cPos.x, cPos.y));
+            childLine.setAttribute('stroke', branch.color);
+            childLine.setAttribute('stroke-width', '1');
+            childLine.setAttribute('fill', 'none');
+            childLine.setAttribute('opacity', isActive ? '0.6' : '0.15');
+            svg.appendChild(childLine);
+
+            const childNode = document.createElement('div');
+            childNode.className = 'inner-map-child' + (isActive ? ' visible' : '');
+            childNode.style.left = cPos.x + 'px';
+            childNode.style.top = cPos.y + 'px';
+            childNode.style.animationDelay = (bi * 0.1 + ci * 0.08 + 0.2) + 's';
+            if (isActive) {
+              childNode.style.background = branch.color + '0d';
+              childNode.style.borderColor = branch.color + '60';
+            }
+            childNode.innerHTML =
+              '<div class="inner-map-child-label">' + escapeHtml(childText) + '</div>' +
+              '<div class="inner-map-child-desc">' + escapeHtml(childDesc) + '</div>';
+            canvas.appendChild(childNode);
+          });
+        });
+      }
+
+      canvas.addEventListener('click', function (event) {
+        if (event.target.closest('.inner-map-branch')) return;
+        state.innerMapActiveBranch = null;
+        draw();
+      });
+
+      draw();
+    }
+
+    function showStrategyMindmap(mindmap) {
+      const roots = Array.isArray(mindmap.nodes) ? mindmap.nodes : [];
+      const colors = ['var(--accent1)', 'var(--accent2)', 'var(--accent3)', 'var(--accent4)', 'var(--muted)', 'var(--accent2)'];
+      const directions = roots.slice(0, 3);
+      const priorities = roots.slice(0, Math.max(roots.length, 1));
+      const allocations = roots.slice(0, 4);
+      const warningNode = roots.find(function (node) {
+        return String(node.status || '').toLowerCase() === 'red';
+      }) || roots[0] || null;
+
+      const allocationWeights = allocations.map(function (node, idx) {
+        return getNodeWeight(node, idx);
+      });
+      const allocTotal = allocationWeights.reduce(function (sum, value) { return sum + value; }, 0) || 1;
+      let allocationPercents = allocationWeights.map(function (value) {
+        return Math.round((value / allocTotal) * 100);
+      });
+      const allocationDelta = 100 - allocationPercents.reduce(function (sum, value) { return sum + value; }, 0);
+      if (allocationPercents.length) allocationPercents[0] += allocationDelta;
+
+      const directionHtml = directions.map(function (node, idx) {
+        return '<div class="dir-card" style="--card-color: ' + colors[idx % colors.length] + '">' +
+          '<span class="dir-badge">Direction ' + String(idx + 1) + '</span>' +
+          '<div class="dir-title">' + escapeHtml(String(node.text || ('Topic ' + (idx + 1)))) + '</div>' +
+          '<div class="dir-desc">' + escapeHtml(getNodeDescription(node)) + '</div>' +
+        '</div>';
+      }).join('');
+
+      const priorityHtml = priorities.map(function (node, idx) {
+        const width = Math.max(20, Math.min(100, getNodeWeight(node, idx)));
+        const subtopics = Array.isArray(node.children) ? node.children.length : 0;
+        return '<div class="priority-row" style="--card-color: ' + colors[idx % colors.length] + '">' +
+          '<div class="priority-num">' + String(idx + 1) + '</div>' +
+          '<div class="priority-bar">' +
+            '<div class="priority-name">' + escapeHtml(String(node.text || ('Topic ' + (idx + 1)))) + '</div>' +
+            '<div class="priority-track"><div class="priority-fill" style="width:' + width + '%"></div></div>' +
+          '</div>' +
+          '<div class="priority-sub">' + escapeHtml(getNodeStatusLabel(node) + ' · ' + subtopics + ' subtopics') + '</div>' +
+        '</div>';
+      }).join('');
+
+      const allocationHtml = allocations.map(function (node, idx) {
+        const items = (Array.isArray(node.children) ? node.children : []).slice(0, 6).map(function (child) {
+          return '<li class="alloc-item">' + escapeHtml(String(child.text || 'Subtopic')) + '</li>';
+        }).join('') || '<li class="alloc-item">Add key details here</li>';
+        return '<div class="alloc-card" style="--card-color: ' + colors[idx % colors.length] + '">' +
+          '<div class="alloc-pct">' + String(Math.max(5, allocationPercents[idx] || 0)) + '%</div>' +
+          '<div class="alloc-title">' + escapeHtml(String(node.text || ('Topic ' + (idx + 1)))) + '</div>' +
+          '<ul class="alloc-items">' + items + '</ul>' +
+          '<div class="alloc-ring"></div>' +
+          '<div class="alloc-ring-2"></div>' +
+        '</div>';
+      }).join('');
+
+      const warningTitle = warningNode ? String(warningNode.text || 'Focus warning') : 'Focus warning';
+      const warningText = warningNode ? getNodeDescription(warningNode) : 'No red-status topic currently.';
+      const themeMode = state.strategyThemeMode || 'system';
+      const resolvedTheme = getResolvedStrategyTheme();
+
+      els.mindmapTree.style.display = 'none';
+      els.mindmapAltView.className = 'mindmap-alt-view strategy-view';
+      els.mindmapAltView.style.display = 'block';
+      els.mindmapAltView.innerHTML =
+        '<div class="strategy-mm" data-theme="' + resolvedTheme + '">' +
+          '<div class="theme-toggle">' +
+            '<button type="button" class="theme-btn' + (themeMode === 'light' ? ' active' : '') + '" data-mode="light">Light</button>' +
+            '<button type="button" class="theme-btn' + (themeMode === 'dark' ? ' active' : '') + '" data-mode="dark">Dark</button>' +
+            '<button type="button" class="theme-btn' + (themeMode === 'system' ? ' active' : '') + '" data-mode="system">System</button>' +
+          '</div>' +
+          '<div class="max-w">' +
+            '<header class="page-header">' +
+              '<p class="eyebrow">Personal Strategy Framework</p>' +
+              '<h3>' + escapeHtml(String(mindmap.title || 'My Strategic Compass')) + '</h3>' +
+              '<p class="subtitle">Direction · Priority · Time Allocation</p>' +
+            '</header>' +
+            '<p class="section-label">01 &nbsp; Directions</p>' +
+            '<div class="directions-grid">' + directionHtml + '</div>' +
+            '<p class="section-label">02 &nbsp; Priorities</p>' +
+            '<div class="priority-stack">' + priorityHtml + '</div>' +
+            '<p class="section-label">03 &nbsp; Time Allocation</p>' +
+            '<div class="alloc-grid">' + allocationHtml + '</div>' +
+            '<p class="section-label">04 &nbsp; Forbidden</p>' +
+            '<div class="forbidden-card">' +
+              '<div class="forbidden-icon">✕</div>' +
+              '<div class="forbidden-content">' +
+                '<div class="forbidden-title">' + escapeHtml(warningTitle) + '</div>' +
+                '<div class="forbidden-reason">' + escapeHtml(warningText) + '</div>' +
+              '</div>' +
+              '<div class="forbidden-stamp">FORBIDDEN</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      const strategyRoot = els.mindmapAltView.querySelector('.strategy-mm');
+      if (!strategyRoot) return;
+      strategyRoot.querySelectorAll('.theme-btn').forEach(function (button) {
+        button.addEventListener('click', function () {
+          const nextMode = button.getAttribute('data-mode') || 'system';
+          state.strategyThemeMode = nextMode;
+          localStorage.setItem(STRATEGY_THEME_MODE_KEY, nextMode);
+          renderMindmap();
+        });
+      });
+    }
+
     function renderMindmap() {
       const mindmap = state.mindmap;
       if (!mindmap || !Array.isArray(mindmap.nodes)) {
         els.mindmapShell.style.display = 'none';
+        els.mindmapAltView.className = 'mindmap-alt-view';
+        els.mindmapAltView.style.display = 'none';
+        els.mindmapAltView.innerHTML = '';
+        state.innerMapActiveBranch = null;
         return;
+      }
+
+      state.mindmapVisualization = sanitizeMindmapVisualization(state.mindmapVisualization);
+      if (els.mindmapVisualizationSelect) {
+        els.mindmapVisualizationSelect.value = state.mindmapVisualization;
       }
 
       els.mindmapShell.style.display = '';
@@ -1677,10 +2667,15 @@
       const dateText = mindmap.generatedAt ? new Date(mindmap.generatedAt).toLocaleString() : 'just now';
       els.mindmapMeta.textContent = (mindmap.message || 'This mindmap was made specifically for your exam.') + ' · Generated ' + dateText;
 
-      els.mindmapTree.innerHTML = '';
-      mindmap.nodes.forEach(function (node) {
-        els.mindmapTree.appendChild(renderMindNode(node, 0));
-      });
+      if (state.mindmapVisualization === 'classic') {
+        showClassicMindmap(mindmap);
+        return;
+      }
+      if (state.mindmapVisualization === 'inner_map') {
+        showInnerMapMindmap(mindmap);
+        return;
+      }
+      showStrategyMindmap(mindmap);
     }
 
     function renderMindNode(node, depth) {
@@ -2255,6 +3250,17 @@
       }
     });
 
+    if (els.mindmapVisualizationSelect) {
+      els.mindmapVisualizationSelect.addEventListener('change', function () {
+        state.mindmapVisualization = sanitizeMindmapVisualization(els.mindmapVisualizationSelect.value);
+        localStorage.setItem(MINDMAP_VISUALIZATION_KEY, state.mindmapVisualization);
+        if (state.mindmapVisualization !== 'inner_map') {
+          state.innerMapActiveBranch = null;
+        }
+        renderMindmap();
+      });
+    }
+
     els.typeToggles.addEventListener('click', function (event) {
       const button = event.target.closest('[data-type]');
       if (!button) return;
@@ -2304,7 +3310,12 @@
       });
     }
 
-    window.addEventListener('resize', drawAnalytics);
+    window.addEventListener('resize', function () {
+      drawAnalytics();
+      if (state.mindmapVisualization === 'inner_map' || state.mindmapVisualization === 'strategy') {
+        renderMindmap();
+      }
+    });
 
     renderPendingFiles();
     renderSavedFiles();
