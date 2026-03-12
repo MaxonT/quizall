@@ -380,6 +380,21 @@
       height: 560px;
     }
 
+    .inner-map-viewport {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .inner-map-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-origin: 50% 50%;
+      transition: transform 620ms cubic-bezier(0.19, 1, 0.22, 1), filter 620ms cubic-bezier(0.19, 1, 0.22, 1);
+      will-change: transform;
+    }
+
     .inner-map-svg {
       position: absolute;
       inset: 0;
@@ -416,9 +431,9 @@
     .inner-map-branch {
       position: absolute;
       transform: translate(-50%, -50%);
-      padding: 10px 16px;
-      min-width: 120px;
-      max-width: 230px;
+      padding: 10px 14px;
+      min-width: 124px;
+      max-width: 210px;
       border-radius: 12px;
       text-align: center;
       cursor: pointer;
@@ -433,6 +448,18 @@
     .inner-map-branch.active {
       transform: translate(-50%, -50%) scale(1.1);
       z-index: 10;
+    }
+
+    .inner-map-branch.compact {
+      min-width: 94px;
+      max-width: 148px;
+      padding: 7px 9px;
+      border-radius: 10px;
+      opacity: 0.86;
+    }
+
+    .inner-map-branch.compact .inner-map-branch-sub {
+      display: none;
     }
 
     .inner-map-branch-label {
@@ -451,12 +478,17 @@
       line-height: 1.3;
     }
 
+    .inner-map-branch.compact .inner-map-branch-label {
+      font-size: 12px;
+      margin-bottom: 0;
+    }
+
     .inner-map-child {
       position: absolute;
       transform: translate(-50%, -50%);
-      padding: 6px 10px;
-      min-width: 130px;
-      max-width: 245px;
+      padding: 6px 9px;
+      min-width: 118px;
+      max-width: 210px;
       border-radius: 8px;
       text-align: center;
       border: 1px solid transparent;
@@ -472,7 +504,7 @@
     }
 
     .inner-map-child-label {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       color: #e8e6e3;
       margin-bottom: 2px;
@@ -489,6 +521,27 @@
       overflow: hidden;
       opacity: 0;
       transition: max-height 0.4s ease, opacity 0.3s ease;
+    }
+
+    .inner-map-child.compact {
+      min-width: 72px;
+      max-width: 104px;
+      padding: 4px 6px;
+      border-radius: 7px;
+      opacity: 0.24;
+      pointer-events: none;
+    }
+
+    .inner-map-child.compact .inner-map-child-label {
+      font-size: 10px;
+      margin-bottom: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .inner-map-child.compact .inner-map-child-desc {
+      display: none;
     }
 
     .inner-map-child.visible .inner-map-child-desc {
@@ -1877,11 +1930,11 @@
               <div class="mindmap-meta" id="mindmapMeta"></div>
             </div>
             <div class="row mindmap-head-controls">
-              <span class="mindmap-viz-label">Visualization</span>
+              <span class="mindmap-viz-label">View Mode</span>
               <div id="mindmapVizSwitch" class="mindmap-viz-switch" role="tablist" aria-label="Mindmap visualization modes">
-                <button type="button" class="mindmap-viz-btn" data-viz="classic">Precision Tree</button>
-                <button type="button" class="mindmap-viz-btn" data-viz="inner_map">Inner Constellation</button>
-                <button type="button" class="mindmap-viz-btn" data-viz="strategy">Strategic Compass</button>
+                <button type="button" class="mindmap-viz-btn" data-viz="classic">Structured Map</button>
+                <button type="button" class="mindmap-viz-btn" data-viz="inner_map">Focus Map</button>
+                <button type="button" class="mindmap-viz-btn" data-viz="strategy">Strategy Board</button>
               </div>
               <button class="btn btn-soft mindmap-fullscreen-btn" id="mindmapFullscreenBtn" type="button">Fullscreen</button>
               <button class="btn btn-soft" id="addRootNodeBtn" type="button">+ Root Node</button>
@@ -2516,7 +2569,7 @@
 
     function showInnerMapMindmap(mindmap) {
       const palette = ['#b06bce', '#6b8cce', '#ce6b6b', '#6bce8a', '#c9a55a', '#7a89ff'];
-      const maxChildrenPerBranch = 6;
+      const maxChildrenPerBranch = 5;
       const roots = (Array.isArray(mindmap.nodes) ? mindmap.nodes : []).map(function (node, index) {
         const children = Array.isArray(node.children) ? node.children : [];
         const visibleChildren = children.slice(0, maxChildrenPerBranch).map(function (child) {
@@ -2530,7 +2583,7 @@
           visibleChildren.push({
             text: '+' + String(children.length - maxChildrenPerBranch) + ' more topics',
             source: null,
-            fallback: 'Open Precision Tree for full editing view.'
+            fallback: 'Open Structured Map for full editing view.'
           });
         }
         return {
@@ -2547,17 +2600,22 @@
       els.mindmapAltView.style.display = 'block';
       els.mindmapAltView.innerHTML =
         '<div class="inner-map-canvas" id="innerMapCanvas">' +
+        '<div class="inner-map-viewport">' +
+        '<div class="inner-map-stage" id="innerMapStage">' +
         '<svg class="inner-map-svg" id="innerMapSvg"></svg>' +
         '<div class="inner-map-center">' +
         '<div class="inner-map-center-label">' + escapeHtml(mindmap.title || 'ExamTopics Mindmap') + '</div>' +
         '<div class="inner-map-center-sub">' + escapeHtml((mindmap.examName || 'From structure to mastery')) + '</div>' +
+        '</div>' +
+        '</div>' +
         '</div>' +
         '<div class="inner-map-instruction">点击每个分支查看详情 · Click a branch to explore</div>' +
         '</div>';
 
       const canvas = document.getElementById('innerMapCanvas');
       const svg = document.getElementById('innerMapSvg');
-      if (!canvas || !svg) return;
+      const stage = document.getElementById('innerMapStage');
+      if (!canvas || !svg || !stage) return;
 
       function polarToXY(cx, cy, angle, distance) {
         const rad = (angle * Math.PI) / 180;
@@ -2576,6 +2634,21 @@
         return 'M ' + x1 + ' ' + y1 + ' Q ' + cx + ' ' + cy + ' ' + x2 + ' ' + y2;
       }
 
+      function moveCamera(targetPos) {
+        const W = canvas.clientWidth || 960;
+        const H = canvas.clientHeight || 560;
+        if (!targetPos) {
+          stage.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+          stage.style.filter = 'saturate(1)';
+          return;
+        }
+        const baseScale = Math.max(1.12, Math.min(1.26, 1 + 260 / Math.max(W, H)));
+        const tx = W / 2 - targetPos.x * baseScale;
+        const ty = H / 2 - targetPos.y * baseScale;
+        stage.style.transform = 'translate3d(' + tx.toFixed(2) + 'px, ' + ty.toFixed(2) + 'px, 0) scale(' + baseScale.toFixed(3) + ')';
+        stage.style.filter = 'saturate(1.08)';
+      }
+
       function draw() {
         const W = canvas.clientWidth || 960;
         const H = canvas.clientHeight || 560;
@@ -2584,9 +2657,10 @@
         const scale = Math.min(W / 1120, H / 760, 1);
         const branchRadius = Math.min(W, H) * 0.32;
         const ns = 'http://www.w3.org/2000/svg';
+        let activeBranchPosition = null;
 
         svg.innerHTML = '';
-        canvas.querySelectorAll('.inner-map-branch, .inner-map-child').forEach(function (node) {
+        stage.querySelectorAll('.inner-map-branch, .inner-map-child').forEach(function (node) {
           node.remove();
         });
 
@@ -2613,9 +2687,10 @@
           mainLine.setAttribute('fill', 'none');
           mainLine.setAttribute('opacity', isActive ? '0.8' : '0.3');
           svg.appendChild(mainLine);
+          if (isActive) activeBranchPosition = bPos;
 
           const branchNode = document.createElement('div');
-          branchNode.className = 'inner-map-branch' + (isActive ? ' active' : '');
+          branchNode.className = 'inner-map-branch' + (isActive ? ' active' : ' compact');
           branchNode.style.left = bPos.x + 'px';
           branchNode.style.top = bPos.y + 'px';
           branchNode.style.animationDelay = (bi * 0.1) + 's';
@@ -2623,51 +2698,60 @@
             branchNode.style.background = branch.color + '18';
             branchNode.style.borderColor = branch.color;
             branchNode.style.boxShadow = '0 0 25px ' + branch.color + '25';
+          } else {
+            branchNode.style.background = 'rgba(20,20,32,0.9)';
+            branchNode.style.borderColor = '#2a2a3d';
+            branchNode.style.boxShadow = '';
           }
           branchNode.innerHTML =
             '<div class="inner-map-branch-label" style="color:' + branch.color + ';">' + escapeHtml(branch.label) + '</div>' +
             '<div class="inner-map-branch-sub">' + escapeHtml(branch.sublabel) + '</div>';
           branchNode.addEventListener('click', function (event) {
             event.stopPropagation();
-            state.innerMapActiveBranch = state.innerMapActiveBranch === branch.id ? null : branch.id;
+            state.innerMapActiveBranch = branch.id;
             draw();
           });
-          canvas.appendChild(branchNode);
+          stage.appendChild(branchNode);
 
           branch.children.forEach(function (child, ci) {
-            const spread = Math.max(22, Math.min(90, branch.children.length * 20));
+            const spread = Math.max(24, Math.min(72, branch.children.length * 14));
             const offset = branch.children.length === 1 ? 0 : (-spread / 2 + (spread / (branch.children.length - 1)) * ci);
-            const cPos = polarToXY(bPos.x, bPos.y, angle + offset, Math.max(130, 150 * scale));
+            const cPos = polarToXY(bPos.x, bPos.y, angle + offset, Math.max(96, 122 * scale));
             const childText = compactText(child.text || 'Subtopic', 70);
             const childDesc = child.source ? ('Source: ' + child.source) : compactText(child.fallback || '', 120);
 
             const childLine = document.createElementNS(ns, 'path');
             childLine.setAttribute('d', makeCurvedPath(bPos.x, bPos.y, cPos.x, cPos.y));
             childLine.setAttribute('stroke', branch.color);
-            childLine.setAttribute('stroke-width', '1');
+            childLine.setAttribute('stroke-width', isActive ? '1' : '0.9');
             childLine.setAttribute('fill', 'none');
-            childLine.setAttribute('opacity', isActive ? '0.6' : '0.15');
+            childLine.setAttribute('opacity', isActive ? '0.62' : '0.06');
             svg.appendChild(childLine);
 
             const childNode = document.createElement('div');
-            childNode.className = 'inner-map-child' + (isActive ? ' visible' : '');
+            childNode.className = 'inner-map-child' + (isActive ? ' visible' : ' compact');
             childNode.style.left = cPos.x + 'px';
             childNode.style.top = cPos.y + 'px';
             childNode.style.animationDelay = (bi * 0.1 + ci * 0.08 + 0.2) + 's';
             if (isActive) {
               childNode.style.background = branch.color + '0d';
               childNode.style.borderColor = branch.color + '60';
+            } else {
+              childNode.style.background = 'rgba(20,20,32,0.62)';
+              childNode.style.borderColor = 'rgba(42,42,61,0.62)';
             }
             childNode.innerHTML =
               '<div class="inner-map-child-label">' + escapeHtml(childText) + '</div>' +
               '<div class="inner-map-child-desc">' + escapeHtml(childDesc) + '</div>';
-            canvas.appendChild(childNode);
+            stage.appendChild(childNode);
           });
         });
+
+        moveCamera(activeBranchPosition);
       }
 
       canvas.addEventListener('click', function (event) {
-        if (event.target.closest('.inner-map-branch')) return;
+        if (event.target.closest('.inner-map-branch, .inner-map-child')) return;
         state.innerMapActiveBranch = null;
         draw();
       });
@@ -2746,8 +2830,8 @@
           '</div>' +
           '<div class="max-w">' +
             '<header class="page-header">' +
-              '<p class="eyebrow">Personal Strategy Framework</p>' +
-              '<h3>' + escapeHtml(String(mindmap.title || 'My Strategic Compass')) + '</h3>' +
+              '<p class="eyebrow">Study Strategy Framework</p>' +
+              '<h3>' + escapeHtml(String(mindmap.title || 'Strategy Board')) + '</h3>' +
               '<p class="subtitle">Direction · Priority · Time Allocation</p>' +
             '</header>' +
             '<p class="section-label">01 &nbsp; Directions</p>' +
