@@ -243,6 +243,8 @@ oauthRouter.get("/:provider/authorize", (req, res) => {
  */
 oauthRouter.get("/callback", async (req, res) => {
   const { code, state, error } = req.query;
+  const stored = state ? codeVerifierStore.get(state) : null;
+  const returnOrigin = stored?.returnOrigin || null;
   
   // Determine frontend URL dynamically if not set
   // Redirect to same origin user came from (if allowed), else fallback to FRONTEND_URL / CORS_ORIGIN / request host
@@ -279,7 +281,6 @@ oauthRouter.get("/callback", async (req, res) => {
     errorUrl.searchParams.set('oauth_error', encodeURIComponent('Missing code or state'));
     return res.redirect(errorUrl.toString());
   }
-  const stored = codeVerifierStore.get(state);
   if (!stored || stored.expiresAt < Date.now()) {
     codeVerifierStore.delete(state);
     const errorUrl = new URL(`${frontendBase}/index.html`);
@@ -287,7 +288,7 @@ oauthRouter.get("/callback", async (req, res) => {
     return res.redirect(errorUrl.toString());
   }
   
-  const { codeVerifier, provider, returnOrigin } = stored;
+  const { codeVerifier, provider } = stored;
   codeVerifierStore.delete(state);
 
   try {
