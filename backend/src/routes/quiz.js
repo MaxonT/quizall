@@ -18,6 +18,7 @@ const MAX_FILE_BATCH = 30;
 const STREAK_MAX_DAYS = 365;
 const AI_MODEL = "claude-sonnet-4-20250514";
 const ANTHROPIC_ENABLED = !!(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim());
+let warnedMissingTimezoneColumn = false;
 
 const OUTLINE_KEYWORDS = ["syllabus", "outline", "review", "exam", "topic", "考纲", "重点", "复习"];
 
@@ -475,6 +476,22 @@ function buildRecentDateKeys(days, timezone = "UTC") {
     keys.push(key);
   }
   return keys;
+}
+
+async function getUserTimezoneSafe(userId) {
+  try {
+    const user = await dbGet(`SELECT timezone FROM users WHERE id = ?`, [userId]);
+    return normalizeWhitespace(user?.timezone || "UTC") || "UTC";
+  } catch (err) {
+    if (USE_POSTGRES && err?.code === "42703") {
+      if (!warnedMissingTimezoneColumn) {
+        warnedMissingTimezoneColumn = true;
+        console.warn("[quizall] users.timezone column missing, falling back to UTC for study streak");
+      }
+      return "UTC";
+    }
+    throw err;
+  }
 }
 
 function computeStreak(days, intensityByDate) {
@@ -1266,9 +1283,7 @@ quizRouter.get("/study-streak", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
     const days = Math.min(STREAK_MAX_DAYS, Math.max(14, Number.parseInt(req.query.days, 10) || 140));
-
-    const user = await dbGet(`SELECT timezone FROM users WHERE id = ?`, [userId]);
-    const timezone = normalizeWhitespace(user?.timezone || "UTC") || "UTC";
+    const timezone = await getUserTimezoneSafe(userId);
 
     const fileRows = await dbAll(
       `SELECT created_at

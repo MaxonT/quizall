@@ -44,13 +44,29 @@ app.use("/api/stripe", stripeWebhookRouter);
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 
+function shouldSkipApiLimiter(req) {
+  const path = (req.path || "").split("?")[0];
+  const original = (req.originalUrl || req.url || "").split("?")[0];
+  const isHealth =
+    path === "/health" ||
+    path === "/api/health" ||
+    original === "/health" ||
+    original === "/api/health" ||
+    original.startsWith("/api/health/");
+  const isStripeWebhook =
+    path.startsWith("/stripe/webhook") ||
+    path.startsWith("/api/stripe/webhook") ||
+    original.startsWith("/api/stripe/webhook");
+  return isHealth || isStripeWebhook;
+}
+
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
   message: { ok: false, error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path === '/api/health' || req.path.startsWith('/api/stripe/webhook'),
+  skip: shouldSkipApiLimiter,
 });
 
 const authLimiter = rateLimit({

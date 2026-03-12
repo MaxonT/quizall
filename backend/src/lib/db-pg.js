@@ -516,6 +516,8 @@ export async function initializeSchema() {
   try {
     await db.exec(schema);
     await db.exec("ALTER TABLE question_sessions ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'en';");
+    await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(100) DEFAULT 'UTC';");
+    await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone_updated_at TIMESTAMP;");
     console.log('[quizall] PostgreSQL schema initialized');
   } catch (err) {
     console.error('[quizall] Failed to initialize PostgreSQL schema:', err);
@@ -576,4 +578,3 @@ export async function ensureColumn(table, column, definition) {
     await db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 }
-
