@@ -2414,7 +2414,7 @@
         <span class="card-step">Step 3</span>
         <div class="card-head-copy">
           <h2>Exam Prep: Collect Topics → Generate Mindmap</h2>
-          <p class="card-sub">Tier 1 auto-scan tries to find syllabus/outline/review/考纲 files. Or type your exam topics directly.</p>
+          <p class="card-sub">Auto-detect likely exam-outline files (syllabus, review sheet, exam guide). You can also type exam topics directly.</p>
         </div>
       </div>
       <div class="prep-shell">
@@ -2433,11 +2433,11 @@
           </div>
         </div>
         <div class="row prep-toolbar">
-          <button class="btn btn-soft" id="scanOutlineBtn" type="button">Tier 1 Auto-Scan Outline Files</button>
+          <button class="btn btn-soft" id="scanOutlineBtn" type="button">Find Outline Files Automatically</button>
           <button class="btn btn-primary" id="generateMindmapBtn" type="button">Generate ExamTopics Mindmap</button>
         </div>
         <div class="list-panel">
-          <p class="field-label">Auto-Scan Candidates</p>
+          <p class="field-label">Suggested Outline Files</p>
           <div id="outlineCandidates" class="candidate-list"></div>
         </div>
         <div id="mindmapShell" class="mindmap-shell" style="margin-top:2px; display:none;">
@@ -3133,7 +3133,7 @@
       }
 
       els.savedFiles.innerHTML = files.map(function (file) {
-        const badge = file.isOutlineCandidate ? '<span class="muted-pill" style="font-size:0.65rem; padding:3px 8px;">outline candidate</span>' : '';
+        const badge = file.isOutlineCandidate ? '<span class="muted-pill" style="font-size:0.65rem; padding:3px 8px;">auto-detected</span>' : '';
         return '<div class="list-item">' +
           '<div class="list-main">' +
             '<div class="list-title">' + escapeHtml(file.fileName) + '</div>' +
@@ -3149,7 +3149,7 @@
 
     function renderOutlineCandidates(candidates) {
       if (!candidates || !candidates.length) {
-        els.outlineCandidates.innerHTML = '<p class="empty-text">No obvious outline files found. You can still type exam topics manually.</p>';
+        els.outlineCandidates.innerHTML = '<p class="empty-text">No likely outline files found. You can still type exam topics manually.</p>';
         return;
       }
 
@@ -4259,7 +4259,7 @@
       if (!state.selectedProjectId) {
         throw new Error('Select a project first.');
       }
-      setStatus('Scanning saved files for exam outline keywords...');
+      setStatus('Analyzing saved files to find likely outline materials...');
       const data = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/outline-candidates');
       renderOutlineCandidates(data.candidates || []);
       if (data.recommendedFileId) {
@@ -4627,7 +4627,7 @@
       try {
         await scanOutlineCandidates();
       } catch (err) {
-        setStatus(err.message || 'Failed to auto-scan.', 'error');
+        setStatus(err.message || 'Failed to auto-detect outline files.', 'error');
       } finally {
         setBusy(false);
       }
