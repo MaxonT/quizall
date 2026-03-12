@@ -162,6 +162,15 @@ function normalizeWhitespace(text = "") {
   return String(text).replace(/\s+/g, " ").trim();
 }
 
+function normalizeIsoDateOrNull(text = "") {
+  const value = normalizeWhitespace(text || "");
+  if (!value) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return value;
+}
+
 function normalizeType(type) {
   const raw = String(type || "").toLowerCase().replace(/[\s-]+/g, "_");
   if (raw === "mcq" || raw === "multiplechoice") return "multiple_choice";
@@ -973,6 +982,51 @@ quizRouter.post("/projects", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[quizall] projects create error:", err);
     return res.status(500).json({ ok: false, error: "Failed to create project" });
+  }
+});
+
+quizRouter.patch("/projects/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: "Project not found" });
+    }
+
+    const hasExamDate = Object.prototype.hasOwnProperty.call(req.body || {}, "examDate");
+    if (!hasExamDate) {
+      return res.status(400).json({ ok: false, error: "No updatable project field provided" });
+    }
+
+    const examDate = normalizeIsoDateOrNull(req.body?.examDate || "");
+    if (examDate === undefined) {
+      return res.status(400).json({ ok: false, error: "examDate must be YYYY-MM-DD or empty" });
+    }
+
+    const now = new Date().toISOString();
+    await dbRun(
+      `UPDATE study_projects
+       SET exam_date = ?, updated_at = ?
+       WHERE id = ? AND user_id = ?`,
+      [examDate, now, projectId, userId]
+    );
+
+    return res.json({
+      ok: true,
+      project: {
+        id: project.id,
+        name: project.name,
+        examName: project.exam_name,
+        examDate: examDate,
+        description: project.description,
+        createdAt: project.created_at,
+        updatedAt: now,
+      },
+    });
+  } catch (err) {
+    console.error("[quizall] projects update error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to update project" });
   }
 });
 
