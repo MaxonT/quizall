@@ -714,6 +714,45 @@ async function touchProject(projectId) {
   await dbRun(`UPDATE study_projects SET updated_at = ? WHERE id = ?`, [new Date().toISOString(), projectId]);
 }
 
+async function saveProjectExamPrepRecord({
+  projectId,
+  userId,
+  examTopics,
+  topicsSource,
+  selectedFileId,
+  mindmap,
+  generatedAt,
+  updatedAt,
+}) {
+  const existing = await dbGet(
+    `SELECT id FROM project_exam_prep WHERE project_id = ? AND user_id = ? LIMIT 1`,
+    [projectId, userId]
+  );
+
+  if (existing?.id) {
+    await dbRun(
+      `UPDATE project_exam_prep
+       SET exam_topics = ?,
+           topics_source = ?,
+           selected_file_id = ?,
+           mindmap_json = ?,
+           generated_at = ?,
+           updated_at = ?
+       WHERE id = ?`,
+      [examTopics, topicsSource, selectedFileId, JSON.stringify(mindmap), generatedAt, updatedAt, existing.id]
+    );
+    return existing.id;
+  }
+
+  const prepId = nanoid(16);
+  await dbRun(
+    `INSERT INTO project_exam_prep (id, project_id, user_id, exam_topics, topics_source, selected_file_id, mindmap_json, generated_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [prepId, projectId, userId, examTopics, topicsSource, selectedFileId, JSON.stringify(mindmap), generatedAt, updatedAt]
+  );
+  return prepId;
+}
+
 function normalizeGeneratedQuizPayload(raw, allowedTypes, fallbackTopics, fallbackSource) {
   let questions = raw;
   if (!Array.isArray(questions)) {
@@ -1102,19 +1141,16 @@ quizRouter.post("/projects/:id/exam-prep", requireAuth, async (req, res) => {
     const mindmap = buildMindmap(project, topics, rag.byTopic, topicAccuracyMap);
 
     const now = new Date().toISOString();
-    const prepId = nanoid(16);
-    await dbRun(
-      `INSERT INTO project_exam_prep (id, project_id, user_id, exam_topics, topics_source, selected_file_id, mindmap_json, generated_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(project_id) DO UPDATE SET
-         exam_topics = excluded.exam_topics,
-         topics_source = excluded.topics_source,
-         selected_file_id = excluded.selected_file_id,
-         mindmap_json = excluded.mindmap_json,
-         generated_at = excluded.generated_at,
-         updated_at = excluded.updated_at`,
-      [prepId, projectId, userId, examTopicsText, resolvedMode, selectedFileId, JSON.stringify(mindmap), now, now]
-    );
+    await saveProjectExamPrepRecord({
+      projectId,
+      userId,
+      examTopics: examTopicsText,
+      topicsSource: resolvedMode,
+      selectedFileId,
+      mindmap,
+      generatedAt: now,
+      updatedAt: now,
+    });
 
     await touchProject(projectId);
 
@@ -1151,26 +1187,16 @@ quizRouter.put("/projects/:id/mindmap", requireAuth, async (req, res) => {
     const examTopics = normalizeWhitespace(req.body?.examTopics || "Updated topics");
     const now = new Date().toISOString();
 
-    await dbRun(
-      `INSERT INTO project_exam_prep (id, project_id, user_id, exam_topics, topics_source, selected_file_id, mindmap_json, generated_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(project_id) DO UPDATE SET
-         exam_topics = excluded.exam_topics,
-         topics_source = excluded.topics_source,
-         mindmap_json = excluded.mindmap_json,
-         updated_at = excluded.updated_at`,
-      [
-        nanoid(16),
-        projectId,
-        userId,
-        examTopics,
-        "manual_edit",
-        null,
-        JSON.stringify(mindmap),
-        now,
-        now,
-      ]
-    );
+    await saveProjectExamPrepRecord({
+      projectId,
+      userId,
+      examTopics,
+      topicsSource: "manual_edit",
+      selectedFileId: null,
+      mindmap,
+      generatedAt: now,
+      updatedAt: now,
+    });
 
     await touchProject(projectId);
 
