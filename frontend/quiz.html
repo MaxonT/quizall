@@ -57,6 +57,98 @@
       letter-spacing: 0.03em;
     }
 
+    .timer-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .timer-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .timer-control select,
+    .timer-control input {
+      border: 1px solid rgba(148,163,184,0.32);
+      border-radius: 9px;
+      background: rgba(10, 14, 31, 0.86);
+      color: var(--text);
+      padding: 5px 8px;
+      font-size: 0.78rem;
+      min-width: 86px;
+    }
+
+    .timer-apply-btn {
+      border: 1px solid rgba(34, 211, 238, 0.38);
+      border-radius: 9px;
+      background: rgba(6, 182, 212, 0.14);
+      color: #a5f3fc;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(6px);
+      padding: 16px;
+    }
+
+    .confirm-overlay.open { display: flex; }
+
+    .confirm-card {
+      width: min(560px, 100%);
+      border: 1px solid rgba(148,163,184,0.3);
+      border-radius: 14px;
+      padding: 16px;
+      background: linear-gradient(145deg, rgba(10,16,37,0.98), rgba(8,13,30,0.96));
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      display: grid;
+      gap: 12px;
+    }
+
+    .confirm-title {
+      margin: 0;
+      font-size: 1.06rem;
+      color: var(--text);
+    }
+
+    .confirm-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .confirm-stats {
+      border: 1px dashed rgba(148,163,184,0.32);
+      border-radius: 10px;
+      padding: 10px;
+      display: grid;
+      gap: 6px;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .progress-wrap {
       border: 1px solid rgba(148,163,184,0.22);
       border-radius: 14px;
@@ -252,8 +344,27 @@
         <h1 id="sessionTitle" class="session-title">Quiz Session</h1>
         <div id="sessionMeta" class="session-meta"></div>
       </div>
-      <div class="row" style="display:flex; gap:8px; align-items:center;">
+      <div class="row" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
         <span id="timer" class="timer">00:00</span>
+        <div class="timer-tools">
+          <label class="timer-control">
+            Timer
+            <select id="timerPreset">
+              <option value="0">No limit</option>
+              <option value="10">10 min</option>
+              <option value="20" selected>20 min</option>
+              <option value="30">30 min</option>
+              <option value="45">45 min</option>
+              <option value="60">60 min</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <label class="timer-control" id="customTimerWrap" style="display:none;">
+            Custom
+            <input id="customTimerMinutes" type="number" min="1" max="300" step="1" value="25" />
+          </label>
+          <button id="applyTimerBtn" class="timer-apply-btn" type="button">Apply Timer</button>
+        </div>
         <button id="restartBtn" class="btn" type="button">Start Over</button>
       </div>
     </section>
@@ -266,9 +377,21 @@
     <section id="questionsContainer"></section>
 
     <section class="actions">
-      <button id="submitBtn" class="btn btn-primary" type="button" disabled>Answer all questions first</button>
+      <button id="submitBtn" class="btn btn-primary" type="button">Review & Submit</button>
     </section>
   </main>
+
+  <section id="submitConfirmOverlay" class="confirm-overlay" aria-hidden="true">
+    <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmSubmitTitle">
+      <h2 id="confirmSubmitTitle" class="confirm-title">Submit Quiz Confirmation</h2>
+      <p id="confirmSubmitNote" class="confirm-note">You can submit now, even if some questions are unanswered.</p>
+      <div id="confirmSubmitStats" class="confirm-stats"></div>
+      <div class="confirm-actions">
+        <button id="confirmBackBtn" class="btn" type="button">Back to Quiz</button>
+        <button id="confirmSubmitBtn" class="btn btn-primary" type="button">Confirm Submit</button>
+      </div>
+    </div>
+  </section>
 
   <script src="lib/navUserBar.js"></script>
   <script src="lib/scienceData.js"></script>
@@ -299,8 +422,11 @@
 
     const state = {
       answers: {},
-      seconds: 0,
+      secondsElapsed: 0,
+      timerLimitSeconds: 20 * 60,
+      remainingSeconds: 20 * 60,
       timerId: null,
+      eventsBound: false,
     };
 
     const els = {
@@ -312,7 +438,31 @@
       progressFill: document.getElementById('progressFill'),
       questionsContainer: document.getElementById('questionsContainer'),
       submitBtn: document.getElementById('submitBtn'),
+      timerPreset: document.getElementById('timerPreset'),
+      customTimerWrap: document.getElementById('customTimerWrap'),
+      customTimerMinutes: document.getElementById('customTimerMinutes'),
+      applyTimerBtn: document.getElementById('applyTimerBtn'),
+      submitConfirmOverlay: document.getElementById('submitConfirmOverlay'),
+      confirmSubmitStats: document.getElementById('confirmSubmitStats'),
+      confirmSubmitNote: document.getElementById('confirmSubmitNote'),
+      confirmBackBtn: document.getElementById('confirmBackBtn'),
+      confirmSubmitBtn: document.getElementById('confirmSubmitBtn'),
     };
+
+    function formatClock(totalSeconds) {
+      const safe = Math.max(0, Number(totalSeconds) || 0);
+      const mm = String(Math.floor(safe / 60)).padStart(2, '0');
+      const ss = String(safe % 60).padStart(2, '0');
+      return mm + ':' + ss;
+    }
+
+    function renderTimerDisplay() {
+      if (state.timerLimitSeconds > 0) {
+        els.timer.textContent = 'Left ' + formatClock(state.remainingSeconds);
+        return;
+      }
+      els.timer.textContent = formatClock(state.secondsElapsed);
+    }
 
     function normalizeType(type) {
       const raw = String(type || '').toLowerCase().replace(/[\s-]+/g, '_');
@@ -395,10 +545,17 @@
     function startTimer() {
       if (state.timerId) clearInterval(state.timerId);
       state.timerId = setInterval(function () {
-        state.seconds += 1;
-        const mm = String(Math.floor(state.seconds / 60)).padStart(2, '0');
-        const ss = String(state.seconds % 60).padStart(2, '0');
-        els.timer.textContent = mm + ':' + ss;
+        state.secondsElapsed += 1;
+        if (state.timerLimitSeconds > 0) {
+          state.remainingSeconds = Math.max(0, state.remainingSeconds - 1);
+          renderTimerDisplay();
+          if (state.remainingSeconds <= 0) {
+            if (state.timerId) clearInterval(state.timerId);
+            openSubmitConfirmation(true);
+          }
+          return;
+        }
+        renderTimerDisplay();
       }, 1000);
     }
 
@@ -411,8 +568,6 @@
       const answered = countAnswered();
       els.progressText.textContent = answered + ' / ' + total + ' answered';
       els.progressFill.style.width = (total ? (answered / total * 100) : 0) + '%';
-      els.submitBtn.disabled = answered !== total;
-      els.submitBtn.textContent = answered === total ? 'Submit Quiz' : 'Answer all questions first';
     }
 
     function markAnswered(questionIndex) {
@@ -473,14 +628,63 @@
     function resetSession() {
       if (!confirm('Start over? Current answers will be cleared.')) return;
       state.answers = {};
-      state.seconds = 0;
+      state.secondsElapsed = 0;
+      state.remainingSeconds = state.timerLimitSeconds > 0 ? state.timerLimitSeconds : 0;
       if (state.timerId) clearInterval(state.timerId);
-      els.timer.textContent = '00:00';
+      renderTimerDisplay();
       renderQuestions();
-      attachEvents();
       startTimer();
       updateProgress();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function applyTimerSettings() {
+      var preset = String(els.timerPreset.value || '0');
+      var minutes;
+      if (preset === 'custom') {
+        minutes = Number.parseInt(String(els.customTimerMinutes.value || '0'), 10);
+      } else {
+        minutes = Number.parseInt(preset, 10);
+      }
+
+      if (!Number.isFinite(minutes) || minutes < 0) minutes = 0;
+      if (minutes > 300) minutes = 300;
+
+      state.timerLimitSeconds = minutes > 0 ? minutes * 60 : 0;
+      state.secondsElapsed = 0;
+      state.remainingSeconds = state.timerLimitSeconds > 0 ? state.timerLimitSeconds : 0;
+      renderTimerDisplay();
+      startTimer();
+    }
+
+    function updateTimerControls() {
+      var isCustom = String(els.timerPreset.value) === 'custom';
+      els.customTimerWrap.style.display = isCustom ? 'inline-flex' : 'none';
+    }
+
+    function closeSubmitConfirmation() {
+      els.submitConfirmOverlay.classList.remove('open');
+      els.submitConfirmOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    function openSubmitConfirmation(timerExpired) {
+      const total = quiz.questions.length;
+      const answered = countAnswered();
+      const unanswered = Math.max(0, total - answered);
+      const spent = formatClock(state.secondsElapsed);
+      const usedTimerText = state.timerLimitSeconds > 0 ? (Math.round(state.timerLimitSeconds / 60) + ' min') : 'No limit';
+
+      els.confirmSubmitNote.textContent = timerExpired
+        ? 'Time is up. Please confirm submission now.'
+        : 'You can submit now, even if some questions are unanswered.';
+      els.confirmSubmitStats.innerHTML =
+        '<div>Answered: <strong>' + answered + '</strong> / ' + total + '</div>' +
+        '<div>Unanswered: <strong>' + unanswered + '</strong></div>' +
+        '<div>Time spent: <strong>' + spent + '</strong></div>' +
+        '<div>Timer mode: <strong>' + usedTimerText + '</strong></div>';
+
+      els.submitConfirmOverlay.classList.add('open');
+      els.submitConfirmOverlay.setAttribute('aria-hidden', 'false');
     }
 
     function evaluate(question, userAnswer) {
@@ -539,7 +743,7 @@
         total: total,
         correct: correct,
         score: scorePercent,
-        timeSeconds: state.seconds,
+        timeSeconds: state.secondsElapsed,
         questions: results,
         answers: results.map(function (item) {
           return {
@@ -557,7 +761,7 @@
         projectId: quiz.projectId,
         questions: results,
         answers: state.answers,
-        timeTaken: state.seconds * 1000,
+        timeTaken: state.secondsElapsed * 1000,
       }));
 
       if (window.quizallScience && quiz.projectId) {
@@ -587,6 +791,9 @@
     }
 
     function attachEvents() {
+      if (state.eventsBound) return;
+      state.eventsBound = true;
+
       els.questionsContainer.addEventListener('click', function (event) {
         const optionBtn = event.target.closest('.option-btn');
         if (optionBtn) {
@@ -633,10 +840,19 @@
       });
 
       els.restartBtn.addEventListener('click', resetSession);
-      els.submitBtn.addEventListener('click', function () {
-        if (countAnswered() !== quiz.questions.length) return;
+      els.timerPreset.addEventListener('change', updateTimerControls);
+      els.applyTimerBtn.addEventListener('click', applyTimerSettings);
+      els.confirmBackBtn.addEventListener('click', closeSubmitConfirmation);
+      els.confirmSubmitBtn.addEventListener('click', function () {
         if (state.timerId) clearInterval(state.timerId);
+        closeSubmitConfirmation();
         submitQuiz();
+      });
+      els.submitConfirmOverlay.addEventListener('click', function (event) {
+        if (event.target === els.submitConfirmOverlay) closeSubmitConfirmation();
+      });
+      els.submitBtn.addEventListener('click', function () {
+        openSubmitConfirmation(false);
       });
     }
 
@@ -647,6 +863,8 @@
         'Questions: ' + quiz.questions.length,
       ].filter(Boolean).join(' · ');
 
+      updateTimerControls();
+      renderTimerDisplay();
       renderQuestions();
       attachEvents();
       updateProgress();
