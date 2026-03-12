@@ -20,7 +20,7 @@
       padding: 0;
       display: grid;
       gap: 22px;
-      grid-template-columns: 170px minmax(0, 1fr);
+      grid-template-columns: 224px minmax(0, 1fr);
       align-items: start;
     }
 
@@ -134,11 +134,12 @@
       border: 1px solid rgba(148,163,184,0.24);
       border-radius: 13px;
       background: linear-gradient(180deg, rgba(8,13,30,0.88), rgba(11,17,37,0.84));
-      padding: 11px;
+      padding: 13px 12px;
       display: grid;
-      gap: 8px;
+      gap: 10px;
       backdrop-filter: blur(8px);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+      min-height: 172px;
     }
 
     #workspaceContextProject {
@@ -177,8 +178,6 @@
 
     .workspace-context-date-edit {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
-      align-items: center;
       gap: 8px;
     }
 
@@ -187,6 +186,14 @@
       padding: 8px 10px;
       font-size: 0.8rem;
       border-radius: 10px;
+      width: 100%;
+    }
+
+    .workspace-context-date-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
     }
 
     #workspaceContextMeta {
@@ -197,6 +204,12 @@
       overflow: hidden;
       text-overflow: ellipsis;
       line-height: 1.4;
+    }
+
+    .workspace-context-key {
+      font-weight: 800;
+      color: #c5f7ff;
+      letter-spacing: 0.01em;
     }
 
     .journey-section {
@@ -2096,6 +2109,10 @@
       color: #334155;
     }
 
+    html[data-theme="light"] .workspace-context-key {
+      color: #0f172a;
+    }
+
     html[data-theme="light"] .journey-section.is-spotlight {
       border-color: rgba(59,130,246,0.38);
       box-shadow: 0 0 0 1px rgba(59,130,246,0.16), 0 18px 30px rgba(15,23,42,0.12);
@@ -2228,9 +2245,6 @@
       .workspace-context {
         position: static;
       }
-      .workspace-context-date-edit {
-        grid-template-columns: minmax(0, 1fr);
-      }
       #workspaceContextMeta {
         white-space: normal;
         text-align: left;
@@ -2293,8 +2307,10 @@
           </div>
           <div class="workspace-context-date-edit" id="examDateEditRow" style="display:none;">
             <input id="examDateInput" type="date" class="input workspace-context-date-input" />
-            <button class="btn btn-primary workspace-context-edit-btn" id="saveExamDateBtn" type="button">Save</button>
-            <button class="btn btn-soft workspace-context-edit-btn" id="cancelExamDateBtn" type="button">Cancel</button>
+            <div class="workspace-context-date-actions">
+              <button class="btn btn-primary workspace-context-edit-btn" id="saveExamDateBtn" type="button">Save</button>
+              <button class="btn btn-soft workspace-context-edit-btn" id="cancelExamDateBtn" type="button">Cancel</button>
+            </div>
           </div>
         </div>
         <div id="workspaceContextMeta">User: —</div>
@@ -2975,8 +2991,8 @@
       const email = getEmailFromToken(token) || 'User';
       if (!project) {
         if (els.workspaceContextProject) els.workspaceContextProject.textContent = 'No active project selected';
-        if (els.workspaceContextExamDate) els.workspaceContextExamDate.textContent = 'Exam date: —';
-        if (els.workspaceContextMeta) els.workspaceContextMeta.textContent = 'User: ' + email;
+        if (els.workspaceContextExamDate) els.workspaceContextExamDate.innerHTML = '<span class="workspace-context-key">Exam date:</span> —';
+        if (els.workspaceContextMeta) els.workspaceContextMeta.innerHTML = '<span class="workspace-context-key">User:</span> ' + escapeHtml(email);
         if (els.editExamDateBtn) els.editExamDateBtn.disabled = true;
         setExamDateEditing(false);
         return;
@@ -2984,8 +3000,12 @@
       if (els.workspaceContextProject) {
         els.workspaceContextProject.textContent = project.name || 'Active project';
       }
-      if (els.workspaceContextExamDate) els.workspaceContextExamDate.textContent = 'Exam date: ' + (project.examDate || 'TBD');
-      if (els.workspaceContextMeta) els.workspaceContextMeta.textContent = 'User: ' + email;
+      if (els.workspaceContextExamDate) {
+        els.workspaceContextExamDate.innerHTML = '<span class="workspace-context-key">Exam date:</span> ' + escapeHtml(project.examDate || 'TBD');
+      }
+      if (els.workspaceContextMeta) {
+        els.workspaceContextMeta.innerHTML = '<span class="workspace-context-key">User:</span> ' + escapeHtml(email);
+      }
       if (els.editExamDateBtn) els.editExamDateBtn.disabled = false;
       if (!state.examDateEditing && els.examDateInput) {
         els.examDateInput.value = project.examDate || '';
