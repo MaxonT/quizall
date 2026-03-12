@@ -29,9 +29,9 @@ async function dbRun(sql, params = []) {
 
 async function tableExists(name) {
   if (USE_POSTGRES) {
-    const r = await db.get(
-      `SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1`,
-      name
+    const r = await dbGet(
+      `SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ?`,
+      [name]
     );
     return !!r;
   }
