@@ -11,7 +11,7 @@
       ? window.location.origin
       : "http://localhost:8080");
   if (typeof window !== "undefined" && window.location?.hostname?.includes(".onrender.com") && API_BASE === window.location.origin) {
-    API_BASE = "https://quizall-backend.onrender.com";
+    API_BASE = "https://quizall-backend-0qr4.onrender.com";
   }
 
   function getToken() {

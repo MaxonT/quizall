@@ -1,6 +1,4 @@
-# Auto-generated config (will be generated during build)
-# Only ignore root config.js, not i18n/config.js
-/config.js
+# Runtime config is deployed with the static site.
 
 # Node modules
 node_modules/

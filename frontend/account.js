@@ -15,7 +15,7 @@
       : "http://localhost:8080");
   // Failsafe: Render 前端域名下不应同源请求 /api
   if (typeof window !== "undefined" && window.location?.hostname?.includes(".onrender.com") && API_BASE === window.location.origin) {
-    API_BASE = "https://quizall-backend.onrender.com";
+    API_BASE = "https://quizall-backend-0qr4.onrender.com";
   }
 
   // DOM Elements

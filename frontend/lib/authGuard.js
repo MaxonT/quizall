@@ -7,7 +7,7 @@
 
   // Failsafe: 在 Render 前端域名下，绝不应向同源请求 /api（会拿到 404.html 的 HTML）
   if (typeof window !== "undefined" && window.location && window.location.hostname.includes(".onrender.com") && API_BASE === window.location.origin) {
-    API_BASE = "https://quizall-backend.onrender.com";
+    API_BASE = "https://quizall-backend-0qr4.onrender.com";
     console.warn("[authGuard] API_BASE was pointing to frontend, overridden to backend");
   }
 
