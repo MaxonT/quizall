@@ -328,7 +328,7 @@ async function generateHistoricalData() {
       const min = Math.floor(Math.random() * 60);
       const createdAt = `${dateStr}T${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}:00.000Z`;
       await dbRun(
-        `INSERT OR IGNORE INTO analytics_users (id, source, timezone, country, device_type, browser, created_at, last_active_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO analytics_users (id, source, timezone, country, device_type, browser, created_at, last_active_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [userId, randSource(), tz, tzCountry[tz] || 'US', randDevice(), randBrowser(), createdAt, createdAt]
       );
       allUsers.push({ id: userId });
@@ -353,7 +353,7 @@ async function generateHistoricalData() {
       const sessionStart = `${dateStr}T${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}:00.000Z`;
       const duration = Math.round(30 + Math.random() * 600);
       await dbRun(
-        `INSERT OR IGNORE INTO analytics_sessions (id, user_id, session_start, session_end, duration_seconds, page_views, device_type, browser, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO analytics_sessions (id, user_id, session_start, session_end, duration_seconds, page_views, device_type, browser, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [sessionId, activeIds[i], sessionStart, sessionStart, duration, 1 + Math.floor(Math.random() * 5), randDevice(), randBrowser(), sessionStart]
       );
       await dbRun(

@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { optionalAuth, requireAuth } from "./auth.js";
 import { db, ensureColumn } from "../lib/db.js";
 import { USE_POSTGRES, dbGet, dbRun, dbAll } from "../lib/dbHelpers.js";
-import { chatJsonAnthropic, extractImageTextAnthropic } from "../lib/anthropicClient.js";
+import { chatJsonAnthropic } from "../lib/anthropicClient.js";
 
 export const quizRouter = Router();
 
@@ -15,8 +15,6 @@ const HISTORY_MAX_LIMIT = 50;
 const PROJECT_MAX_LIMIT = 100;
 const FILE_TEXT_MAX_LENGTH = 120000;
 const MAX_FILE_BATCH = 30;
-const MAX_IMAGE_BASE64_LENGTH = 6_000_000;
-const MAX_TOPIC_COUNT = 24;
 const STREAK_MAX_DAYS = 365;
 const AI_MODEL = "claude-sonnet-4-20250514";
 const ANTHROPIC_ENABLED = !!(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim());
@@ -68,34 +66,6 @@ CREATE TABLE IF NOT EXISTS project_exam_prep (
   CONSTRAINT fk_exam_prep_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 CREATE INDEX IF NOT EXISTS idx_exam_prep_project ON project_exam_prep(project_id);
-
-CREATE TABLE IF NOT EXISTS topic_revisions (
-  id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  source_type TEXT NOT NULL,
-  before_topics_json TEXT NOT NULL,
-  after_topics_json TEXT NOT NULL,
-  diff_json TEXT,
-  created_at TEXT NOT NULL,
-  CONSTRAINT fk_topic_revisions_project FOREIGN KEY (project_id) REFERENCES study_projects(id) ON DELETE CASCADE,
-  CONSTRAINT fk_topic_revisions_user FOREIGN KEY (user_id) REFERENCES users(id)
-);
-CREATE INDEX IF NOT EXISTS idx_topic_revisions_project ON topic_revisions(project_id, created_at);
-
-CREATE TABLE IF NOT EXISTS file_analysis_cache (
-  id TEXT PRIMARY KEY,
-  project_file_id TEXT NOT NULL,
-  asset_type TEXT NOT NULL,
-  extracted_text TEXT,
-  metadata_json TEXT,
-  status TEXT NOT NULL,
-  error_code TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  CONSTRAINT fk_file_analysis_cache_project_file FOREIGN KEY (project_file_id) REFERENCES project_files(id) ON DELETE CASCADE
-);
-CREATE INDEX IF NOT EXISTS idx_file_analysis_cache_file ON file_analysis_cache(project_file_id, updated_at);
 `;
 
 const QUIZ_SCHEMA_SQL = `
@@ -492,166 +462,6 @@ function buildSourcePackString(snippets) {
     .join("\n\n");
 }
 
-function toUniqueTopics(topics) {
-  const seen = new Set();
-  const unique = [];
-  for (const rawTopic of topics || []) {
-    const topic = normalizeWhitespace(rawTopic || "");
-    if (!topic) continue;
-    const key = topic.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    unique.push(topic);
-    if (unique.length >= MAX_TOPIC_COUNT) break;
-  }
-  return unique;
-}
-
-function buildTopicDiff(beforeTopics, afterTopics) {
-  const before = toUniqueTopics(beforeTopics);
-  const after = toUniqueTopics(afterTopics);
-  const beforeSet = new Set(before.map((item) => item.toLowerCase()));
-  const afterSet = new Set(after.map((item) => item.toLowerCase()));
-  return {
-    added: after.filter((item) => !beforeSet.has(item.toLowerCase())),
-    removed: before.filter((item) => !afterSet.has(item.toLowerCase())),
-    merged: [],
-  };
-}
-
-async function extractImageTextSignal(fileName, mimeType, imageBase64) {
-  if (!imageBase64 || typeof imageBase64 !== "string") return "";
-  if (!ANTHROPIC_ENABLED) return "";
-  if (imageBase64.length > MAX_IMAGE_BASE64_LENGTH) return "";
-
-  try {
-    const vision = await extractImageTextAnthropic({
-      imageBase64,
-      mediaType: mimeType || "image/png",
-      model: AI_MODEL,
-      maxTokens: 1200,
-      prompt: [
-        `Image file: ${fileName || "uploaded-image"}.`,
-        "Extract exam-relevant text only.",
-        "Keep it concise and plain text.",
-      ].join(" "),
-    });
-    return String(vision?.text || "").slice(0, FILE_TEXT_MAX_LENGTH).trim();
-  } catch (err) {
-    console.warn("[quizall] image extraction skipped:", err?.message || err);
-    return "";
-  }
-}
-
-function buildTopicCandidates(files, hintText = "") {
-  const allContent = (files || []).map((file) => String(file.content || "")).join("\n\n");
-  const seedTopics = toUniqueTopics(extractTopics(hintText, allContent));
-  const hintTerms = tokenize(hintText).slice(0, 24);
-
-  const candidates = seedTopics.map((topic) => {
-    const topicTerms = toUniqueTopics([topic, ...hintTerms]).flatMap((item) => tokenize(item));
-    const evidence = [];
-
-    for (const file of files || []) {
-      const chunks = splitIntoChunks(file.content || "", 560);
-      for (let idx = 0; idx < chunks.length; idx += 1) {
-        const chunk = chunks[idx];
-        const score = scoreTextByTerms(chunk, topicTerms);
-        if (score <= 0) continue;
-        evidence.push({
-          source: `${file.file_name}#${idx + 1}`,
-          excerpt: normalizeWhitespace(chunk).slice(0, 180),
-          score,
-        });
-      }
-    }
-
-    evidence.sort((a, b) => b.score - a.score);
-    const topEvidence = evidence.slice(0, 3);
-    const confidence = Math.max(0.35, Math.min(0.95, 0.45 + topEvidence.length * 0.13));
-
-    return {
-      label: topic,
-      confidence,
-      relevance: confidence >= 0.72 ? "high" : confidence >= 0.55 ? "medium" : "low",
-      evidence: topEvidence.map((item) => ({ source: item.source, excerpt: item.excerpt })),
-    };
-  });
-
-  return candidates.slice(0, MAX_TOPIC_COUNT);
-}
-
-async function refineTopicsWithChat(currentTopics, userMessage, evidenceSnippets) {
-  const current = toUniqueTopics(currentTopics);
-  const message = normalizeWhitespace(userMessage || "");
-  if (!message) {
-    return {
-      updatedTopics: current,
-      diff: buildTopicDiff(current, current),
-      rationale: "No refinement message provided.",
-      warnings: ["empty_user_message"],
-    };
-  }
-
-  if (!ANTHROPIC_ENABLED) {
-    const fallbackTopics = toUniqueTopics([...current, ...extractTopics(message, "")]);
-    return {
-      updatedTopics: fallbackTopics,
-      diff: buildTopicDiff(current, fallbackTopics),
-      rationale: "Anthropic disabled; applied rule-based refinement from user message.",
-      warnings: ["anthropic_disabled_fallback"],
-    };
-  }
-
-  const limitedEvidence = (evidenceSnippets || []).slice(0, 8);
-  const system = [
-    "You refine exam topics for a study project.",
-    "Return strict JSON with keys: updatedTopics, diff, rationale, warnings.",
-    "diff must contain added, removed, merged arrays.",
-    `Keep updatedTopics concise and <= ${MAX_TOPIC_COUNT} items.`,
-  ].join("\n");
-  const user = [
-    "Current topics:",
-    JSON.stringify(current),
-    "",
-    "User refinement request:",
-    message,
-    "",
-    "Evidence snippets:",
-    JSON.stringify(limitedEvidence),
-  ].join("\n");
-
-  try {
-    const result = await chatJsonAnthropic({
-      system,
-      user,
-      model: AI_MODEL,
-      temperature: 0.2,
-      maxTokens: 1800,
-    });
-    const updatedTopics = toUniqueTopics(result?.data?.updatedTopics || current);
-    const diff = result?.data?.diff || buildTopicDiff(current, updatedTopics);
-    return {
-      updatedTopics,
-      diff: {
-        added: toUniqueTopics(diff.added || []),
-        removed: toUniqueTopics(diff.removed || []),
-        merged: Array.isArray(diff.merged) ? diff.merged.slice(0, 10) : [],
-      },
-      rationale: normalizeWhitespace(result?.data?.rationale || "Refinement completed."),
-      warnings: Array.isArray(result?.data?.warnings) ? result.data.warnings.slice(0, 8) : [],
-    };
-  } catch (err) {
-    const fallbackTopics = toUniqueTopics([...current, ...extractTopics(message, "")]);
-    return {
-      updatedTopics: fallbackTopics,
-      diff: buildTopicDiff(current, fallbackTopics),
-      rationale: "Model refinement failed; applied fallback rules.",
-      warnings: ["refinement_model_failed", err?.message || "unknown_error"],
-    };
-  }
-}
-
 function toDateKey(dateInput, timezone = "UTC") {
   const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
   if (!date || Number.isNaN(date.getTime())) return null;
@@ -985,24 +795,6 @@ async function saveProjectExamPrepRecord({
   return prepId;
 }
 
-async function saveTopicRevision({ projectId, userId, sourceType, beforeTopics, afterTopics, diff }) {
-  const now = new Date().toISOString();
-  await dbRun(
-    `INSERT INTO topic_revisions (id, project_id, user_id, source_type, before_topics_json, after_topics_json, diff_json, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      nanoid(16),
-      projectId,
-      userId,
-      sourceType,
-      JSON.stringify(toUniqueTopics(beforeTopics || [])),
-      JSON.stringify(toUniqueTopics(afterTopics || [])),
-      JSON.stringify(diff || buildTopicDiff(beforeTopics || [], afterTopics || [])),
-      now,
-    ]
-  );
-}
-
 function normalizeGeneratedQuizPayload(raw, allowedTypes, fallbackTopics, fallbackSource) {
   let questions = raw;
   if (!Array.isArray(questions)) {
@@ -1331,22 +1123,7 @@ quizRouter.post("/projects/:id/files", requireAuth, async (req, res) => {
     for (const file of inputFiles) {
       const fileName = normalizeWhitespace(file?.name || file?.fileName || "Untitled");
       const mimeType = normalizeWhitespace(file?.mimeType || file?.type || "");
-      const isImageAsset = mimeType.startsWith("image/");
-      let text = String(file?.text || "").trim();
-      const imageBase64 = typeof file?.imageBase64 === "string" ? file.imageBase64.trim() : "";
-      let analysisStatus = "completed";
-      let analysisError = null;
-
-      if ((!text || text.length < 20) && imageBase64) {
-        text = await extractImageTextSignal(fileName, mimeType, imageBase64);
-      }
-
-      if (isImageAsset && (!text || text.length < 20)) {
-        text = `Image material: ${fileName}`;
-        analysisStatus = "fallback";
-        analysisError = "image_text_not_found";
-      }
-
+      const text = String(file?.text || "").trim();
       if (!text || text.length < 20) continue;
 
       const clippedText = text.slice(0, FILE_TEXT_MAX_LENGTH);
@@ -1357,22 +1134,6 @@ quizRouter.post("/projects/:id/files", requireAuth, async (req, res) => {
         `INSERT INTO project_files (id, project_id, user_id, file_name, mime_type, content, content_length, is_outline_candidate, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [rowId, projectId, userId, fileName, mimeType || null, clippedText, clippedText.length, score > 0 ? 1 : 0, now]
-      );
-
-      await dbRun(
-        `INSERT INTO file_analysis_cache (id, project_file_id, asset_type, extracted_text, metadata_json, status, error_code, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          nanoid(16),
-          rowId,
-          isImageAsset ? "image" : "text",
-          clippedText.slice(0, 2400),
-          JSON.stringify({ fileName, mimeType }),
-          analysisStatus,
-          analysisError,
-          now,
-          now,
-        ]
       );
 
       inserted.push({
@@ -1459,208 +1220,6 @@ quizRouter.get("/projects/:id/outline-candidates", requireAuth, async (req, res)
   } catch (err) {
     console.error("[quizall] outline scan error:", err);
     return res.status(500).json({ ok: false, error: "Failed to scan outline candidates" });
-  }
-});
-
-quizRouter.post("/projects/:id/topics/candidates", requireAuth, async (req, res) => {
-  try {
-    const userId = req.user.sub;
-    const projectId = req.params.id;
-    const project = await getProjectForUser(projectId, userId);
-    if (!project) {
-      return res.status(404).json({ ok: false, error: "Project not found" });
-    }
-
-    const files = await getProjectFiles(projectId, userId);
-    const hintText = normalizeWhitespace(req.body?.hintText || req.body?.topicsHint || "");
-    const candidates = buildTopicCandidates(files, hintText);
-
-    return res.json({
-      ok: true,
-      projectId,
-      candidates,
-      scanSummary: {
-        fileCount: files.length,
-        candidateCount: candidates.length,
-      },
-    });
-  } catch (err) {
-    console.error("[quizall] topic candidates error:", err);
-    return res.status(500).json({ ok: false, error: "Failed to build topic candidates" });
-  }
-});
-
-quizRouter.post("/projects/:id/topics/refine", requireAuth, async (req, res) => {
-  try {
-    const userId = req.user.sub;
-    const projectId = req.params.id;
-    const project = await getProjectForUser(projectId, userId);
-    if (!project) {
-      return res.status(404).json({ ok: false, error: "Project not found" });
-    }
-
-    const currentTopics = toUniqueTopics(Array.isArray(req.body?.currentTopics) ? req.body.currentTopics : []);
-    const userMessage = normalizeWhitespace(req.body?.userMessage || "");
-    if (!userMessage) {
-      return res.status(400).json({ ok: false, error: "userMessage is required" });
-    }
-
-    const files = await getProjectFiles(projectId, userId);
-    const evidence = buildRagPack(files, `${currentTopics.join(" ")} ${userMessage}`, 2).snippets;
-    const refined = await refineTopicsWithChat(currentTopics, userMessage, evidence);
-
-    await saveTopicRevision({
-      projectId,
-      userId,
-      sourceType: "chat",
-      beforeTopics: currentTopics,
-      afterTopics: refined.updatedTopics,
-      diff: refined.diff,
-    });
-
-    return res.json({ ok: true, projectId, ...refined });
-  } catch (err) {
-    console.error("[quizall] topic refine error:", err);
-    return res.status(500).json({ ok: false, error: "Failed to refine topics" });
-  }
-});
-
-quizRouter.post("/projects/:id/topics/manual", requireAuth, async (req, res) => {
-  try {
-    const userId = req.user.sub;
-    const projectId = req.params.id;
-    const project = await getProjectForUser(projectId, userId);
-    if (!project) {
-      return res.status(404).json({ ok: false, error: "Project not found" });
-    }
-
-    const mode = normalizeWhitespace(req.body?.strategy || "append").toLowerCase();
-    const incoming = toUniqueTopics(Array.isArray(req.body?.topics) ? req.body.topics : []);
-    if (!incoming.length) {
-      return res.status(400).json({ ok: false, error: "topics array is required" });
-    }
-
-    const prep = await dbGet(
-      `SELECT exam_topics FROM project_exam_prep WHERE project_id = ? AND user_id = ? LIMIT 1`,
-      [projectId, userId]
-    );
-    const previous = extractTopics(prep?.exam_topics || "", "");
-    const finalTopics = mode === "replace" ? incoming : toUniqueTopics([...previous, ...incoming]);
-    const diff = buildTopicDiff(previous, finalTopics);
-
-    await saveTopicRevision({
-      projectId,
-      userId,
-      sourceType: "manual",
-      beforeTopics: previous,
-      afterTopics: finalTopics,
-      diff,
-    });
-
-    return res.json({
-      ok: true,
-      projectId,
-      strategy: mode,
-      finalTopics,
-      diff,
-      validationErrors: [],
-    });
-  } catch (err) {
-    console.error("[quizall] manual topics error:", err);
-    return res.status(500).json({ ok: false, error: "Failed to apply manual topics" });
-  }
-});
-
-quizRouter.post("/projects/:id/artifact/generate", requireAuth, async (req, res) => {
-  try {
-    const userId = req.user.sub;
-    const projectId = req.params.id;
-    const project = await getProjectForUser(projectId, userId);
-    if (!project) {
-      return res.status(404).json({ ok: false, error: "Project not found" });
-    }
-
-    const files = await getProjectFiles(projectId, userId);
-    const finalTopics = toUniqueTopics(Array.isArray(req.body?.finalTopics) ? req.body.finalTopics : []);
-    if (!finalTopics.length) {
-      return res.status(400).json({ ok: false, error: "finalTopics is required" });
-    }
-
-    const joinedTopics = finalTopics.join("\n");
-    const rag = buildRagPack(files, joinedTopics, 3);
-    const topicAccuracyMap = await getTopicAccuracyMap(userId, projectId);
-    const mindmap = buildMindmap(project, finalTopics, rag.byTopic, topicAccuracyMap);
-
-    const now = new Date().toISOString();
-    await saveProjectExamPrepRecord({
-      projectId,
-      userId,
-      examTopics: joinedTopics,
-      topicsSource: "confirmed_topics",
-      selectedFileId: null,
-      mindmap,
-      generatedAt: now,
-      updatedAt: now,
-    });
-    await touchProject(projectId);
-
-    let artifactMarkdown = [
-      `# ${mindmap.title}`,
-      "",
-      "## Final Exam Topics",
-      ...finalTopics.map((item) => `- ${item}`),
-      "",
-      "## Study Plan",
-      "1. Review high-confidence topics first.",
-      "2. Run module quizzes for weak areas.",
-      "3. Re-generate after topic refinements.",
-    ].join("\n");
-
-    if (ANTHROPIC_ENABLED) {
-      const prompt = [
-        "Create a concise markdown study artifact.",
-        "Use headings: Overview, Priority Topics, Practice Plan, Common Traps.",
-        "Keep it practical and exam-focused.",
-        "Final topics:",
-        finalTopics.join(", "),
-        "",
-        "Evidence snippets:",
-        buildSourcePackString(rag.snippets.slice(0, 8)),
-      ].join("\n");
-
-      try {
-        const generated = await chatJsonAnthropic({
-          system: "Return JSON with key artifactMarkdown only.",
-          user: prompt,
-          model: AI_MODEL,
-          maxTokens: 1800,
-          temperature: 0.25,
-        });
-        const llmArtifact = normalizeWhitespace(generated?.data?.artifactMarkdown || "");
-        if (llmArtifact) {
-          artifactMarkdown = generated.data.artifactMarkdown;
-        }
-      } catch (err) {
-        console.warn("[quizall] artifact markdown fallback:", err?.message || err);
-      }
-    }
-
-    return res.json({
-      ok: true,
-      projectId,
-      artifactId: nanoid(16),
-      status: "ready",
-      finalTopics,
-      mindmap,
-      artifact: {
-        type: "markdown",
-        content: artifactMarkdown,
-      },
-      traceId: nanoid(12),
-    });
-  } catch (err) {
-    console.error("[quizall] artifact generate error:", err);
-    return res.status(500).json({ ok: false, error: "Failed to generate artifact" });
   }
 });
 
