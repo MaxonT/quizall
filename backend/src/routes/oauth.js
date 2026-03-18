@@ -12,7 +12,6 @@ import { nanoid } from "nanoid";
 export const oauthRouter = Router();
 
 const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
-const NODE_ENV = process.env.NODE_ENV || "development";
 
 // 与 auth.js 一致：PG 下必须用异步 query，否则 oauth 回调拿到的是 Promise 而非用户行，导致 JWT 里 sub/email 为 undefined、/me 查不到用户
 async function dbGet(sql, params = []) {
@@ -25,17 +24,13 @@ async function dbRun(sql, params = []) {
 }
 
 // OAuth Configuration
-let TOKEN_SECRET = process.env.JWT_SECRET;
+// Problem C: JWT_SECRET 必须显式设置，任何环境均不允许使用默认弱密钥
+const TOKEN_SECRET = process.env.JWT_SECRET;
 if (!TOKEN_SECRET) {
-  if (NODE_ENV !== "production") {
-    console.warn("[quizall] WARNING: JWT_SECRET not set. OAuth is using insecure dev secret.");
-    TOKEN_SECRET = "dev";
-  } else {
-    throw new Error(
-      "[quizall] FATAL: JWT_SECRET environment variable must be set. " +
-      "OAuth authentication cannot start without a secure secret."
-    );
-  }
+  throw new Error(
+    "[quizall] FATAL: JWT_SECRET environment variable must be set. " +
+    "OAuth authentication cannot start without a secure secret."
+  );
 }
 const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
