@@ -1585,6 +1585,42 @@
       scrollbar-width: thin;
     }
 
+    .flow-nav {
+      border: 1px solid rgba(148,163,184,0.24);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(11,18,38,0.74);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .flow-nav-copy {
+      display: grid;
+      gap: 4px;
+    }
+
+    .flow-nav-copy strong {
+      color: #e6faff;
+      font-size: 0.92rem;
+      letter-spacing: 0.01em;
+    }
+
+    .flow-nav-copy span {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .flow-nav-actions {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
     .workflow-item {
       display: inline-flex;
       align-items: center;
@@ -1629,6 +1665,59 @@
       box-shadow: 0 16px 32px rgba(2,8,23,0.32);
       transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
       padding: 20px;
+    }
+
+    .project-primary-cta {
+      border: 1px solid rgba(34,211,238,0.28);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+      background: linear-gradient(145deg, rgba(12,30,54,0.78), rgba(10,20,40,0.72));
+      display: grid;
+      gap: 8px;
+    }
+
+    .project-primary-cta h3 {
+      margin: 0;
+      font-size: 1.02rem;
+      color: #e6faff;
+      letter-spacing: 0.01em;
+    }
+
+    .project-primary-cta p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    .btn-create-project-hero {
+      min-height: 46px;
+      min-width: 220px;
+      padding: 12px 20px;
+      font-size: 0.96rem;
+      letter-spacing: 0.01em;
+      box-shadow: 0 14px 28px rgba(34, 211, 238, 0.25);
+    }
+
+    .workspace-stage.flow-enabled .journey-section {
+      display: none;
+    }
+
+    .workspace-stage.flow-enabled .journey-section.is-flow-active {
+      display: block;
+      animation: flowStageIn .24s ease;
+    }
+
+    @keyframes flowStageIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .card.card-elevated::before {
@@ -1691,6 +1780,59 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin-top: 8px;
+    }
+
+    .topic-refine-grid {
+      margin-top: 2px;
+    }
+
+    .topic-group {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .topic-group-title {
+      margin: 0;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .topic-diff-panel {
+      border: 1px solid rgba(148,163,184,0.22);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(8,12,30,0.46);
+      display: none;
+      gap: 10px;
+    }
+
+    .topic-diff-row {
+      display: grid;
+      gap: 4px;
+    }
+
+    .topic-diff-label {
+      margin: 0;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .topic-diff-values {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    .topic-diff-values.is-empty {
+      color: var(--muted);
     }
 
     .list-panel {
@@ -2060,6 +2202,33 @@
       box-shadow: 0 10px 22px rgba(15,23,42,0.08);
     }
 
+    html[data-theme="light"] .flow-nav {
+      border-color: rgba(148,163,184,0.36);
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,250,255,0.94));
+      box-shadow: 0 10px 22px rgba(15,23,42,0.08);
+    }
+
+    html[data-theme="light"] .flow-nav-copy strong {
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .flow-nav-copy span {
+      color: #475569;
+    }
+
+    html[data-theme="light"] .project-primary-cta {
+      border-color: rgba(14,165,183,0.28);
+      background: linear-gradient(145deg, rgba(240,249,255,0.96), rgba(236,253,245,0.9));
+    }
+
+    html[data-theme="light"] .project-primary-cta h3 {
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .project-primary-cta p {
+      color: #475569;
+    }
+
     html[data-theme="light"] .journey-rail {
       border-color: rgba(148,163,184,0.35);
       background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,248,253,0.94));
@@ -2212,6 +2381,15 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.92);
     }
 
+    html[data-theme="light"] .topic-diff-panel {
+      border-color: rgba(148,163,184,0.3);
+      background: rgba(255,255,255,0.88);
+    }
+
+    html[data-theme="light"] .topic-diff-values {
+      color: #0f172a;
+    }
+
     @media (max-width: 980px) {
       .project-grid { grid-template-columns: 1fr; }
       .stats { grid-template-columns: 1fr; }
@@ -2225,6 +2403,12 @@
         grid-template-columns: 1fr;
       }
       .workspace-stage { gap: 18px; }
+      .flow-nav {
+        align-items: flex-start;
+      }
+      .btn-create-project-hero {
+        width: 100%;
+      }
       .journey-rail {
         position: static;
         top: auto;
@@ -2332,6 +2516,17 @@
       <span class="workflow-item"><b>5</b> Analytics</span>
     </section>
 
+    <section class="flow-nav" id="flowNav" aria-label="Page flow controls" style="display:none;">
+      <div class="flow-nav-copy">
+        <strong id="flowProgressText">Step 1 of 5 · Create Project</strong>
+        <span id="flowProgressHint">One clear action per page for a cleaner workflow.</span>
+      </div>
+      <div class="flow-nav-actions">
+        <button class="btn btn-soft" id="flowBackBtn" type="button">Back</button>
+        <button class="btn btn-primary" id="flowNextBtn" type="button">Continue</button>
+      </div>
+    </section>
+
     <section class="card card-elevated card-project journey-section is-spotlight" id="journeyStep01" data-journey-step="step01">
       <div class="card-head">
         <span class="card-step">Step 1</span>
@@ -2339,6 +2534,11 @@
           <h2>Project Workspace</h2>
           <p class="card-sub">One project per course or exam. Everything below is scoped to the selected project.</p>
         </div>
+      </div>
+      <div class="project-primary-cta">
+        <h3>Start here: create your project</h3>
+        <p>This is the first action. Once your project is created, we will guide you step by step.</p>
+        <button class="btn btn-primary btn-create-project-hero" id="newProjectHeroBtn" type="button">Create Project</button>
       </div>
       <div class="project-grid">
         <div class="stack">
@@ -2388,8 +2588,8 @@
         <div id="uploadDetails">
         <div id="dropzone" class="dropzone" role="button" tabindex="0">
           <strong>Drop files here or click to upload</strong>
-          <small>PDF, DOCX, TXT, MD, CSV, JSON</small>
-          <input id="fileInput" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json" hidden />
+          <small>PDF, DOCX, TXT, MD, CSV, JSON, PNG, JPG, JPEG, WEBP</small>
+          <input id="fileInput" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json,.png,.jpg,.jpeg,.webp" hidden />
         </div>
         <div class="row">
           <button class="btn btn-soft" id="clearPendingBtn" type="button">Clear Pending</button>
@@ -2433,8 +2633,24 @@
           </div>
         </div>
         <div class="row prep-toolbar">
+          <button class="btn btn-soft" id="scanTopicCandidatesBtn" type="button">Auto Detect Topic Candidates</button>
           <button class="btn btn-soft" id="scanOutlineBtn" type="button">Find Outline Files Automatically</button>
           <button class="btn btn-primary" id="generateMindmapBtn" type="button">Generate ExamTopics Mindmap</button>
+        </div>
+        <div class="asset-lists topic-refine-grid">
+          <div class="list-panel">
+            <p class="field-label">Candidate Topics</p>
+            <div id="topicCandidates" class="candidate-list"></div>
+          </div>
+          <div class="list-panel">
+            <p class="field-label">Refine Topics by Chat</p>
+            <textarea id="topicRefineInput" class="textarea" style="min-height:108px;" placeholder="Example: focus on Exam 2, remove chapter 1 definitions, add glycolysis regulation."></textarea>
+            <div class="row" style="margin-top:10px;">
+              <button class="btn btn-soft" id="topicRefineBtn" type="button">Apply Chat Refinement</button>
+              <button class="btn btn-soft" id="topicManualApplyBtn" type="button">Use Current Typed Topics</button>
+            </div>
+            <div id="topicDiffPanel" class="topic-diff-panel" style="margin-top:10px;"></div>
+          </div>
         </div>
         <div class="list-panel">
           <p class="field-label">Suggested Outline Files</p>
@@ -2482,7 +2698,7 @@
       <div id="moduleTodoList" class="module-todo-list"></div>
     </section>
 
-    <section class="card card-elevated">
+    <section class="card card-elevated" id="projectTabsCard">
       <div class="card-head">
         <span class="card-step">Step 4-6</span>
         <div class="card-head-copy">
@@ -2626,6 +2842,9 @@
       selectedProjectId: null,
       projectDetail: null,
       pendingFiles: [],
+      candidateTopics: [],
+      finalTopics: [],
+      lastTopicDiff: null,
       selectedOutlineFileId: null,
       mindmap: null,
       selectedTypes: new Set(['free_response', 'multiple_choice', 'true_false']),
@@ -2640,6 +2859,9 @@
       moduleMission: null,
       confirmResolver: null,
       busy: false,
+      pageFlowEnabled: false,
+      flowStepOrder: ['step01', 'step02', 'step03', 'step04', 'step05'],
+      flowCurrentStep: 'step01',
     };
 
     const els = {
@@ -2657,10 +2879,17 @@
       projectSelect: document.getElementById('projectSelect'),
       refreshProjectsBtn: document.getElementById('refreshProjectsBtn'),
       newProjectBtn: document.getElementById('newProjectBtn'),
+      newProjectHeroBtn: document.getElementById('newProjectHeroBtn'),
       projectSummary: document.getElementById('projectSummary'),
       statFiles: document.getElementById('statFiles'),
       statQuizSessions: document.getElementById('statQuizSessions'),
       statAccuracy: document.getElementById('statAccuracy'),
+
+      flowNav: document.getElementById('flowNav'),
+      flowProgressText: document.getElementById('flowProgressText'),
+      flowProgressHint: document.getElementById('flowProgressHint'),
+      flowBackBtn: document.getElementById('flowBackBtn'),
+      flowNextBtn: document.getElementById('flowNextBtn'),
 
       dropzone: document.getElementById('dropzone'),
       fileInput: document.getElementById('fileInput'),
@@ -2677,8 +2906,14 @@
       topicsInput: document.getElementById('topicsInput'),
       emailTemplate: document.getElementById('emailTemplate'),
       copyEmailTemplateBtn: document.getElementById('copyEmailTemplateBtn'),
+      scanTopicCandidatesBtn: document.getElementById('scanTopicCandidatesBtn'),
       scanOutlineBtn: document.getElementById('scanOutlineBtn'),
       generateMindmapBtn: document.getElementById('generateMindmapBtn'),
+      topicCandidates: document.getElementById('topicCandidates'),
+      topicRefineInput: document.getElementById('topicRefineInput'),
+      topicRefineBtn: document.getElementById('topicRefineBtn'),
+      topicManualApplyBtn: document.getElementById('topicManualApplyBtn'),
+      topicDiffPanel: document.getElementById('topicDiffPanel'),
       outlineCandidates: document.getElementById('outlineCandidates'),
       mindmapShell: document.getElementById('mindmapShell'),
       mindmapTitle: document.getElementById('mindmapTitle'),
@@ -2701,6 +2936,7 @@
 
       analyticsCanvas: document.getElementById('analyticsCanvas'),
       analyticsEmpty: document.getElementById('analyticsEmpty'),
+      projectTabsCard: document.getElementById('projectTabsCard'),
       projectDetailTabs: document.getElementById('projectDetailTabs'),
       projectPanels: document.querySelectorAll('[data-project-panel]'),
       projectScienceGrid: document.getElementById('projectScienceGrid'),
@@ -2736,6 +2972,167 @@
     els.emailTemplate.value = DEFAULT_EMAIL_TEMPLATE;
     state.mindmapVisualization = sanitizeMindmapVisualization(state.mindmapVisualization);
 
+    function isFlowEnabledFromConfig() {
+      const params = new URLSearchParams(window.location.search);
+      const queryValue = (params.get('flow') || '').toLowerCase();
+      if (queryValue === 'v2' || queryValue === '1' || queryValue === 'true') {
+        localStorage.setItem('quizall.createFlowV2', '1');
+        return true;
+      }
+      if (queryValue === 'legacy' || queryValue === '0' || queryValue === 'false') {
+        localStorage.setItem('quizall.createFlowV2', '0');
+        return false;
+      }
+      const stored = localStorage.getItem('quizall.createFlowV2');
+      if (stored === '0') return false;
+      if (stored === '1') return true;
+      localStorage.setItem('quizall.createFlowV2', '1');
+      return true;
+    }
+
+    function updateFlowNavUi() {
+      if (!state.pageFlowEnabled) return;
+      const idx = state.flowStepOrder.indexOf(state.flowCurrentStep);
+      const total = state.flowStepOrder.length;
+      const labels = {
+        step01: 'Create Project',
+        step02: 'Upload Materials',
+        step03: 'Confirm Topics',
+        step04: 'Mindmap and Quiz',
+        step05: 'Analytics',
+      };
+      const hints = {
+        step01: 'Start with a clearly named project.',
+        step02: 'Upload your files and images before analysis.',
+        step03: 'Refine and confirm exam-relevant topics.',
+        step04: 'Generate focused outputs from confirmed topics.',
+        step05: 'Review trend and decide next iteration.',
+      };
+      if (els.flowProgressText) {
+        els.flowProgressText.textContent = 'Step ' + String(idx + 1) + ' of ' + String(total) + ' · ' + (labels[state.flowCurrentStep] || 'Workspace');
+      }
+      if (els.flowProgressHint) {
+        els.flowProgressHint.textContent = hints[state.flowCurrentStep] || 'Move to the next page when this step is complete.';
+      }
+      if (els.flowBackBtn) {
+        els.flowBackBtn.disabled = idx <= 0 || state.busy;
+      }
+      if (els.flowNextBtn) {
+        els.flowNextBtn.disabled = idx >= total - 1 || state.busy;
+      }
+    }
+
+    function getFlowCompletionGate(stepId) {
+      const completion = getStepCompletionMap();
+      if (stepId === 'step01') return true;
+      if (stepId === 'step02') return completion.step01;
+      if (stepId === 'step03') return completion.step02;
+      if (stepId === 'step04') return completion.step03;
+      if (stepId === 'step05') return completion.step04;
+      return false;
+    }
+
+    function getFlowBlockReason(stepId) {
+      const completion = getStepCompletionMap();
+      if (stepId === 'step02' && !completion.step01) {
+        return 'Create or select a project first.';
+      }
+      if (stepId === 'step03' && !completion.step02) {
+        return 'Upload at least one material before topics.';
+      }
+      if (stepId === 'step04' && !completion.step03) {
+        return 'Confirm topics before generating mindmap or quiz.';
+      }
+      if (stepId === 'step05' && !completion.step04) {
+        return 'Generate a mindmap first to unlock analytics flow.';
+      }
+      return 'Complete the current step before continuing.';
+    }
+
+    function trackCreateFlowEvent(eventName, properties) {
+      const payload = {
+        event: eventName,
+        properties: Object.assign({
+          page: 'create',
+          flowVersion: state.pageFlowEnabled ? 'v2' : 'legacy',
+          projectId: state.selectedProjectId || null,
+          step: state.flowCurrentStep || null,
+          timestamp: new Date().toISOString(),
+        }, properties || {}),
+      };
+
+      fetch(API_BASE + '/api/analytics/track', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(function () {
+        // Non-blocking analytics.
+      });
+    }
+
+    function setFlowStep(stepId, options) {
+      if (!state.pageFlowEnabled) return;
+      const opts = options || {};
+      if (state.flowStepOrder.indexOf(stepId) < 0) return;
+      if (!opts.force && !getFlowCompletionGate(stepId)) return;
+
+      const previousStep = state.flowCurrentStep;
+
+      state.flowCurrentStep = stepId;
+
+      document.querySelectorAll('.journey-section').forEach(function (section) {
+        const isActive = section.getAttribute('data-journey-step') === stepId;
+        section.classList.toggle('is-flow-active', isActive);
+      });
+
+      if (els.projectTabsCard) {
+        const showTabs = stepId === 'step04' || stepId === 'step05';
+        els.projectTabsCard.style.display = showTabs ? '' : 'none';
+      }
+
+      if (stepId === 'step05') {
+        setProjectTab('analytics', { silentBadge: true });
+      } else if (stepId === 'step04') {
+        setProjectTab('quiz', { silentBadge: true });
+      }
+
+      activateJourneyStep(stepId, { energy: !!opts.energy });
+      refreshJourneyCompletion();
+      updateFlowNavUi();
+      if (previousStep !== stepId) {
+        trackCreateFlowEvent('create_flow_step_view', { fromStep: previousStep || null, toStep: stepId });
+      }
+      if (!opts.silent) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function goFlowStep(offset) {
+      if (!state.pageFlowEnabled) return;
+      const idx = state.flowStepOrder.indexOf(state.flowCurrentStep);
+      const nextIdx = Math.max(0, Math.min(state.flowStepOrder.length - 1, idx + offset));
+      const target = state.flowStepOrder[nextIdx];
+      const before = state.flowCurrentStep;
+      setFlowStep(target, { force: offset < 0 });
+      if (offset > 0 && before === state.flowCurrentStep && target !== before) {
+        setStatus(getFlowBlockReason(target), 'error');
+        trackCreateFlowEvent('create_flow_blocked', { targetStep: target, reason: getFlowBlockReason(target) });
+      }
+    }
+
+    function initPageFlowMode() {
+      state.pageFlowEnabled = isFlowEnabledFromConfig();
+      if (!state.pageFlowEnabled) return;
+      if (els.flowNav) els.flowNav.style.display = '';
+      const workspaceStage = document.querySelector('.workspace-stage');
+      if (workspaceStage) workspaceStage.classList.add('flow-enabled');
+      setFlowStep('step01', { force: true, silent: true });
+    }
+
     function setStatus(message, type) {
       els.statusMessage.textContent = message;
       els.statusMessage.className = 'status' + (type ? ' ' + type : '');
@@ -2746,9 +3143,14 @@
       [
         els.saveFilesBtn,
         els.scanOutlineBtn,
+        els.scanTopicCandidatesBtn,
+        els.topicRefineBtn,
+        els.topicManualApplyBtn,
         els.generateMindmapBtn,
         els.generateQuizBtn,
         els.createProjectConfirmBtn,
+        els.flowBackBtn,
+        els.flowNextBtn,
         els.refreshProjectsBtn,
         els.saveExamDateBtn,
         els.deleteMindmapBtn
@@ -2760,6 +3162,7 @@
         }
         button.disabled = value;
       });
+      updateFlowNavUi();
     }
 
     function api(path, options) {
@@ -3165,6 +3568,103 @@
       }).join('');
     }
 
+    function renderTopicCandidates(candidates) {
+      state.candidateTopics = Array.isArray(candidates) ? candidates.slice() : [];
+      const rank = { high: 0, medium: 1, low: 2 };
+      state.candidateTopics.sort(function (a, b) {
+        const ar = rank[(a && a.relevance) || 'medium'];
+        const br = rank[(b && b.relevance) || 'medium'];
+        if (ar !== br) return ar - br;
+        return String(a && a.label || '').localeCompare(String(b && b.label || ''));
+      });
+      if (!els.topicCandidates) return;
+      if (!state.candidateTopics.length) {
+        els.topicCandidates.innerHTML = '<p class="empty-text">No candidate topics yet. Use auto detect or type topics manually.</p>';
+        return;
+      }
+
+      const selected = new Set(extractTopics(els.topicsInput.value || '', ''));
+      const grouped = { high: [], medium: [], low: [] };
+      state.candidateTopics.forEach(function (item) {
+        const key = (item && item.relevance) || 'medium';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(item);
+      });
+
+      function renderItems(items) {
+        return items.map(function (item, index) {
+        const label = item.label || ('Topic ' + String(index + 1));
+        const isSelected = selected.has(label);
+        const confidence = Math.round((Number(item.confidence) || 0) * 100);
+        const evidence = Array.isArray(item.evidence) ? item.evidence.slice(0, 1) : [];
+        const evidenceText = evidence.length
+          ? escapeHtml((evidence[0].source || 'source') + ' · ' + (evidence[0].excerpt || ''))
+          : 'No evidence snippet';
+        return '<div class="list-item">' +
+          '<div class="list-main">' +
+            '<div class="list-title">' + escapeHtml(label) + '</div>' +
+            '<div class="list-meta">' + escapeHtml((item.relevance || 'medium').toUpperCase()) + ' · ' + confidence + '% confidence · ' + evidenceText + '</div>' +
+          '</div>' +
+          '<button class="btn ' + (isSelected ? 'btn-primary' : 'btn-soft') + '" data-topic-candidate="' + escapeHtml(label) + '">' + (isSelected ? 'Selected' : 'Add') + '</button>' +
+        '</div>';
+        }).join('');
+      }
+
+      const groupLabels = {
+        high: 'High relevance',
+        medium: 'Medium relevance',
+        low: 'Low relevance',
+      };
+
+      els.topicCandidates.innerHTML = ['high', 'medium', 'low'].map(function (groupKey) {
+        const items = grouped[groupKey] || [];
+        if (!items.length) return '';
+        return '<section class="topic-group">' +
+          '<p class="topic-group-title">' + escapeHtml(groupLabels[groupKey]) + '</p>' +
+          renderItems(items) +
+        '</section>';
+      }).join('');
+    }
+
+    function renderTopicDiff(diff, rationale, warnings) {
+      state.lastTopicDiff = diff || null;
+      if (!els.topicDiffPanel) return;
+      if (!diff) {
+        els.topicDiffPanel.style.display = 'none';
+        els.topicDiffPanel.innerHTML = '';
+        return;
+      }
+
+      function renderValue(values) {
+        const list = Array.isArray(values) ? values : [];
+        if (!list.length) return '<p class="topic-diff-values is-empty">None</p>';
+        return '<p class="topic-diff-values">' + escapeHtml(list.join(', ')) + '</p>';
+      }
+
+      const warningText = Array.isArray(warnings) && warnings.length ? warnings.join(', ') : '';
+      const rows = [
+        { label: 'Added', values: diff.added || [] },
+        { label: 'Removed', values: diff.removed || [] },
+        { label: 'Merged', values: diff.merged || [] },
+      ];
+
+      els.topicDiffPanel.innerHTML = rows.map(function (row) {
+        return '<div class="topic-diff-row">' +
+          '<p class="topic-diff-label">' + escapeHtml(row.label) + '</p>' +
+          renderValue(row.values) +
+        '</div>';
+      }).join('') +
+      '<div class="topic-diff-row">' +
+        '<p class="topic-diff-label">Rationale</p>' +
+        '<p class="topic-diff-values' + (rationale ? '' : ' is-empty') + '">' + escapeHtml(rationale || 'No rationale provided') + '</p>' +
+      '</div>' +
+      '<div class="topic-diff-row">' +
+        '<p class="topic-diff-label">Warnings</p>' +
+        '<p class="topic-diff-values' + (warningText ? '' : ' is-empty') + '">' + escapeHtml(warningText || 'None') + '</p>' +
+      '</div>';
+      els.topicDiffPanel.style.display = 'grid';
+    }
+
     function drawAnalytics() {
       const trend = (state.projectDetail && state.projectDetail.analytics && state.projectDetail.analytics.trend) || [];
       const canvas = els.analyticsCanvas;
@@ -3375,9 +3875,25 @@
         const target = node.getAttribute('data-journey-target');
         node.classList.toggle('is-complete', !!completion[target]);
       });
+      updateFlowNavUi();
+    }
+
+    function syncFlowStepFromCompletion() {
+      if (!state.pageFlowEnabled) return;
+      const completion = getStepCompletionMap();
+      let target = 'step01';
+      if (completion.step01) target = 'step02';
+      if (completion.step02) target = 'step03';
+      if (completion.step03) target = 'step04';
+      if (completion.step04) target = 'step05';
+      setFlowStep(target, { force: true, silent: true });
     }
 
     function scrollToJourneyStep(stepId) {
+      if (state.pageFlowEnabled) {
+        setFlowStep(stepId);
+        return;
+      }
       if (stepId === 'step05') {
         setProjectTab('analytics');
       } else if (stepId === 'step04') {
@@ -3401,6 +3917,7 @@
       });
 
       window.addEventListener('scroll', function () {
+        if (state.pageFlowEnabled) return;
         const sections = Array.prototype.slice.call(document.querySelectorAll('.journey-section[data-journey-step]'))
           .filter(function (section) {
             if (section.closest('.project-tab-panel') && !section.closest('.project-tab-panel').classList.contains('active')) {
@@ -4066,9 +4583,11 @@
         refreshUploadCollapse();
         drawAnalytics();
         renderOutlineCandidates([]);
+        renderTopicCandidates([]);
         renderMindmap();
         ensureMissionFromMindmap();
         refreshJourneyCompletion();
+        syncFlowStepFromCompletion();
         if (els.projectScienceGrid) els.projectScienceGrid.innerHTML = '<p class="empty-text">Select a project to view science activation.</p>';
         if (els.projectScienceNotes) els.projectScienceNotes.innerHTML = '';
         setStatus('No project yet. Create your first project.', 'success');
@@ -4100,11 +4619,13 @@
       renderMindmap();
       ensureMissionFromMindmap();
       renderOutlineCandidates([]);
+      renderTopicCandidates([]);
       syncProjectScienceFlagsFromDetail();
       refreshJourneyCompletion();
       renderProjectScience();
       setProjectTab(state.currentProjectTab || 'quiz', { silentBadge: true });
       setStatus('Project ready. Continue with exam prep.', 'success');
+      syncFlowStepFromCompletion();
     }
 
     function addPendingFiles(fileList) {
@@ -4186,6 +4707,25 @@
       return await file.text();
     }
 
+    function isImageFile(file) {
+      if (!file) return false;
+      if (String(file.type || '').toLowerCase().startsWith('image/')) return true;
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      return ['png', 'jpg', 'jpeg', 'webp'].indexOf(ext) >= 0;
+    }
+
+    async function fileToBase64(file) {
+      const buffer = await file.arrayBuffer();
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      const chunkSize = 0x8000;
+      for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+        const chunk = bytes.subarray(offset, offset + chunkSize);
+        binary += String.fromCharCode.apply(null, chunk);
+      }
+      return btoa(binary);
+    }
+
     async function savePendingFiles() {
       if (!state.selectedProjectId) {
         throw new Error('Select a project first.');
@@ -4199,11 +4739,23 @@
       for (let i = 0; i < state.pendingFiles.length; i++) {
         const file = state.pendingFiles[i];
         setStatus('Extracting ' + file.name + ' (' + (i + 1) + '/' + state.pendingFiles.length + ')...');
+        const mimeType = file.type || 'application/octet-stream';
+        if (isImageFile(file)) {
+          const imageBase64 = await fileToBase64(file);
+          payload.push({
+            name: file.name,
+            mimeType: mimeType,
+            imageBase64: imageBase64,
+            text: '',
+          });
+          continue;
+        }
+
         const text = await extractText(file);
         if (!text || text.trim().length < 20) continue;
         payload.push({
           name: file.name,
-          mimeType: file.type || 'application/octet-stream',
+          mimeType: mimeType,
           text: text,
         });
       }
@@ -4232,6 +4784,13 @@
       if (result.files.length && window.quizallScience && state.selectedProjectId) {
         window.quizallScience.markProjectFlags(state.selectedProjectId, { filesUploaded: true });
         window.quizallScience.showBadge('files_uploaded');
+      }
+      if (result.files.length && state.pageFlowEnabled) {
+        try {
+          await scanTopicCandidates();
+        } catch (_) {
+          // Keep the flow non-blocking even if candidate scan fails.
+        }
       }
       refreshJourneyCompletion();
       activateJourneyStep('step03', { energy: true });
@@ -4269,6 +4828,89 @@
       setStatus('Auto-scan finished.', 'success');
     }
 
+    async function scanTopicCandidates() {
+      if (!state.selectedProjectId) {
+        throw new Error('Select a project first.');
+      }
+      setStatus('Scanning materials for candidate exam topics...');
+      const data = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/topics/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hintText: els.topicsInput.value.trim() }),
+      });
+      renderTopicCandidates(data.candidates || []);
+      renderTopicDiff(null, '', []);
+      if ((!els.topicsInput.value || !els.topicsInput.value.trim()) && Array.isArray(data.candidates) && data.candidates.length) {
+        const suggested = data.candidates.slice(0, 8).map(function (item) { return item.label; }).filter(Boolean);
+        els.topicsInput.value = suggested.join('\n');
+      }
+      refreshJourneyCompletion();
+      trackCreateFlowEvent('create_topics_candidates_scanned', {
+        candidateCount: Array.isArray(data.candidates) ? data.candidates.length : 0,
+      });
+      setStatus('Candidate topics updated.', 'success');
+    }
+
+    async function applyChatTopicRefinement() {
+      if (!state.selectedProjectId) {
+        throw new Error('Select a project first.');
+      }
+      const currentTopics = extractTopics(els.topicsInput.value || '', '');
+      const userMessage = (els.topicRefineInput && els.topicRefineInput.value || '').trim();
+      if (!userMessage) {
+        throw new Error('Write a refinement request first.');
+      }
+      setStatus('Applying topic refinement...');
+      const data = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/topics/refine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentTopics: currentTopics,
+          userMessage: userMessage,
+        }),
+      });
+      const updated = Array.isArray(data.updatedTopics) ? data.updatedTopics : currentTopics;
+      els.topicsInput.value = updated.join('\n');
+      if (els.topicRefineInput) {
+        els.topicRefineInput.value = '';
+      }
+      refreshJourneyCompletion();
+      const diff = data && data.diff ? data.diff : { added: [], removed: [] };
+      renderTopicDiff(diff, data && data.rationale || '', data && data.warnings || []);
+      const addedCount = Array.isArray(diff.added) ? diff.added.length : 0;
+      const removedCount = Array.isArray(diff.removed) ? diff.removed.length : 0;
+      trackCreateFlowEvent('create_topics_refined', {
+        added: addedCount,
+        removed: removedCount,
+      });
+      setStatus('Topics refined. +' + String(addedCount) + ' / -' + String(removedCount) + '. Review and continue.', 'success');
+    }
+
+    async function applyManualTopics() {
+      if (!state.selectedProjectId) {
+        throw new Error('Select a project first.');
+      }
+      const manualTopics = extractTopics(els.topicsInput.value || '', '');
+      if (!manualTopics.length) {
+        throw new Error('Please enter at least one topic first.');
+      }
+      setStatus('Saving manual topic set...');
+      const data = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/topics/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topics: manualTopics,
+          strategy: 'replace',
+        }),
+      });
+      const finalTopics = Array.isArray(data.finalTopics) ? data.finalTopics : manualTopics;
+      els.topicsInput.value = finalTopics.join('\n');
+      renderTopicDiff(data && data.diff ? data.diff : { added: finalTopics, removed: [], merged: [] }, 'Manual topics applied by user.', []);
+      refreshJourneyCompletion();
+      trackCreateFlowEvent('create_topics_manual_applied', { topicCount: finalTopics.length });
+      setStatus('Manual topics confirmed.', 'success');
+    }
+
     async function generateMindmap() {
       if (!state.selectedProjectId) {
         throw new Error('Select a project first.');
@@ -4279,17 +4921,31 @@
       }
 
       setStatus('Building personalized exam mindmap...');
-      const payload = {
-        sourceMode: state.selectedOutlineFileId ? 'file' : 'typed',
-        selectedFileId: state.selectedOutlineFileId || null,
-        topicsInput: els.topicsInput.value.trim(),
-      };
+      const finalTopics = extractTopics(els.topicsInput.value.trim(), '');
+      if (!finalTopics.length) {
+        throw new Error('Confirm at least one topic before generating mindmap.');
+      }
 
-      const data = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/exam-prep', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      let data;
+      try {
+        data = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/artifact/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ finalTopics: finalTopics }),
+        });
+      } catch (_) {
+        const fallbackPayload = {
+          sourceMode: state.selectedOutlineFileId ? 'file' : 'typed',
+          selectedFileId: state.selectedOutlineFileId || null,
+          topicsInput: els.topicsInput.value.trim(),
+        };
+        data = await api('/api/quiz/projects/' + encodeURIComponent(state.selectedProjectId) + '/exam-prep', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(fallbackPayload),
+        });
+        trackCreateFlowEvent('create_artifact_fallback_used', { reason: 'artifact_endpoint_failed' });
+      }
 
       state.mindmap = data.mindmap;
       if (data.examTopics && !els.topicsInput.value.trim()) {
@@ -4309,6 +4965,10 @@
       setProjectTab('quiz', { silentBadge: true });
       scrollToJourneyStep('step04');
       renderProjectScience();
+      trackCreateFlowEvent('create_artifact_generated', {
+        topicCount: finalTopics.length,
+        hasMindmap: !!state.mindmap,
+      });
       setStatus('ExamTopics mindmap generated. You can now edit nodes.', 'success');
     }
 
@@ -4374,6 +5034,9 @@
         state.selectedProjectId = data.project.id;
         await loadProjectDetail(data.project.id);
       }
+      trackCreateFlowEvent('create_project_created', {
+        projectId: data && data.project ? data.project.id : null,
+      });
       activateJourneyStep('step02', { energy: true });
       scrollToJourneyStep('step02');
       setStatus('Project created.', 'success');
@@ -4546,6 +5209,7 @@
 
     els.topicsInput.addEventListener('input', function () {
       refreshJourneyCompletion();
+      renderTopicCandidates(state.candidateTopics);
     });
 
     els.saveFilesBtn.addEventListener('click', async function () {
@@ -4587,6 +5251,9 @@
     });
 
     els.newProjectBtn.addEventListener('click', openModal);
+    if (els.newProjectHeroBtn) {
+      els.newProjectHeroBtn.addEventListener('click', openModal);
+    }
     els.cancelProjectBtn.addEventListener('click', closeModal);
     els.newProjectModal.addEventListener('click', function (event) {
       if (event.target === els.newProjectModal) closeModal();
@@ -4632,6 +5299,64 @@
         setBusy(false);
       }
     });
+
+    if (els.scanTopicCandidatesBtn) {
+      els.scanTopicCandidatesBtn.addEventListener('click', async function () {
+        if (state.busy) return;
+        setBusy(true);
+        try {
+          await scanTopicCandidates();
+        } catch (err) {
+          setStatus(err.message || 'Failed to scan topic candidates.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      });
+    }
+
+    if (els.topicRefineBtn) {
+      els.topicRefineBtn.addEventListener('click', async function () {
+        if (state.busy) return;
+        setBusy(true);
+        try {
+          await applyChatTopicRefinement();
+        } catch (err) {
+          setStatus(err.message || 'Failed to refine topics.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      });
+    }
+
+    if (els.topicManualApplyBtn) {
+      els.topicManualApplyBtn.addEventListener('click', async function () {
+        if (state.busy) return;
+        setBusy(true);
+        try {
+          await applyManualTopics();
+        } catch (err) {
+          setStatus(err.message || 'Failed to apply manual topics.', 'error');
+        } finally {
+          setBusy(false);
+        }
+      });
+    }
+
+    if (els.topicCandidates) {
+      els.topicCandidates.addEventListener('click', function (event) {
+        const label = event.target.getAttribute('data-topic-candidate');
+        if (!label) return;
+        const current = extractTopics(els.topicsInput.value || '', '');
+        const normalized = label.trim();
+        const exists = current.some(function (item) { return item.toLowerCase() === normalized.toLowerCase(); });
+        const next = exists
+          ? current.filter(function (item) { return item.toLowerCase() !== normalized.toLowerCase(); })
+          : current.concat([normalized]);
+        els.topicsInput.value = next.join('\n');
+        renderTopicCandidates(state.candidateTopics);
+        refreshJourneyCompletion();
+      });
+    }
 
     els.outlineCandidates.addEventListener('click', function (event) {
       const fileId = event.target.getAttribute('data-outline-file');
@@ -4843,6 +5568,17 @@
       });
     }
 
+    if (els.flowBackBtn) {
+      els.flowBackBtn.addEventListener('click', function () {
+        goFlowStep(-1);
+      });
+    }
+    if (els.flowNextBtn) {
+      els.flowNextBtn.addEventListener('click', function () {
+        goFlowStep(1);
+      });
+    }
+
     window.addEventListener('resize', function () {
       drawAnalytics();
       if (state.mindmapVisualization === 'inner_map' || state.mindmapVisualization === 'strategy') {
@@ -4858,9 +5594,14 @@
     renderMindmapVizSwitch();
     updateMindmapFullscreenButton();
     setupJourneyRail();
+    initPageFlowMode();
     renderModuleMission();
     refreshJourneyCompletion();
-    activateJourneyStep('step01');
+    if (state.pageFlowEnabled) {
+      setFlowStep('step01', { force: true, silent: true });
+    } else {
+      activateJourneyStep('step01');
+    }
     setProjectTab('quiz', { silentBadge: true });
     if (els.projectScienceGrid) {
       els.projectScienceGrid.innerHTML = '<p class="empty-text">Select a project to view science activation.</p>';

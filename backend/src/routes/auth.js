@@ -8,10 +8,11 @@ import { getNextLocalMidnightIso, normalizeTimeZone } from "../lib/timezone.js";
 export const authRouter = Router();
 
 const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
+const NODE_ENV = process.env.NODE_ENV || "development";
 
 let TOKEN_SECRET = process.env.JWT_SECRET;
 if (!TOKEN_SECRET) {
-  if (process.env.NODE_ENV === "development") {
+  if (NODE_ENV !== "production") {
     console.warn("[quizall] WARNING: JWT_SECRET not set. Using insecure dev secret.");
     TOKEN_SECRET = "dev";
   } else {

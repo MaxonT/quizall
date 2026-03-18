@@ -9,7 +9,8 @@
     "start": "node scripts/run_migrations.js && node src/server.js",
     "health": "node scripts/healthcheck.js",
     "migrate": "node scripts/run_migrations.js",
-    "test": "node scripts/selftest.js"
+    "test": "node scripts/selftest.js",
+    "test:create-flow": "node scripts/create_flow_smoketest.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

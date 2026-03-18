@@ -46,7 +46,11 @@ if (USE_POSTGRES) {
   runMigration('migrations/001_subscriptions.js');
   runMigration('migrations/002_analytics.js', ' up');
   runMigration('migrations/002_checkout_sessions.js', ' up');
+  runMigration('migrations/002_timezone_refresh.js');
   runMigration('migrations/003_stripe_events.js', ' up');
+  runMigration('migrations/004_exemplar_bank.js');
+  runMigration('migrations/005_coupons.js');
+  runMigration('migrations/006_create_flow_topics.js');
 }
 
 console.log('[QuizAll] ✅ Migrations complete.');
