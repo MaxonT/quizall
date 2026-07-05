@@ -30,8 +30,6 @@
     navHistory: document.getElementById("navHistory"),
     navHistoryCount: document.getElementById("navHistoryCount"),
     projectList: document.getElementById("projectList"),
-    sidebarStreak: document.getElementById("sidebarStreak"),
-    starterCards: document.getElementById("starterCards"),
     avatarBtn: document.getElementById("avatarBtn"),
     avatarInitials: document.getElementById("avatarInitials"),
     avatarEmail: document.getElementById("avatarEmail"),
@@ -44,10 +42,11 @@
     fileInput: null,
     attachmentsBar: document.getElementById("attachmentsBar"),
     avatarMenu: document.getElementById("avatarMenu"),
-    embedOverlay: document.getElementById("embedOverlay"),
-    embedTitle: document.getElementById("embedTitle"),
-    embedFrame: document.getElementById("embedFrame"),
-    embedClose: document.getElementById("embedClose"),
+    sampleLink: document.getElementById("sampleLink"),
+    settingsOverlay: document.getElementById("settingsOverlay"),
+    settingsBody: document.getElementById("settingsBody"),
+    settingsTabTitle: document.getElementById("settingsTabTitle"),
+    settingsClose: document.getElementById("settingsClose"),
   };
 
   function icon(id, extraClass) {
@@ -421,29 +420,6 @@
     }
   }
 
-  async function loadStreak() {
-    if (!els.sidebarStreak) return;
-    try {
-      const data = await api("/api/quiz/study-streak?days=7");
-      const heatmap = Array.isArray(data.heatmap) ? data.heatmap.slice(-7) : [];
-      if (!heatmap.length) {
-        els.sidebarStreak.innerHTML = "";
-        return;
-      }
-      const streak = data.currentStreak || 0;
-      const dots = heatmap
-        .map((d) => `<span class="streak-dot lvl-${Math.max(0, Math.min(3, d.intensity || 0))}"></span>`)
-        .join("");
-      const headline = streak > 0 ? `${streak}-day streak` : "Study streak";
-      const sub = streak > 0 ? "Keep it going" : "Last 7 days";
-      els.sidebarStreak.innerHTML =
-        `<div class="streak-head">${icon("i-flame")} ${headline}<span class="streak-sub">${sub}</span></div>` +
-        `<div class="streak-dots">${dots}</div>`;
-    } catch (err) {
-      els.sidebarStreak.innerHTML = "";
-    }
-  }
-
   const SAMPLE_TEXT =
     "Photosynthesis is how plants make their own food. " +
     "Plants take in sunlight, water, and carbon dioxide (a gas in the air). " +
@@ -680,7 +656,6 @@
       appendMessage("ai", `<p class="meta-line">Session complete. Start a new study session anytime from the left.</p>`);
       setProcessing(false);
       await loadProjects();
-      loadStreak();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Sorry, I couldn't write the note: ${escapeHtml(err.message)}</p>`);
@@ -782,12 +757,50 @@
         if (planLoaded) appendMessage("ai", `<p class="meta-line">Quiz rounds weren't finished in this session.</p>`);
       }
 
-      appendMessage("ai", `<p class="meta-line">This is a saved session (read-only). Click "New study session" to start again.</p>`);
+      if (planLoaded) {
+        const againMsg = appendMessage(
+          "ai",
+          `<p class="meta-line">Want another pass at this material?</p>` +
+            `<button type="button" class="btn-round requiz-btn">Quiz me again ${icon("i-arrow-right")}</button>`
+        );
+        againMsg.querySelector(".requiz-btn").addEventListener("click", (e) => {
+          e.currentTarget.disabled = true;
+          requizProject();
+        });
+      } else {
+        appendMessage("ai", `<p class="meta-line">This is a saved session. Click "New study session" to start fresh.</p>`);
+      }
       await loadProjects();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Could not load session: ${escapeHtml(err.message)}</p>`);
     }
+  }
+
+  function buildContentFromPlan(plan) {
+    const parts = [plan.summary || ""];
+    (plan.key_concepts || []).forEach((k) => parts.push(`${k.concept}: ${k.detail || ""}`));
+    (plan.topics || []).forEach((t) => parts.push(String(t)));
+    return parts.filter(Boolean).join("\n");
+  }
+
+  async function requizProject() {
+    if (!state.projectId || !state.studyPlan || state.isProcessing) return;
+    setViewOnly(false);
+    setProcessing(true);
+    state.roundIndex = -1;
+    state.roundResults = [];
+    state.analysis = {
+      subject: state.studyPlan.subject,
+      topics: state.studyPlan.topics || [],
+      key_concepts: state.studyPlan.key_concepts || [],
+    };
+    state.materialPreview = buildContentFromPlan(state.studyPlan);
+    appendMessage(
+      "ai",
+      `<p>Let's go again — three fresh rounds on <strong>${escapeHtml(state.studyPlan.subject || state.projectName)}</strong>.</p>`
+    );
+    await startRound(0);
   }
 
   function resetNewChat() {
@@ -809,16 +822,158 @@
     els.composerInput.focus();
   }
 
-  function openEmbed(title, url) {
-    els.embedTitle.textContent = title;
-    els.embedFrame.src = url;
-    els.embedOverlay.classList.remove("hidden");
+  // ── Native settings modal ──────────────────────────────────────────
+  const TAB_TITLES = { account: "Account", appearance: "Appearance", billing: "Billing", usage: "Usage" };
+
+  function openSettings(tab) {
     els.avatarMenu.classList.add("hidden");
+    els.settingsOverlay.classList.remove("hidden");
+    switchSettingsTab(tab || "account");
   }
 
-  function closeEmbed() {
-    els.embedOverlay.classList.add("hidden");
-    els.embedFrame.src = "about:blank";
+  function closeSettings() {
+    els.settingsOverlay.classList.add("hidden");
+  }
+
+  function switchSettingsTab(tab) {
+    document.querySelectorAll(".settings-tab").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-tab") === tab);
+    });
+    els.settingsTabTitle.textContent = TAB_TITLES[tab] || "Settings";
+    if (tab === "account") renderAccountTab();
+    else if (tab === "appearance") renderAppearanceTab();
+    else if (tab === "billing") renderBillingTab();
+    else if (tab === "usage") renderUsageTab();
+  }
+
+  async function renderAccountTab() {
+    els.settingsBody.innerHTML = '<div class="settings-loading">Loading account…</div>';
+    try {
+      const data = await api("/api/auth/me");
+      const user = data.user || {};
+      const tier = user.subscription?.tier || "free";
+      els.settingsBody.innerHTML =
+        `<div class="set-row"><span class="set-k">Email</span><span class="set-v">${escapeHtml(user.email || "—")}</span></div>` +
+        `<div class="set-row"><span class="set-k">Plan</span><span class="set-v"><span class="badge">${escapeHtml(tier)}</span></span></div>` +
+        `<div class="set-row"><span class="set-k">Timezone</span><span class="set-v">${escapeHtml(user.timezone || "UTC")}</span></div>` +
+        `<div class="set-actions"><button type="button" class="set-btn danger" id="setLogout">Log out</button></div>`;
+      document.getElementById("setLogout").addEventListener("click", () => {
+        window.authGuard.clearToken();
+        window.location.href = "index.html";
+      });
+    } catch (err) {
+      els.settingsBody.innerHTML = `<div class="settings-loading">Could not load account: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  function renderAppearanceTab() {
+    const current = localStorage.getItem("theme") || "dark";
+    els.settingsBody.innerHTML =
+      `<div class="theme-options">` +
+      ["dark", "light", "auto"]
+        .map((mode) => {
+          const label = mode === "auto" ? "System" : mode.charAt(0).toUpperCase() + mode.slice(1);
+          const swatch = mode === "auto" ? "system" : mode;
+          return (
+            `<button type="button" class="theme-option${current === mode ? " is-active" : ""}" data-mode="${mode}">` +
+            `<span class="theme-swatch ${swatch}"></span>${label}</button>`
+          );
+        })
+        .join("") +
+      `</div>` +
+      `<p class="set-note">Language and other preferences live in <a href="settings.html" target="_blank" rel="noopener">all settings</a>.</p>`;
+
+    els.settingsBody.querySelectorAll(".theme-option").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mode = btn.getAttribute("data-mode");
+        const applied = mode === "auto"
+          ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+          : mode;
+        if (window.themeManager?.set) window.themeManager.set(applied);
+        else document.documentElement.setAttribute("data-theme", applied);
+        localStorage.setItem("theme", mode === "auto" ? "auto" : applied);
+        els.settingsBody.querySelectorAll(".theme-option").forEach((b) => b.classList.toggle("is-active", b === btn));
+      });
+    });
+  }
+
+  async function renderBillingTab() {
+    els.settingsBody.innerHTML = '<div class="settings-loading">Loading billing…</div>';
+    try {
+      const data = await api("/api/billing/status");
+      const sub = data.subscription || {};
+      const periodEnd = sub.currentPeriodEnd || sub.current_period_end;
+      els.settingsBody.innerHTML =
+        `<div class="set-row"><span class="set-k">Plan</span><span class="set-v"><span class="badge">${escapeHtml(sub.plan || "free")}</span></span></div>` +
+        `<div class="set-row"><span class="set-k">Status</span><span class="set-v">${escapeHtml(sub.status || "none")}</span></div>` +
+        (periodEnd
+          ? `<div class="set-row"><span class="set-k">Renews</span><span class="set-v">${escapeHtml(new Date(periodEnd).toLocaleDateString())}</span></div>`
+          : "") +
+        `<div class="set-actions">` +
+        `<button type="button" class="set-btn primary" id="setPortal">Manage subscription</button>` +
+        `<a class="set-btn" href="subscription.html" target="_blank" rel="noopener">View plans</a>` +
+        `</div>`;
+      document.getElementById("setPortal").addEventListener("click", async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        try {
+          const res = await api("/api/billing/portal-session", { method: "POST" });
+          if (res.url) window.location.href = res.url;
+        } catch (err) {
+          btn.disabled = false;
+          btn.textContent = "Unavailable on free plan";
+        }
+      });
+    } catch (err) {
+      els.settingsBody.innerHTML = `<div class="settings-loading">Could not load billing: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  function usageMeter(label, used, total) {
+    const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+    return (
+      `<div class="usage-meter">` +
+      `<div class="usage-meter-head"><span class="um-label">${escapeHtml(label)}</span><span class="um-value">${used} / ${total || "∞"}</span></div>` +
+      `<div class="usage-bar"><div class="usage-bar-fill" style="width:${pct}%"></div></div>` +
+      `</div>`
+    );
+  }
+
+  async function renderUsageTab() {
+    els.settingsBody.innerHTML = '<div class="settings-loading">Loading usage…</div>';
+    try {
+      const [statusData, streakData] = await Promise.all([
+        api("/api/billing/status").catch(() => null),
+        api("/api/quiz/study-streak?days=7").catch(() => null),
+      ]);
+
+      let html = "";
+
+      if (statusData) {
+        const usage = statusData.usage || {};
+        const limits = statusData.limits || {};
+        html += usageMeter("Prompt optimizations today", usage.promptOptimization ?? 0, limits.promptOptimization?.daily ?? 0);
+        html += usageMeter("Question-wizard sessions today", usage.questionWizard ?? 0, limits.questionWizard?.daily ?? 0);
+        html += `<p class="set-note">Limits reset daily at midnight in your timezone.</p>`;
+      }
+
+      if (streakData && Array.isArray(streakData.heatmap)) {
+        const heatmap = streakData.heatmap.slice(-7);
+        const streak = streakData.currentStreak || 0;
+        const dots = heatmap
+          .map((d) => `<span class="streak-dot lvl-${Math.max(0, Math.min(3, d.intensity || 0))}"></span>`)
+          .join("");
+        html +=
+          `<div class="streak-card">` +
+          `<div class="streak-head">${icon("i-flame")} ${streak > 0 ? `${streak}-day streak` : "Study streak"}<span class="streak-sub">Last 7 days</span></div>` +
+          `<div class="streak-dots">${dots}</div>` +
+          `</div>`;
+      }
+
+      els.settingsBody.innerHTML = html || '<div class="settings-loading">No usage data yet.</div>';
+    } catch (err) {
+      els.settingsBody.innerHTML = `<div class="settings-loading">Could not load usage: ${escapeHtml(err.message)}</div>`;
+    }
   }
 
   function ensureFileInput() {
@@ -863,20 +1018,11 @@
       });
     }
 
-    if (els.starterCards) {
-      els.starterCards.querySelectorAll(".starter-card").forEach((card) => {
-        card.addEventListener("click", () => {
-          const kind = card.getAttribute("data-starter");
-          if (kind === "upload") {
-            triggerUpload();
-          } else if (kind === "paste") {
-            els.composerInput.focus();
-          } else if (kind === "sample") {
-            els.composerInput.value = SAMPLE_TEXT;
-            autosizeComposer();
-            els.composerInput.focus();
-          }
-        });
+    if (els.sampleLink) {
+      els.sampleLink.addEventListener("click", () => {
+        els.composerInput.value = SAMPLE_TEXT;
+        autosizeComposer();
+        els.composerInput.focus();
       });
     }
     els.composerInput.addEventListener("input", autosizeComposer);
@@ -904,18 +1050,27 @@
     document.addEventListener("click", () => els.avatarMenu.classList.add("hidden"));
     els.avatarMenu.addEventListener("click", (e) => e.stopPropagation());
 
-    document.getElementById("menuSettings").addEventListener("click", () => openEmbed("Settings", "settings.html"));
-    document.getElementById("menuUsage").addEventListener("click", () => openEmbed("Usage", "settings.html#accountPanel"));
-    document.getElementById("menuBilling").addEventListener("click", () => openEmbed("Billing", "subscription.html"));
-    document.getElementById("menuPrivacy").addEventListener("click", () => openEmbed("Privacy", "privacy.html"));
+    document.getElementById("menuSettings").addEventListener("click", () => openSettings("account"));
+    document.getElementById("menuUsage").addEventListener("click", () => openSettings("usage"));
+    document.getElementById("menuBilling").addEventListener("click", () => openSettings("billing"));
+    document.getElementById("menuPrivacy").addEventListener("click", () => {
+      els.avatarMenu.classList.add("hidden");
+      window.open("privacy.html", "_blank", "noopener");
+    });
     document.getElementById("menuLogout").addEventListener("click", () => {
       window.authGuard.clearToken();
       window.location.href = "index.html";
     });
 
-    els.embedClose.addEventListener("click", closeEmbed);
-    els.embedOverlay.addEventListener("click", (e) => {
-      if (e.target === els.embedOverlay) closeEmbed();
+    document.querySelectorAll(".settings-tab").forEach((btn) => {
+      btn.addEventListener("click", () => switchSettingsTab(btn.getAttribute("data-tab")));
+    });
+    els.settingsClose.addEventListener("click", closeSettings);
+    els.settingsOverlay.addEventListener("click", (e) => {
+      if (e.target === els.settingsOverlay) closeSettings();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !els.settingsOverlay.classList.contains("hidden")) closeSettings();
     });
 
     if (els.mobileMenuBtn) {
@@ -940,9 +1095,15 @@
     bindEvents();
     renderWelcome();
     loadProjects();
-    loadStreak();
     autosizeComposer();
     els.composerInput.focus();
+
+    // Deep link: #settings or #settings/usage etc.
+    const hash = (window.location.hash || "").replace(/^#/, "");
+    if (hash.startsWith("settings")) {
+      const tab = hash.split("/")[1];
+      openSettings(TAB_TITLES[tab] ? tab : "account");
+    }
   }
 
   if (document.readyState === "loading") {

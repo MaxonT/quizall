@@ -73,8 +73,6 @@
         <div class="project-list" id="projectList"></div>
       </div>
 
-      <div class="sidebar-streak" id="sidebarStreak"></div>
-
       <div class="sidebar-footer">
         <button type="button" class="avatar-btn" id="avatarBtn">
           <span class="avatar-circle" id="avatarInitials">U</span>
@@ -118,42 +116,7 @@
               </button>
             </div>
           </div>
-          <p class="composer-hint">QuizAll reads your material, plans, and quizzes you. Keep answers simple.</p>
-        </div>
-
-        <div class="starter-cards" id="starterCards">
-          <button type="button" class="starter-card" data-starter="upload">
-            <span class="starter-icon"><svg class="icon"><use href="#i-file"></use></svg></span>
-            <span class="starter-title">Upload a file</span>
-            <span class="starter-sub">PDF, DOCX, TXT, or notes</span>
-          </button>
-          <button type="button" class="starter-card" data-starter="paste">
-            <span class="starter-icon"><svg class="icon"><use href="#i-clipboard"></use></svg></span>
-            <span class="starter-title">Paste text</span>
-            <span class="starter-sub">Lecture notes or a syllabus</span>
-          </button>
-          <button type="button" class="starter-card" data-starter="sample">
-            <span class="starter-icon"><svg class="icon"><use href="#i-sparkles"></use></svg></span>
-            <span class="starter-title">Try a sample</span>
-            <span class="starter-sub">See a full 3-round quiz</span>
-          </button>
-        </div>
-
-        <div class="flow-strip" id="flowStrip">
-          <div class="flow-step">
-            <span class="flow-num"><svg class="icon"><use href="#i-layers"></use></svg></span>
-            <span class="flow-text"><b>Study plan</b>Simple, plain-language plan</span>
-          </div>
-          <span class="flow-arrow"><svg class="icon"><use href="#i-arrow-right"></use></svg></span>
-          <div class="flow-step">
-            <span class="flow-num"><svg class="icon"><use href="#i-target"></use></svg></span>
-            <span class="flow-text"><b>3 rounds</b>Choice · Fill-in · Short answer</span>
-          </div>
-          <span class="flow-arrow"><svg class="icon"><use href="#i-arrow-right"></use></svg></span>
-          <div class="flow-step">
-            <span class="flow-num"><svg class="icon"><use href="#i-notebook"></use></svg></span>
-            <span class="flow-text"><b>Study note</b>A recap you can keep</span>
-          </div>
+          <p class="composer-hint">QuizAll builds a plan, quizzes you in three rounds, then writes your note. <button type="button" class="hint-link" id="sampleLink">Try a sample</button></p>
         </div>
       </div>
     </main>
@@ -168,15 +131,32 @@
     <button type="button" class="danger" id="menuLogout"><svg class="icon"><use href="#i-logout"></use></svg> Log out</button>
   </div>
 
-  <div class="embed-overlay hidden" id="embedOverlay">
-    <div class="embed-panel">
-      <div class="embed-head">
-        <h2 id="embedTitle">Panel</h2>
-        <button type="button" class="embed-close" id="embedClose" aria-label="Close">
-          <svg class="icon"><use href="#i-x"></use></svg>
+  <div class="settings-overlay hidden" id="settingsOverlay">
+    <div class="settings-modal">
+      <aside class="settings-side">
+        <div class="settings-side-title">Settings</div>
+        <button type="button" class="settings-tab is-active" data-tab="account">
+          <svg class="icon"><use href="#i-settings"></use></svg> Account
         </button>
-      </div>
-      <iframe class="embed-frame" id="embedFrame" title="Embedded panel"></iframe>
+        <button type="button" class="settings-tab" data-tab="appearance">
+          <svg class="icon"><use href="#i-sparkles"></use></svg> Appearance
+        </button>
+        <button type="button" class="settings-tab" data-tab="billing">
+          <svg class="icon"><use href="#i-card"></use></svg> Billing
+        </button>
+        <button type="button" class="settings-tab" data-tab="usage">
+          <svg class="icon"><use href="#i-activity"></use></svg> Usage
+        </button>
+      </aside>
+      <section class="settings-content">
+        <div class="settings-content-head">
+          <h2 id="settingsTabTitle">Account</h2>
+          <button type="button" class="settings-close" id="settingsClose" aria-label="Close">
+            <svg class="icon"><use href="#i-x"></use></svg>
+          </button>
+        </div>
+        <div class="settings-body" id="settingsBody"></div>
+      </section>
     </div>
   </div>
 
