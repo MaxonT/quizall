@@ -20,6 +20,9 @@ const AI_MODEL = "claude-sonnet-4-20250514";
 const ANTHROPIC_ENABLED = !!(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim());
 let warnedMissingTimezoneColumn = false;
 
+const SIMPLE_LANGUAGE_RULE =
+  "Use extremely simple, plain language. Short sentences only. Avoid jargon; if you must use a term, explain it in parentheses immediately. Write as if teaching someone with zero background.";
+
 const OUTLINE_KEYWORDS = ["syllabus", "outline", "review", "exam", "topic", "考纲", "重点", "复习"];
 
 const PROJECT_SCHEMA_SQL = `
@@ -110,14 +113,41 @@ CREATE TABLE IF NOT EXISTS quiz_api_logs (
 CREATE INDEX IF NOT EXISTS idx_quiz_api_logs_user ON quiz_api_logs(user_id, created_at);
 `;
 
+const STUDY_FLOW_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS study_plans (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  content_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  CONSTRAINT fk_study_plans_project FOREIGN KEY (project_id) REFERENCES study_projects(id) ON DELETE CASCADE,
+  CONSTRAINT fk_study_plans_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_study_plans_project ON study_plans(project_id, created_at);
+
+CREATE TABLE IF NOT EXISTS study_notes (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  content_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  CONSTRAINT fk_study_notes_project FOREIGN KEY (project_id) REFERENCES study_projects(id) ON DELETE CASCADE,
+  CONSTRAINT fk_study_notes_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_study_notes_project ON study_notes(project_id, created_at);
+`;
+
 if (!USE_POSTGRES) {
   db.exec(QUIZ_SCHEMA_SQL);
   db.exec(PROJECT_SCHEMA_SQL);
+  db.exec(STUDY_FLOW_SCHEMA_SQL);
 } else {
   await db.exec(PROJECT_SCHEMA_SQL);
+  await db.exec(STUDY_FLOW_SCHEMA_SQL);
 }
 
 await Promise.resolve(ensureColumn("quiz_results", "project_id", "TEXT"));
+await Promise.resolve(ensureColumn("quiz_results", "round_label", "TEXT"));
 await Promise.resolve(ensureColumn("quiz_questions", "source_reference", "TEXT"));
 await Promise.resolve(ensureColumn("quiz_questions", "topic_node", "TEXT"));
 await Promise.resolve(ensureColumn("quiz_questions", "difficulty", "TEXT"));
@@ -574,6 +604,7 @@ function buildAnalysisPrompt(content, examTopicHint = "") {
   return {
     system: [
       "You are an expert educator. Analyze the study material and extract the concepts students should be tested on.",
+      SIMPLE_LANGUAGE_RULE,
       examTopicHint ? `Prioritize these exam topics: ${examTopicHint}` : "",
       "Return a JSON object with this exact structure:",
       '{ "subject": "string", "topics": ["array of topic strings"], "key_concepts": [{ "concept": "string", "detail": "string", "difficulty": "easy|medium|hard" }] }',
@@ -581,6 +612,139 @@ function buildAnalysisPrompt(content, examTopicHint = "") {
       .filter(Boolean)
       .join("\n"),
     user: content,
+  };
+}
+
+function buildStudyPlanPrompt(content, examTopicHint = "") {
+  return {
+    system: [
+      "You are a friendly study coach. Read the material and create a simple study plan.",
+      SIMPLE_LANGUAGE_RULE,
+      examTopicHint ? `Focus on: ${examTopicHint}` : "",
+      "Return a JSON object with this exact structure:",
+      "{",
+      '  "subject": "string",',
+      '  "topics": ["topic strings"],',
+      '  "key_concepts": [{ "concept": "string", "detail": "string", "difficulty": "easy|medium|hard" }],',
+      '  "plan": [{ "title": "string", "why": "string", "estimated_minutes": number }],',
+      '  "summary": "one plain sentence about what this material covers"',
+      "}",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    user: content,
+  };
+}
+
+function buildNotePrompt(content, studyPlan, rounds = []) {
+  const roundsText = rounds
+    .map((round, index) => {
+      const label = round.label || `Round ${index + 1}`;
+      const score = round.correct != null && round.total != null ? `${round.correct}/${round.total}` : "n/a";
+      const misses = (round.missed || [])
+        .slice(0, 5)
+        .map((item) => `- Q: ${item.question}\n  Your answer: ${item.userAnswer}\n  Correct: ${item.correctAnswer}`)
+        .join("\n");
+      return `### ${label} (${score})\n${misses || "No missed items listed."}`;
+    })
+    .join("\n\n");
+
+  return {
+    system: [
+      "You are a study coach writing revision notes after a quiz session.",
+      SIMPLE_LANGUAGE_RULE,
+      "Return a JSON object:",
+      '{ "summary": "plain recap", "what_you_know": ["..."], "what_to_review": ["..."], "key_takeaways": ["..."] }',
+    ].join("\n"),
+    user: [
+      "=== STUDY MATERIAL (excerpt) ===",
+      String(content || "").slice(0, 12000),
+      "",
+      "=== STUDY PLAN ===",
+      JSON.stringify(studyPlan || {}, null, 2),
+      "",
+      "=== QUIZ ROUNDS ===",
+      roundsText || "No round details provided.",
+    ].join("\n"),
+  };
+}
+
+function buildMockStudyPlan(content, projectName = "") {
+  const analysis = buildMockAnalysis(content, "", projectName);
+  const topics = analysis.topics || ["Core ideas"];
+  return {
+    ...analysis,
+    plan: topics.slice(0, 4).map((topic, index) => ({
+      title: `Learn ${topic}`,
+      why: `This shows up in your materials. Spend a few minutes on it.`,
+      estimated_minutes: 5 + index * 3,
+    })),
+    summary: `This material is mainly about ${analysis.subject || "your topic"}. We'll quiz you in three short rounds.`,
+  };
+}
+
+function buildMockNote(studyPlan, rounds = []) {
+  const topics = Array.isArray(studyPlan?.topics) ? studyPlan.topics : ["the main ideas"];
+  const totalMissed = rounds.reduce((sum, round) => sum + (Array.isArray(round.missed) ? round.missed.length : 0), 0);
+  return {
+    summary: `You worked through ${topics.slice(0, 2).join(" and ")}. Keep reviewing the parts you missed.`,
+    what_you_know: topics.slice(0, 3).map((topic) => `You touched on ${topic}.`),
+    what_to_review: totalMissed > 0
+      ? ["Go back to the questions you missed.", "Read your material once more, slowly."]
+      : ["Skim your notes tomorrow to lock it in."],
+    key_takeaways: topics.slice(0, 4).map((topic) => `${topic} matters for this subject.`),
+  };
+}
+
+async function getProjectCombinedContent(projectId, userId) {
+  const files = await getProjectFiles(projectId, userId);
+  if (!files.length) return "";
+  return files.map((file) => String(file.content || "").trim()).filter(Boolean).join("\n\n").slice(0, FILE_TEXT_MAX_LENGTH);
+}
+
+async function saveStudyPlanRecord({ projectId, userId, payload }) {
+  const now = new Date().toISOString();
+  const rowId = nanoid(16);
+  await dbRun(
+    `INSERT INTO study_plans (id, project_id, user_id, content_json, created_at) VALUES (?, ?, ?, ?, ?)`,
+    [rowId, projectId, userId, JSON.stringify(payload), now]
+  );
+  return { id: rowId, createdAt: now };
+}
+
+async function saveStudyNoteRecord({ projectId, userId, payload }) {
+  const now = new Date().toISOString();
+  const rowId = nanoid(16);
+  await dbRun(
+    `INSERT INTO study_notes (id, project_id, user_id, content_json, created_at) VALUES (?, ?, ?, ?, ?)`,
+    [rowId, projectId, userId, JSON.stringify(payload), now]
+  );
+  return { id: rowId, createdAt: now };
+}
+
+async function getLatestStudyPlan(projectId, userId) {
+  const row = await dbGet(
+    `SELECT id, content_json, created_at FROM study_plans WHERE project_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1`,
+    [projectId, userId]
+  );
+  if (!row) return null;
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    ...safeJsonParse(row.content_json, {}),
+  };
+}
+
+async function getLatestStudyNote(projectId, userId) {
+  const row = await dbGet(
+    `SELECT id, content_json, created_at FROM study_notes WHERE project_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1`,
+    [projectId, userId]
+  );
+  if (!row) return null;
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    ...safeJsonParse(row.content_json, {}),
   };
 }
 
@@ -695,6 +859,7 @@ function buildQuizPrompt(content, analysis, types, numQuestions, sourcePack) {
   return {
     system: [
       "You are an expert quiz generator for exam prep.",
+      SIMPLE_LANGUAGE_RULE,
       `Generate exactly ${numQuestions} quiz questions using ONLY these question types: ${typeList}.`,
       frqPriority,
       "Use Bloom's Taxonomy levels across questions for balanced cognitive depth.",
@@ -1462,6 +1627,180 @@ quizRouter.get("/study-streak", requireAuth, async (req, res) => {
   }
 });
 
+quizRouter.get("/projects/:id/study-plan", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: "Project not found" });
+    }
+
+    const plan = await getLatestStudyPlan(projectId, userId);
+    if (!plan) {
+      return res.status(404).json({ ok: false, error: "No study plan found for this project" });
+    }
+
+    return res.json({ ok: true, studyPlan: plan });
+  } catch (err) {
+    console.error("[quizall] study-plan GET error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load study plan" });
+  }
+});
+
+quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: "Project not found" });
+    }
+
+    const typedContent = String(req.body?.content || "").trim();
+    const projectContent = await getProjectCombinedContent(projectId, userId);
+    let content = typedContent || projectContent;
+
+    if (!content || content.length < CONTENT_MIN_LENGTH) {
+      return res.status(400).json({
+        ok: false,
+        error: `Content must be at least ${CONTENT_MIN_LENGTH} characters. Upload files or paste more content.`,
+      });
+    }
+
+    const examTopicHint = normalizeWhitespace(req.body?.examTopics || "");
+
+    if (!ANTHROPIC_ENABLED && process.env.NODE_ENV !== "production") {
+      const mockPlan = buildMockStudyPlan(content, project.name);
+      await saveStudyPlanRecord({ projectId, userId, payload: mockPlan });
+      await touchProject(projectId);
+      return res.json({
+        ok: true,
+        studyPlan: mockPlan,
+        analysis: {
+          subject: mockPlan.subject,
+          topics: mockPlan.topics,
+          key_concepts: mockPlan.key_concepts || [],
+        },
+        meta: { mock: true, reason: "Anthropic API key missing in development mode" },
+      });
+    }
+
+    const start = Date.now();
+    const prompt = buildStudyPlanPrompt(content, examTopicHint);
+    const result = await chatJsonAnthropic({
+      system: prompt.system,
+      user: prompt.user,
+      model: AI_MODEL,
+      maxTokens: 2048,
+      temperature: 0.25,
+    });
+    const duration = Date.now() - start;
+    await logApiCall(userId, "study-plan", result.usage, duration);
+
+    const plan = result.data;
+    if (!plan || !plan.subject || !Array.isArray(plan.topics) || !Array.isArray(plan.plan)) {
+      console.error("[quizall] study-plan unexpected format:", JSON.stringify(plan).slice(0, 220));
+      return res.status(502).json({ ok: false, error: "AI returned an unexpected study plan format. Please try again." });
+    }
+
+    await saveStudyPlanRecord({ projectId, userId, payload: plan });
+    await touchProject(projectId);
+
+    return res.json({
+      ok: true,
+      studyPlan: plan,
+      analysis: {
+        subject: plan.subject,
+        topics: plan.topics,
+        key_concepts: Array.isArray(plan.key_concepts) ? plan.key_concepts : [],
+      },
+    });
+  } catch (err) {
+    console.error("[quizall] study-plan POST error:", err);
+    if (err.code === "ANTHROPIC_DISABLED") {
+      return res.status(503).json({ ok: false, error: "AI service is currently unavailable" });
+    }
+    return res.status(500).json({ ok: false, error: "Failed to generate study plan" });
+  }
+});
+
+quizRouter.get("/projects/:id/note", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: "Project not found" });
+    }
+
+    const note = await getLatestStudyNote(projectId, userId);
+    if (!note) {
+      return res.status(404).json({ ok: false, error: "No study note found for this project" });
+    }
+
+    return res.json({ ok: true, note });
+  } catch (err) {
+    console.error("[quizall] note GET error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load study note" });
+  }
+});
+
+quizRouter.post("/projects/:id/note", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: "Project not found" });
+    }
+
+    const rounds = Array.isArray(req.body?.rounds) ? req.body.rounds : [];
+    const studyPlan = req.body?.studyPlan || (await getLatestStudyPlan(projectId, userId)) || {};
+    const content = String(req.body?.content || "").trim() || (await getProjectCombinedContent(projectId, userId));
+
+    if (!ANTHROPIC_ENABLED && process.env.NODE_ENV !== "production") {
+      const mockNote = buildMockNote(studyPlan, rounds);
+      await saveStudyNoteRecord({ projectId, userId, payload: mockNote });
+      await touchProject(projectId);
+      return res.json({
+        ok: true,
+        note: mockNote,
+        meta: { mock: true, reason: "Anthropic API key missing in development mode" },
+      });
+    }
+
+    const start = Date.now();
+    const prompt = buildNotePrompt(content, studyPlan, rounds);
+    const result = await chatJsonAnthropic({
+      system: prompt.system,
+      user: prompt.user,
+      model: AI_MODEL,
+      maxTokens: 2048,
+      temperature: 0.3,
+    });
+    const duration = Date.now() - start;
+    await logApiCall(userId, "study-note", result.usage, duration);
+
+    const note = result.data;
+    if (!note || !note.summary) {
+      console.error("[quizall] note unexpected format:", JSON.stringify(note).slice(0, 220));
+      return res.status(502).json({ ok: false, error: "AI returned an unexpected note format. Please try again." });
+    }
+
+    await saveStudyNoteRecord({ projectId, userId, payload: note });
+    await touchProject(projectId);
+
+    return res.json({ ok: true, note });
+  } catch (err) {
+    console.error("[quizall] note POST error:", err);
+    if (err.code === "ANTHROPIC_DISABLED") {
+      return res.status(503).json({ ok: false, error: "AI service is currently unavailable" });
+    }
+    return res.status(500).json({ ok: false, error: "Failed to generate study note" });
+  }
+});
+
 // ────────────────────────────────────────────────────────────────────────────────
 // Quiz Generation
 // ────────────────────────────────────────────────────────────────────────────────
@@ -1575,23 +1914,30 @@ quizRouter.post("/generate", optionalAuth, async (req, res) => {
     }
 
     const analysisStart = Date.now();
-    const analysisPrompt = buildAnalysisPrompt(content, examTopicHint);
-    const analysisResult = await chatJsonAnthropic({
-      system: analysisPrompt.system,
-      user: analysisPrompt.user,
-      model: AI_MODEL,
-      maxTokens: 2048,
-      temperature: 0.2,
-    });
-    const analysisDuration = Date.now() - analysisStart;
+    let analysis = null;
+    const providedAnalysis = req.body?.analysis;
 
-    const analysis = analysisResult.data;
-    if (!analysis || !analysis.subject || !Array.isArray(analysis.topics)) {
-      console.error("[quizall] Analysis returned unexpected structure:", JSON.stringify(analysis).slice(0, 220));
-      return res.status(502).json({ ok: false, error: "AI analysis returned an unexpected format. Please try again." });
+    if (providedAnalysis && typeof providedAnalysis === "object" && providedAnalysis.subject && Array.isArray(providedAnalysis.topics)) {
+      analysis = providedAnalysis;
+    } else {
+      const analysisPrompt = buildAnalysisPrompt(content, examTopicHint);
+      const analysisResult = await chatJsonAnthropic({
+        system: analysisPrompt.system,
+        user: analysisPrompt.user,
+        model: AI_MODEL,
+        maxTokens: 2048,
+        temperature: 0.2,
+      });
+      const analysisDuration = Date.now() - analysisStart;
+
+      analysis = analysisResult.data;
+      if (!analysis || !analysis.subject || !Array.isArray(analysis.topics)) {
+        console.error("[quizall] Analysis returned unexpected structure:", JSON.stringify(analysis).slice(0, 220));
+        return res.status(502).json({ ok: false, error: "AI analysis returned an unexpected format. Please try again." });
+      }
+
+      await logApiCall(userId, "generate:analysis", analysisResult.usage, analysisDuration);
     }
-
-    await logApiCall(userId, "generate:analysis", analysisResult.usage, analysisDuration);
 
     const quizStart = Date.now();
     const quizPrompt = buildQuizPrompt(content, analysis, normalizedTypes, numQuestions, sourcePackString);
@@ -1827,13 +2173,14 @@ quizRouter.post("/history", requireAuth, async (req, res) => {
 
     const subject = normalizeWhitespace(payload.subject || payload.title || "Untitled Quiz") || "Untitled Quiz";
     const topics = Array.isArray(payload.topics) ? payload.topics : [];
+    const roundLabel = normalizeWhitespace(payload.roundLabel || payload.round_label || "") || null;
 
     const resultId = nanoid(16);
 
     await dbRun(
-      `INSERT INTO quiz_results (id, user_id, project_id, subject, score, total, topics, elapsed, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [resultId, userId, projectId, subject, correct, total, topics.length ? JSON.stringify(topics) : null, elapsedMs, now]
+      `INSERT INTO quiz_results (id, user_id, project_id, subject, score, total, topics, elapsed, created_at, round_label)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [resultId, userId, projectId, subject, correct, total, topics.length ? JSON.stringify(topics) : null, elapsedMs, now, roundLabel]
     );
 
     for (let i = 0; i < normalizedQuestions.length; i++) {
