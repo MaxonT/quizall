@@ -6,19 +6,44 @@
   <title>QuizAll — Study Chat</title>
   <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
   <script src="lib/themeManager.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="theme.css" />
   <link rel="stylesheet" href="create.css" />
   <script src="config.js"></script>
   <script src="lib/authGuard.js"></script>
 </head>
 <body class="chat-app">
+  <!-- Icon sprite (Lucide-style, stroke) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+      <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+      <symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+      <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
+    </defs>
+  </svg>
+
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <img src="assets/quizall-icon.svg" alt="QuizAll" />
         <span>QuizAll</span>
       </div>
-      <button type="button" class="btn-new-chat" id="newChatBtn">+ New chat</button>
+      <button type="button" class="btn-new-chat" id="newChatBtn">
+        <svg class="icon"><use href="#i-plus"></use></svg>
+        New study session
+      </button>
       <div class="project-list" id="projectList">
         <div class="project-list-label">History</div>
       </div>
@@ -30,39 +55,60 @@
       </div>
     </aside>
 
-    <main class="chat-main">
-      <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">☰</button>
-      <div class="chat-messages" id="chatMessages">
+    <main class="chat-main" id="chatMain">
+      <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+        <svg class="icon"><use href="#i-menu"></use></svg>
+      </button>
+
+      <div class="chat-scroll" id="chatMessages">
         <div class="chat-inner" id="chatInner"></div>
       </div>
-      <div class="composer" id="composer">
-        <div class="composer-attachments" id="attachmentsBar"></div>
-        <div class="composer-inner">
-          <textarea id="composerInput" rows="1" placeholder="Paste study material or upload files…"></textarea>
-          <div class="composer-actions">
-            <button type="button" class="btn-icon" id="attachBtn" title="Attach files">📎</button>
-            <button type="button" class="btn-send" id="sendBtn" title="Send">↑</button>
-          </div>
+
+      <div class="composer-region">
+        <div class="hero" id="hero">
+          <span class="hero-badge">
+            <svg class="icon"><use href="#i-sparkles"></use></svg>
+            AI quiz coach
+          </span>
+          <h1>What do you want to <span class="accent">master</span> today?</h1>
+          <p>Upload your notes or paste any text. I'll build a simple plan, then quiz you across three rounds.</p>
         </div>
-        <input id="fileInput" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json" hidden />
+
+        <div class="composer-wrap">
+          <div class="composer-attachments" id="attachmentsBar"></div>
+          <div class="composer" id="composer">
+            <textarea id="composerInput" rows="1" placeholder="Paste study material, or attach files…"></textarea>
+            <div class="composer-actions">
+              <button type="button" class="btn-icon" id="attachBtn" title="Attach files" aria-label="Attach files">
+                <svg class="icon"><use href="#i-paperclip"></use></svg>
+              </button>
+              <button type="button" class="btn-send" id="sendBtn" title="Send" aria-label="Send">
+                <svg class="icon"><use href="#i-arrow-up"></use></svg>
+              </button>
+            </div>
+          </div>
+          <p class="composer-hint">QuizAll reads your material, plans, and quizzes you. Keep answers simple.</p>
+        </div>
       </div>
     </main>
   </div>
 
   <div class="popup-menu hidden" id="avatarMenu">
-    <button type="button" id="menuSettings">Settings</button>
-    <button type="button" id="menuUsage">Usage</button>
-    <button type="button" id="menuBilling">Billing</button>
-    <button type="button" id="menuPrivacy">Privacy</button>
+    <button type="button" id="menuSettings"><svg class="icon"><use href="#i-settings"></use></svg> Settings</button>
+    <button type="button" id="menuUsage"><svg class="icon"><use href="#i-activity"></use></svg> Usage</button>
+    <button type="button" id="menuBilling"><svg class="icon"><use href="#i-card"></use></svg> Billing</button>
+    <button type="button" id="menuPrivacy"><svg class="icon"><use href="#i-shield"></use></svg> Privacy</button>
     <div class="divider"></div>
-    <button type="button" class="danger" id="menuLogout">Log out</button>
+    <button type="button" class="danger" id="menuLogout"><svg class="icon"><use href="#i-logout"></use></svg> Log out</button>
   </div>
 
   <div class="embed-overlay hidden" id="embedOverlay">
     <div class="embed-panel">
       <div class="embed-head">
         <h2 id="embedTitle">Panel</h2>
-        <button type="button" class="embed-close" id="embedClose" aria-label="Close">×</button>
+        <button type="button" class="embed-close" id="embedClose" aria-label="Close">
+          <svg class="icon"><use href="#i-x"></use></svg>
+        </button>
       </div>
       <iframe class="embed-frame" id="embedFrame" title="Embedded panel"></iframe>
     </div>

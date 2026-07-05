@@ -1847,6 +1847,11 @@
     function showView() {
       var authSection = document.getElementById("authSection");
       if (isLoggedIn()) {
+        // 登录后直接进入 AI 对话工作区（产品主入口）
+        window.location.replace("create.html");
+        return;
+      }
+      if (false) {
         document.body.classList.add("logged-in-home");
         $dashboard.classList.remove("idx-hidden");
         $landing.classList.add("idx-hidden");

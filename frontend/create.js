@@ -3,9 +3,9 @@
 
   const API_BASE = window.authGuard?.API_BASE || window.QUIZALL_API_BASE || "http://localhost:8080";
   const ROUNDS = [
-    { key: "mcq", label: "Round 1: Multiple Choice", types: ["multiple_choice"], numQuestions: 5 },
-    { key: "fib", label: "Round 2: Fill in the Blank", types: ["fill_in_the_blank"], numQuestions: 5 },
-    { key: "frq", label: "Round 3: Short Answer (FRQ)", types: ["free_response"], numQuestions: 3 },
+    { key: "mcq", label: "Round 1 · Multiple Choice", short: "Round 1", types: ["multiple_choice"], numQuestions: 5 },
+    { key: "fib", label: "Round 2 · Fill in the Blank", short: "Round 2", types: ["fill_in_the_blank"], numQuestions: 5 },
+    { key: "frq", label: "Round 3 · Short Answer", short: "Round 3", types: ["free_response"], numQuestions: 3 },
   ];
 
   const state = {
@@ -29,13 +29,13 @@
     avatarBtn: document.getElementById("avatarBtn"),
     avatarInitials: document.getElementById("avatarInitials"),
     avatarEmail: document.getElementById("avatarEmail"),
+    chatMain: document.getElementById("chatMain"),
     chatMessages: document.getElementById("chatMessages"),
     chatInner: document.getElementById("chatInner"),
-    composer: document.getElementById("composer"),
     composerInput: document.getElementById("composerInput"),
     attachBtn: document.getElementById("attachBtn"),
     sendBtn: document.getElementById("sendBtn"),
-    fileInput: document.getElementById("fileInput"),
+    fileInput: null,
     attachmentsBar: document.getElementById("attachmentsBar"),
     avatarMenu: document.getElementById("avatarMenu"),
     embedOverlay: document.getElementById("embedOverlay"),
@@ -43,6 +43,10 @@
     embedFrame: document.getElementById("embedFrame"),
     embedClose: document.getElementById("embedClose"),
   };
+
+  function icon(id, extraClass) {
+    return `<svg class="icon${extraClass ? " " + extraClass : ""}"><use href="#${id}"></use></svg>`;
+  }
 
   function escapeHtml(text) {
     const div = document.createElement("div");
@@ -67,9 +71,7 @@
   async function api(path, options) {
     const res = await window.authGuard.fetchWithAuth(`${API_BASE}${path}`, options || {});
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.error || `Request failed (${res.status})`);
-    }
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
     return data;
   }
 
@@ -79,20 +81,32 @@
     });
   }
 
+  function setConversationActive(active) {
+    els.chatMain.classList.toggle("has-messages", !!active);
+  }
+
   function setProcessing(on) {
     state.isProcessing = !!on;
-    els.sendBtn.disabled = on;
-    els.attachBtn.disabled = on;
+    els.sendBtn.disabled = on || state.viewOnly;
+    els.attachBtn.disabled = on || state.viewOnly;
     els.composerInput.disabled = on || state.viewOnly;
   }
 
-  function appendMessage(role, html, extraClass) {
+  function setViewOnly(on) {
+    state.viewOnly = !!on;
+    els.sendBtn.disabled = on || state.isProcessing;
+    els.attachBtn.disabled = on || state.isProcessing;
+    els.composerInput.disabled = on || state.isProcessing;
+  }
+
+  function appendMessage(role, html) {
     const wrap = document.createElement("div");
-    wrap.className = `msg ${role}${extraClass ? ` ${extraClass}` : ""}`;
-    const avatarLabel = role === "ai" ? "AI" : "You";
-    wrap.innerHTML =
-      `<div class="msg-avatar">${avatarLabel}</div>` +
-      `<div class="msg-bubble">${html}</div>`;
+    wrap.className = `msg ${role}`;
+    const avatar =
+      role === "ai"
+        ? `<div class="msg-avatar">${icon("i-sparkles")}</div>`
+        : `<div class="msg-avatar">You</div>`;
+    wrap.innerHTML = `${avatar}<div class="msg-bubble">${html}</div>`;
     els.chatInner.appendChild(wrap);
     scrollToBottom();
     return wrap;
@@ -100,9 +114,9 @@
 
   function appendTyping() {
     const wrap = document.createElement("div");
-    wrap.className = "msg ai typing-msg";
+    wrap.className = "msg ai";
     wrap.innerHTML =
-      '<div class="msg-avatar">AI</div>' +
+      `<div class="msg-avatar">${icon("i-sparkles")}</div>` +
       '<div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>';
     els.chatInner.appendChild(wrap);
     scrollToBottom();
@@ -115,28 +129,31 @@
 
   function renderWelcome() {
     els.chatInner.innerHTML = "";
-    appendMessage(
-      "ai",
-      "<h3>Hi! I'm your quiz coach.</h3>" +
-        "<p>Upload study material (PDF, DOCX, TXT) or paste text below.</p>" +
-        "<p>I'll read it, make a <strong>simple study plan</strong>, then quiz you in <strong>three rounds</strong>: multiple choice → fill in the blank → short answer.</p>" +
-        "<p>When you're done, I'll write you a short <strong>study note</strong>.</p>"
-    );
+    setConversationActive(false);
   }
 
   function formatStudyPlanHtml(plan, options) {
     const opts = options || {};
     const steps = (plan.plan || [])
-      .map((step, i) => `<li><strong>Step ${i + 1}: ${escapeHtml(step.title)}</strong><br>${escapeHtml(step.why || "")}${step.estimated_minutes ? ` <em>(~${step.estimated_minutes} min)</em>` : ""}</li>`)
+      .map(
+        (step, i) =>
+          `<li><span class="step-title">${i + 1}. ${escapeHtml(step.title)}</span>` +
+          `<span class="step-why">${escapeHtml(step.why || "")}</span>` +
+          (step.estimated_minutes ? ` <span class="step-min">~${step.estimated_minutes} min</span>` : "") +
+          `</li>`
+      )
       .join("");
-    const topics = (plan.topics || []).slice(0, 6).map((t) => escapeHtml(t)).join(" · ");
+    const topics = (plan.topics || [])
+      .slice(0, 8)
+      .map((t) => `<span class="topic-tag">${escapeHtml(t)}</span>`)
+      .join("");
     return (
       `<h3>Your study plan</h3>` +
-      `<p><strong>Subject:</strong> ${escapeHtml(plan.subject || "General")}</p>` +
+      `<p class="meta-line">Subject: <strong>${escapeHtml(plan.subject || "General")}</strong></p>` +
       `<p>${escapeHtml(plan.summary || "Here is a simple plan based on your material.")}</p>` +
-      (topics ? `<p><strong>Key topics:</strong> ${topics}</p>` : "") +
+      (topics ? `<div class="topic-tags">${topics}</div>` : "") +
       (steps ? `<ul class="plan-steps">${steps}</ul>` : "") +
-      (opts.includeNextStep === false ? "" : `<p style="margin-top:12px;">Starting <strong>Round 1</strong> now…</p>`)
+      (opts.includeNextStep === false ? "" : `<p class="meta-line" style="margin-top:14px;">Starting <strong>Round 1</strong>…</p>`)
     );
   }
 
@@ -145,9 +162,9 @@
     return (
       `<h3>Your study note</h3>` +
       `<p>${escapeHtml(note.summary || "")}</p>` +
-      `<p><strong>What you know:</strong></p><ul class="note-list">${list(note.what_you_know)}</ul>` +
-      `<p><strong>What to review:</strong></p><ul class="note-list">${list(note.what_to_review)}</ul>` +
-      `<p><strong>Key takeaways:</strong></p><ul class="note-list">${list(note.key_takeaways)}</ul>`
+      `<div class="note-section-label">What you know</div><ul class="note-list">${list(note.what_you_know)}</ul>` +
+      `<div class="note-section-label">What to review</div><ul class="note-list">${list(note.what_to_review)}</ul>` +
+      `<div class="note-section-label">Key takeaways</div><ul class="note-list">${list(note.key_takeaways)}</ul>`
     );
   }
 
@@ -187,7 +204,7 @@
       return question.options
         .map((opt, oi) => {
           const label = String.fromCharCode(65 + oi);
-          return `<button type="button" class="option-btn" data-q="${index}" data-o="${oi}"><strong>${label}.</strong> ${escapeHtml(opt)}</button>`;
+          return `<button type="button" class="option-btn" data-q="${index}" data-o="${oi}"><span class="opt-key">${label}</span><span>${escapeHtml(opt)}</span></button>`;
         })
         .join("");
     }
@@ -200,8 +217,8 @@
   function renderQuizCard(roundConfig, questions, onSubmit) {
     const cardId = `quiz-${Date.now()}`;
     const questionsHtml = questions
-      .map((q, i) => {
-        const nq = normalizeQuestion(q);
+      .map((rawQ, i) => {
+        const nq = normalizeQuestion(rawQ);
         return (
           `<div class="quiz-question" data-qi="${i}">` +
           `<div class="q-label">Q${i + 1}</div>` +
@@ -214,11 +231,11 @@
 
     const html =
       `<h3>${escapeHtml(roundConfig.label)}</h3>` +
-      `<p>Answer each question below, then submit.</p>` +
+      `<p class="meta-line">Answer every question, then submit.</p>` +
       `<div class="quiz-card" id="${cardId}">` +
-      `<div class="quiz-card-head"><span>${questions.length} questions</span></div>` +
+      `<div class="quiz-card-head">${icon("i-sparkles")} ${questions.length} questions</div>` +
       questionsHtml +
-      `<button type="button" class="btn-submit-round" data-submit="${cardId}">Submit round</button>` +
+      `<button type="button" class="btn-round" data-submit="${cardId}">Submit round ${icon("i-arrow-right")}</button>` +
       `</div>`;
 
     const msg = appendMessage("ai", html);
@@ -234,7 +251,8 @@
       });
     });
 
-    card.querySelector(`[data-submit="${cardId}"]`).addEventListener("click", () => {
+    const submitBtn = card.querySelector(`[data-submit="${cardId}"]`);
+    submitBtn.addEventListener("click", () => {
       questions.forEach((_, i) => {
         if (answers[i] != null) return;
         const fill = card.querySelector(`.fill-input[data-q="${i}"]`);
@@ -242,16 +260,20 @@
         if (fill) answers[i] = fill.value;
         if (free) answers[i] = free.value;
       });
-      const missing = questions.findIndex((_, i) => answers[i] == null || answers[i] === "");
+      const missing = questions.findIndex((_, i) => answers[i] == null || String(answers[i]).trim() === "");
       if (missing >= 0) {
-        alert(`Please answer question ${missing + 1} before submitting.`);
+        submitBtn.textContent = `Answer Q${missing + 1} first`;
+        setTimeout(() => {
+          submitBtn.innerHTML = `Submit round ${icon("i-arrow-right")}`;
+        }, 1600);
         return;
       }
-      card.querySelector(`[data-submit="${cardId}"]`).disabled = true;
-      onSubmit(answers, card);
+      submitBtn.disabled = true;
+      card.querySelectorAll(".option-btn, .fill-input, .free-input").forEach((el) => {
+        el.style.pointerEvents = "none";
+      });
+      onSubmit(answers);
     });
-
-    return { msg, card, questions: questions.map(normalizeQuestion) };
   }
 
   function evaluateAnswer(question, userAnswer) {
@@ -270,10 +292,71 @@
     return user === expected;
   }
 
+  function displayAnswer(question, val) {
+    if (question.type === "multiple_choice") {
+      const i = Number(val);
+      if (Array.isArray(question.options) && question.options[i] != null) {
+        return `${String.fromCharCode(65 + i)}. ${question.options[i]}`;
+      }
+      return "(no answer)";
+    }
+    const s = String(val ?? "").trim();
+    return s || "(no answer)";
+  }
+
+  function renderRoundReview(roundConfig, results, correct, total, isLast, onProceed) {
+    const items = results
+      .map((r) => {
+        const cls = r.isCorrect ? "correct" : "wrong";
+        const badge = r.isCorrect
+          ? `<span class="review-badge correct">${icon("i-check")} Correct</span>`
+          : `<span class="review-badge wrong">${icon("i-x")} Missed</span>`;
+        const yourRow = `<div class="review-row"><span class="k">Your answer</span><span class="v ${r.isCorrect ? "good" : "bad"}">${escapeHtml(displayAnswer(r, r.userAnswer))}</span></div>`;
+        const correctRow = r.isCorrect
+          ? ""
+          : `<div class="review-row"><span class="k">Correct answer</span><span class="v good">${escapeHtml(displayAnswer(r, r.correct_answer))}</span></div>`;
+        const explain = r.explanation
+          ? `<div class="review-explain">${escapeHtml(r.explanation)}</div>`
+          : "";
+        return (
+          `<div class="review-item ${cls}">` +
+          `<div class="review-head">${badge}<span class="review-q">${escapeHtml(r.question)}</span></div>` +
+          yourRow +
+          correctRow +
+          explain +
+          `</div>`
+        );
+      })
+      .join("");
+
+    const proceedLabel = isLast
+      ? `Write my note ${icon("i-arrow-right")}`
+      : `Start ${escapeHtml(ROUNDS[state.roundIndex + 1].short)} ${icon("i-arrow-right")}`;
+
+    const html =
+      `<h3>${escapeHtml(roundConfig.short)} results</h3>` +
+      `<div class="review-score"><span class="num">${correct}/${total}</span><span class="lbl">correct</span></div>` +
+      `<div class="review-list">${items}</div>` +
+      `<button type="button" class="btn-round" id="proceedBtn">${proceedLabel}</button>`;
+
+    const msg = appendMessage("ai", html);
+    const btn = msg.querySelector("#proceedBtn");
+    btn.addEventListener("click", () => {
+      btn.disabled = true;
+      onProceed();
+    });
+  }
+
   async function loadProjects() {
     try {
       const data = await api("/api/quiz/projects?limit=50");
       const projects = data.projects || [];
+      if (!projects.length) {
+        els.projectList.innerHTML =
+          '<div class="project-list-label">History</div>' +
+          '<div class="project-empty">No sessions yet. Start one below.</div>';
+        return;
+      }
       els.projectList.innerHTML =
         '<div class="project-list-label">History</div>' +
         projects
@@ -380,7 +463,9 @@
       els.attachmentsBar.innerHTML = "";
       return;
     }
-    els.attachmentsBar.innerHTML = state.pendingFiles.map((f) => `<span>${escapeHtml(f.name)}</span>`).join("");
+    els.attachmentsBar.innerHTML = state.pendingFiles
+      .map((f) => `<span class="attachment-chip">${icon("i-paperclip")} ${escapeHtml(f.name)}</span>`)
+      .join("");
   }
 
   async function runStudyPlan(projectId, contentHint) {
@@ -415,12 +500,13 @@
         content: state.materialPreview || undefined,
       }),
     });
-    return (data.quiz || []).map(normalizeQuestion);
+    return data.quiz || [];
   }
 
-  async function saveRoundHistory(roundConfig, questions, answers) {
+  async function saveRoundHistory(roundConfig, rawQuestions, answers) {
     let correct = 0;
-    const results = questions.map((q, i) => {
+    const results = rawQuestions.map((rawQ, i) => {
+      const q = normalizeQuestion(rawQ);
       const isCorrect = evaluateAnswer(q, answers[i]);
       if (isCorrect) correct += 1;
       return {
@@ -438,69 +524,65 @@
       .filter((r) => !r.isCorrect)
       .map((r) => ({
         question: r.question,
-        userAnswer: r.userAnswer,
-        correctAnswer: r.correct_answer,
+        userAnswer: displayAnswer(r, r.userAnswer),
+        correctAnswer: displayAnswer(r, r.correct_answer),
       }));
 
     state.roundResults.push({
       label: roundConfig.label,
       correct,
-      total: questions.length,
+      total: results.length,
       missed,
-      results,
     });
 
-    await api("/api/quiz/history", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectId: state.projectId,
-        subject: state.studyPlan?.subject || state.projectName,
-        topics: state.studyPlan?.topics || [],
-        correct,
-        total: questions.length,
-        roundLabel: roundConfig.label,
-        questions: results,
-      }),
-    });
+    try {
+      await api("/api/quiz/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: state.projectId,
+          subject: state.studyPlan?.subject || state.projectName,
+          topics: state.studyPlan?.topics || [],
+          correct,
+          total: results.length,
+          roundLabel: roundConfig.label,
+          questions: results,
+        }),
+      });
+    } catch (err) {
+      console.error("save history failed", err);
+    }
 
-    return { correct, total: questions.length };
+    return { correct, total: results.length, results };
   }
 
-  function startRound(index) {
-    return new Promise(async (resolve) => {
-      if (index >= ROUNDS.length) {
-        await finishAllRounds();
-        resolve();
-        return;
-      }
+  async function startRound(index) {
+    if (index >= ROUNDS.length) {
+      await finishAllRounds();
+      return;
+    }
 
-      const roundConfig = ROUNDS[index];
-      state.roundIndex = index;
-      const typing = appendTyping();
+    const roundConfig = ROUNDS[index];
+    state.roundIndex = index;
+    const typing = appendTyping();
 
-      try {
-        const questions = await generateRound(roundConfig);
-        removeTyping(typing);
-        if (!questions.length) throw new Error("No questions generated");
+    try {
+      const questions = await generateRound(roundConfig);
+      removeTyping(typing);
+      if (!questions.length) throw new Error("No questions generated");
 
-        renderQuizCard(roundConfig, questions, async (answers) => {
-          const score = await saveRoundHistory(roundConfig, questions, answers);
-          appendMessage(
-            "ai",
-            `<p><strong>${escapeHtml(roundConfig.label)}</strong> done: ${score.correct}/${score.total} correct.</p>` +
-              (index < ROUNDS.length - 1 ? `<p>Starting <strong>${escapeHtml(ROUNDS[index + 1].label)}</strong>…</p>` : `<p>All rounds done. Writing your note…</p>`)
-          );
+      renderQuizCard(roundConfig, questions, async (answers) => {
+        const { correct, total, results } = await saveRoundHistory(roundConfig, questions, answers);
+        const isLast = index >= ROUNDS.length - 1;
+        renderRoundReview(roundConfig, results, correct, total, isLast, async () => {
           await startRound(index + 1);
-          resolve();
         });
-      } catch (err) {
-        removeTyping(typing);
-        appendMessage("ai", `<p>Sorry, quiz failed: ${escapeHtml(err.message)}</p>`);
-        setProcessing(false);
-        resolve();
-      }
-    });
+      });
+    } catch (err) {
+      removeTyping(typing);
+      appendMessage("ai", `<p>Sorry, this round failed: ${escapeHtml(err.message)}</p>`);
+      setProcessing(false);
+    }
   }
 
   async function finishAllRounds() {
@@ -517,13 +599,19 @@
       });
       removeTyping(typing);
       appendMessage("ai", formatNoteHtml(data.note));
+      appendMessage("ai", `<p class="meta-line">Session complete. Start a new study session anytime from the left.</p>`);
       setProcessing(false);
       await loadProjects();
     } catch (err) {
       removeTyping(typing);
-      appendMessage("ai", `<p>Sorry, note failed: ${escapeHtml(err.message)}</p>`);
+      appendMessage("ai", `<p>Sorry, I couldn't write the note: ${escapeHtml(err.message)}</p>`);
       setProcessing(false);
     }
+  }
+
+  function autosizeComposer() {
+    els.composerInput.style.height = "auto";
+    els.composerInput.style.height = Math.min(els.composerInput.scrollHeight, 200) + "px";
   }
 
   async function handleSend() {
@@ -533,8 +621,8 @@
     const hasFiles = state.pendingFiles.length > 0;
     if (!text && !hasFiles) return;
 
+    setConversationActive(true);
     setProcessing(true);
-    state.viewOnly = false;
     state.roundIndex = -1;
     state.roundResults = [];
     state.analysis = null;
@@ -542,11 +630,12 @@
     state.materialPreview = text;
 
     const userPreview = hasFiles
-      ? `Uploaded ${state.pendingFiles.length} file(s)${text ? ` and pasted text` : ""}`
-      : text.slice(0, 500) + (text.length > 500 ? "…" : "");
+      ? `Uploaded ${state.pendingFiles.length} file(s)${text ? ` + pasted text` : ""}`
+      : text.slice(0, 600) + (text.length > 600 ? "…" : "");
     appendMessage("user", `<p>${escapeHtml(userPreview)}</p>`);
 
     els.composerInput.value = "";
+    autosizeComposer();
     const filesToUpload = state.pendingFiles.slice();
     state.pendingFiles = [];
     renderAttachmentsBar();
@@ -573,14 +662,11 @@
   async function openProject(projectId) {
     if (!projectId || state.isProcessing) return;
     state.projectId = projectId;
-    state.viewOnly = true;
     state.roundResults = [];
     state.analysis = null;
     state.studyPlan = null;
-    setProcessing(false);
-    els.composerInput.disabled = true;
-    els.sendBtn.disabled = true;
-    els.attachBtn.disabled = true;
+    setViewOnly(true);
+    setConversationActive(true);
 
     els.chatInner.innerHTML = "";
     const typing = appendTyping();
@@ -588,18 +674,14 @@
     try {
       const detail = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`);
       state.projectName = detail.project?.name || "Study session";
-      appendMessage("user", `<p>Opened: <strong>${escapeHtml(state.projectName)}</strong></p>`);
+      removeTyping(typing);
+      appendMessage("user", `<p>Reopened: <strong>${escapeHtml(state.projectName)}</strong></p>`);
 
       let planLoaded = false;
       try {
         const planRes = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/study-plan`);
         if (planRes.studyPlan) {
           state.studyPlan = planRes.studyPlan;
-          state.analysis = {
-            subject: planRes.studyPlan.subject,
-            topics: planRes.studyPlan.topics,
-            key_concepts: planRes.studyPlan.key_concepts || [],
-          };
           appendMessage("ai", formatStudyPlanHtml(planRes.studyPlan, { includeNextStep: false }));
           planLoaded = true;
         }
@@ -608,17 +690,17 @@
       }
 
       if (!planLoaded && detail.files?.length) {
-        appendMessage("ai", `<p>This session has ${detail.files.length} uploaded file(s) but no study plan saved yet.</p>`);
+        appendMessage("ai", `<p>This session has ${detail.files.length} uploaded file(s), but no study plan was saved.</p>`);
       }
 
       try {
         const noteRes = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/note`);
         if (noteRes.note) appendMessage("ai", formatNoteHtml(noteRes.note));
       } catch {
-        if (planLoaded) appendMessage("ai", "<p>Quiz rounds not finished yet for this session.</p>");
+        if (planLoaded) appendMessage("ai", `<p class="meta-line">Quiz rounds weren't finished in this session.</p>`);
       }
 
-      removeTyping(typing);
+      appendMessage("ai", `<p class="meta-line">This is a saved session (read-only). Click "New study session" to start again.</p>`);
       await loadProjects();
     } catch (err) {
       removeTyping(typing);
@@ -635,15 +717,13 @@
     state.pendingFiles = [];
     state.roundIndex = -1;
     state.roundResults = [];
-    state.viewOnly = false;
-    state.materialPreview = "";
-    els.composerInput.disabled = false;
-    els.sendBtn.disabled = false;
-    els.attachBtn.disabled = false;
+    setViewOnly(false);
     els.composerInput.value = "";
+    autosizeComposer();
     renderAttachmentsBar();
     renderWelcome();
     loadProjects();
+    els.composerInput.focus();
   }
 
   function openEmbed(title, url) {
@@ -658,22 +738,42 @@
     els.embedFrame.src = "about:blank";
   }
 
+  function ensureFileInput() {
+    let input = document.getElementById("fileInput");
+    if (!input) {
+      input = document.createElement("input");
+      input.type = "file";
+      input.id = "fileInput";
+      input.multiple = true;
+      input.accept = ".pdf,.docx,.txt,.md,.csv,.json";
+      input.hidden = true;
+      document.body.appendChild(input);
+    }
+    els.fileInput = input;
+    return input;
+  }
+
   function bindEvents() {
     els.newChatBtn.addEventListener("click", resetNewChat);
     els.sendBtn.addEventListener("click", handleSend);
+    els.composerInput.addEventListener("input", autosizeComposer);
     els.composerInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSend();
       }
     });
-    els.attachBtn.addEventListener("click", () => els.fileInput.click());
-    els.fileInput.addEventListener("change", () => {
-      const files = Array.from(els.fileInput.files || []);
+
+    const fileInput = ensureFileInput();
+    els.attachBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => {
+      const files = Array.from(fileInput.files || []);
       state.pendingFiles = state.pendingFiles.concat(files);
-      els.fileInput.value = "";
+      fileInput.value = "";
       renderAttachmentsBar();
+      els.composerInput.focus();
     });
+
     els.avatarBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       els.avatarMenu.classList.toggle("hidden");
@@ -696,7 +796,10 @@
     });
 
     if (els.mobileMenuBtn) {
-      els.mobileMenuBtn.addEventListener("click", () => els.sidebar.classList.toggle("open"));
+      els.mobileMenuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        els.sidebar.classList.toggle("open");
+      });
     }
   }
 
@@ -714,6 +817,8 @@
     bindEvents();
     renderWelcome();
     loadProjects();
+    autosizeComposer();
+    els.composerInput.focus();
   }
 
   if (document.readyState === "loading") {
