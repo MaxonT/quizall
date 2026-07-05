@@ -31,6 +31,14 @@
       <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
       <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></symbol>
       <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol>
+      <symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+      <symbol id="i-notebook" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M16 2v20"/></symbol>
     </defs>
   </svg>
 
@@ -44,13 +52,36 @@
         <svg class="icon"><use href="#i-plus"></use></svg>
         New study session
       </button>
-      <div class="project-list" id="projectList">
-        <div class="project-list-label">History</div>
+
+      <nav class="side-nav">
+        <button type="button" class="nav-item is-active" id="navHome">
+          <svg class="icon"><use href="#i-home"></use></svg>
+          <span>Home</span>
+        </button>
+        <button type="button" class="nav-item" id="navUpload">
+          <svg class="icon"><use href="#i-file"></use></svg>
+          <span>Upload material</span>
+        </button>
+        <button type="button" class="nav-item" id="navHistory">
+          <svg class="icon"><use href="#i-clock"></use></svg>
+          <span>History</span>
+          <span class="nav-count" id="navHistoryCount"></span>
+        </button>
+      </nav>
+
+      <div class="sidebar-scroll">
+        <div class="project-list" id="projectList"></div>
       </div>
+
+      <div class="sidebar-streak" id="sidebarStreak"></div>
+
       <div class="sidebar-footer">
         <button type="button" class="avatar-btn" id="avatarBtn">
           <span class="avatar-circle" id="avatarInitials">U</span>
-          <span class="avatar-email" id="avatarEmail">user</span>
+          <span class="avatar-meta">
+            <span class="avatar-email" id="avatarEmail">user</span>
+            <span class="avatar-sub">Free plan</span>
+          </span>
         </button>
       </div>
     </aside>
@@ -88,6 +119,41 @@
             </div>
           </div>
           <p class="composer-hint">QuizAll reads your material, plans, and quizzes you. Keep answers simple.</p>
+        </div>
+
+        <div class="starter-cards" id="starterCards">
+          <button type="button" class="starter-card" data-starter="upload">
+            <span class="starter-icon"><svg class="icon"><use href="#i-file"></use></svg></span>
+            <span class="starter-title">Upload a file</span>
+            <span class="starter-sub">PDF, DOCX, TXT, or notes</span>
+          </button>
+          <button type="button" class="starter-card" data-starter="paste">
+            <span class="starter-icon"><svg class="icon"><use href="#i-clipboard"></use></svg></span>
+            <span class="starter-title">Paste text</span>
+            <span class="starter-sub">Lecture notes or a syllabus</span>
+          </button>
+          <button type="button" class="starter-card" data-starter="sample">
+            <span class="starter-icon"><svg class="icon"><use href="#i-sparkles"></use></svg></span>
+            <span class="starter-title">Try a sample</span>
+            <span class="starter-sub">See a full 3-round quiz</span>
+          </button>
+        </div>
+
+        <div class="flow-strip" id="flowStrip">
+          <div class="flow-step">
+            <span class="flow-num"><svg class="icon"><use href="#i-layers"></use></svg></span>
+            <span class="flow-text"><b>Study plan</b>Simple, plain-language plan</span>
+          </div>
+          <span class="flow-arrow"><svg class="icon"><use href="#i-arrow-right"></use></svg></span>
+          <div class="flow-step">
+            <span class="flow-num"><svg class="icon"><use href="#i-target"></use></svg></span>
+            <span class="flow-text"><b>3 rounds</b>Choice · Fill-in · Short answer</span>
+          </div>
+          <span class="flow-arrow"><svg class="icon"><use href="#i-arrow-right"></use></svg></span>
+          <div class="flow-step">
+            <span class="flow-num"><svg class="icon"><use href="#i-notebook"></use></svg></span>
+            <span class="flow-text"><b>Study note</b>A recap you can keep</span>
+          </div>
         </div>
       </div>
     </main>

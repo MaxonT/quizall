@@ -25,7 +25,13 @@
     sidebar: document.getElementById("sidebar"),
     mobileMenuBtn: document.getElementById("mobileMenuBtn"),
     newChatBtn: document.getElementById("newChatBtn"),
+    navHome: document.getElementById("navHome"),
+    navUpload: document.getElementById("navUpload"),
+    navHistory: document.getElementById("navHistory"),
+    navHistoryCount: document.getElementById("navHistoryCount"),
     projectList: document.getElementById("projectList"),
+    sidebarStreak: document.getElementById("sidebarStreak"),
+    starterCards: document.getElementById("starterCards"),
     avatarBtn: document.getElementById("avatarBtn"),
     avatarInitials: document.getElementById("avatarInitials"),
     avatarEmail: document.getElementById("avatarEmail"),
@@ -347,24 +353,66 @@
     });
   }
 
+  function groupLabelFor(dateStr) {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "Earlier";
+    const now = new Date();
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startThat = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diff = Math.round((startToday - startThat) / 86400000);
+    if (diff <= 0) return "Today";
+    if (diff === 1) return "Yesterday";
+    if (diff <= 7) return "Previous 7 days";
+    if (diff <= 30) return "Previous 30 days";
+    return "Earlier";
+  }
+
+  function projectMeta(p) {
+    const bits = [];
+    if (p.quizCount > 0) bits.push(`${p.quizCount} ${p.quizCount === 1 ? "round" : "rounds"}`);
+    else if (p.fileCount > 0) bits.push(`${p.fileCount} ${p.fileCount === 1 ? "file" : "files"}`);
+    if (p.latestAccuracy != null && p.quizCount > 0) bits.push(`${p.latestAccuracy}%`);
+    return bits.length ? bits.join(" · ") : "Draft session";
+  }
+
   async function loadProjects() {
     try {
       const data = await api("/api/quiz/projects?limit=50");
       const projects = data.projects || [];
+
+      if (els.navHistoryCount) els.navHistoryCount.textContent = projects.length ? String(projects.length) : "";
+
       if (!projects.length) {
         els.projectList.innerHTML =
-          '<div class="project-list-label">History</div>' +
-          '<div class="project-empty">No sessions yet. Start one below.</div>';
+          '<div class="project-list-label">Recent sessions</div>' +
+          '<div class="project-empty">No sessions yet.<br>Start one from the box on the right.</div>';
         return;
       }
-      els.projectList.innerHTML =
-        '<div class="project-list-label">History</div>' +
-        projects
+
+      const order = ["Today", "Yesterday", "Previous 7 days", "Previous 30 days", "Earlier"];
+      const groups = {};
+      projects.forEach((p) => {
+        const label = groupLabelFor(p.updatedAt || p.createdAt);
+        (groups[label] = groups[label] || []).push(p);
+      });
+
+      let html = "";
+      order.forEach((label) => {
+        const list = groups[label];
+        if (!list || !list.length) return;
+        html += `<div class="project-group-label">${label}</div>`;
+        html += list
           .map(
             (p) =>
-              `<button type="button" class="project-item${p.id === state.projectId ? " is-active" : ""}" data-id="${escapeHtml(p.id)}">${escapeHtml(p.name)}</button>`
+              `<button type="button" class="project-item${p.id === state.projectId ? " is-active" : ""}" data-id="${escapeHtml(p.id)}">` +
+              `<span class="pi-name">${escapeHtml(p.name)}</span>` +
+              `<span class="pi-meta">${escapeHtml(projectMeta(p))}</span>` +
+              `</button>`
           )
           .join("");
+      });
+
+      els.projectList.innerHTML = html;
       els.projectList.querySelectorAll(".project-item").forEach((btn) => {
         btn.addEventListener("click", () => openProject(btn.getAttribute("data-id")));
       });
@@ -372,6 +420,36 @@
       console.error(err);
     }
   }
+
+  async function loadStreak() {
+    if (!els.sidebarStreak) return;
+    try {
+      const data = await api("/api/quiz/study-streak?days=7");
+      const heatmap = Array.isArray(data.heatmap) ? data.heatmap.slice(-7) : [];
+      if (!heatmap.length) {
+        els.sidebarStreak.innerHTML = "";
+        return;
+      }
+      const streak = data.currentStreak || 0;
+      const dots = heatmap
+        .map((d) => `<span class="streak-dot lvl-${Math.max(0, Math.min(3, d.intensity || 0))}"></span>`)
+        .join("");
+      const headline = streak > 0 ? `${streak}-day streak` : "Study streak";
+      const sub = streak > 0 ? "Keep it going" : "Last 7 days";
+      els.sidebarStreak.innerHTML =
+        `<div class="streak-head">${icon("i-flame")} ${headline}<span class="streak-sub">${sub}</span></div>` +
+        `<div class="streak-dots">${dots}</div>`;
+    } catch (err) {
+      els.sidebarStreak.innerHTML = "";
+    }
+  }
+
+  const SAMPLE_TEXT =
+    "Photosynthesis is how plants make their own food. " +
+    "Plants take in sunlight, water, and carbon dioxide (a gas in the air). " +
+    "Inside the leaves, tiny parts called chloroplasts use the sunlight to turn water and carbon dioxide into glucose (a sugar) and oxygen. " +
+    "The plant uses the glucose for energy to grow, and it releases the oxygen into the air, which is what we breathe. " +
+    "This mostly happens in the leaves, and the green color comes from a pigment called chlorophyll.";
 
   function autoProjectName() {
     const d = new Date();
@@ -602,6 +680,7 @@
       appendMessage("ai", `<p class="meta-line">Session complete. Start a new study session anytime from the left.</p>`);
       setProcessing(false);
       await loadProjects();
+      loadStreak();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Sorry, I couldn't write the note: ${escapeHtml(err.message)}</p>`);
@@ -622,6 +701,7 @@
     if (!text && !hasFiles) return;
 
     setConversationActive(true);
+    setActiveNav("navHome");
     setProcessing(true);
     state.roundIndex = -1;
     state.roundResults = [];
@@ -666,7 +746,9 @@
     state.analysis = null;
     state.studyPlan = null;
     setViewOnly(true);
+    setActiveNav("navHistory");
     setConversationActive(true);
+    if (window.innerWidth <= 820) els.sidebar.classList.remove("open");
 
     els.chatInner.innerHTML = "";
     const typing = appendTyping();
@@ -718,6 +800,7 @@
     state.roundIndex = -1;
     state.roundResults = [];
     setViewOnly(false);
+    setActiveNav("navHome");
     els.composerInput.value = "";
     autosizeComposer();
     renderAttachmentsBar();
@@ -753,9 +836,49 @@
     return input;
   }
 
+  function setActiveNav(id) {
+    [els.navHome, els.navUpload, els.navHistory].forEach((el) => {
+      if (el) el.classList.toggle("is-active", el.id === id);
+    });
+  }
+
+  function triggerUpload() {
+    if (state.isProcessing) return;
+    if (state.viewOnly) resetNewChat();
+    (els.fileInput || ensureFileInput()).click();
+  }
+
   function bindEvents() {
     els.newChatBtn.addEventListener("click", resetNewChat);
     els.sendBtn.addEventListener("click", handleSend);
+
+    if (els.navHome) els.navHome.addEventListener("click", () => { setActiveNav("navHome"); resetNewChat(); });
+    if (els.navUpload) els.navUpload.addEventListener("click", () => { setActiveNav("navHome"); triggerUpload(); });
+    if (els.navHistory) {
+      els.navHistory.addEventListener("click", () => {
+        setActiveNav("navHistory");
+        const first = els.projectList.querySelector(".project-item");
+        if (first) first.click();
+        if (window.innerWidth <= 820) els.sidebar.classList.add("open");
+      });
+    }
+
+    if (els.starterCards) {
+      els.starterCards.querySelectorAll(".starter-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          const kind = card.getAttribute("data-starter");
+          if (kind === "upload") {
+            triggerUpload();
+          } else if (kind === "paste") {
+            els.composerInput.focus();
+          } else if (kind === "sample") {
+            els.composerInput.value = SAMPLE_TEXT;
+            autosizeComposer();
+            els.composerInput.focus();
+          }
+        });
+      });
+    }
     els.composerInput.addEventListener("input", autosizeComposer);
     els.composerInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
@@ -817,6 +940,7 @@
     bindEvents();
     renderWelcome();
     loadProjects();
+    loadStreak();
     autosizeComposer();
     els.composerInput.focus();
   }
