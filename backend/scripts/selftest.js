@@ -21,8 +21,11 @@ const BASE_URL = process.env.SELFTEST_BASE_URL || "http://localhost:3000";
 
 const REQUIRED_ENVS = [
   "NODE_ENV",
-  "OPENAI_API_KEY",
-  "JWT_SECRET"
+  "JWT_SECRET",
+];
+
+const PRODUCTION_ENVS = [
+  "ANTHROPIC_API_KEY",
 ];
 
 /**
@@ -31,23 +34,26 @@ const REQUIRED_ENVS = [
  */
 async function runEnvCheck() {
   console.log("[1/2] Env variables");
-  
+
+  const required = [...REQUIRED_ENVS];
+  if (process.env.NODE_ENV === "production") {
+    required.push(...PRODUCTION_ENVS);
+  }
+
   const missing = [];
-  
-  for (const envName of REQUIRED_ENVS) {
+  for (const envName of required) {
     const value = process.env[envName];
-    if (!value || value.trim() === '') {
+    if (!value || value.trim() === "") {
       missing.push(envName);
     }
   }
-  
+
   if (missing.length === 0) {
-    console.log(`✅ Env check passed (${REQUIRED_ENVS.length}/${REQUIRED_ENVS.length})`);
+    console.log(`✅ Env check passed (${required.length}/${required.length})`);
     return true;
-  } else {
-    console.log(`❌ Env check failed – missing: ${missing.join(', ')}`);
-    return false;
   }
+  console.log(`❌ Env check failed – missing: ${missing.join(", ")}`);
+  return false;
 }
 
 /**

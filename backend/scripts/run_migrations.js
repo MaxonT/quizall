@@ -47,6 +47,7 @@ if (USE_POSTGRES) {
   runMigration('migrations/002_analytics.js', ' up');
   runMigration('migrations/002_checkout_sessions.js', ' up');
   runMigration('migrations/003_stripe_events.js', ' up');
+  runMigration('migrations/005_coupons.js', ' up');
 }
 
 console.log('[QuizAll] ✅ Migrations complete.');

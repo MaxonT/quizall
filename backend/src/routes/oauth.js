@@ -42,8 +42,11 @@ const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 // OAuth redirect URI should be the backend callback URL
 // If OAUTH_REDIRECT_URI is explicitly set, use it directly
 // Otherwise, construct it from CORS_ORIGIN
-const OAUTH_REDIRECT_URI = (process.env.OAUTH_REDIRECT_URI ||
-  `${(process.env.CORS_ORIGIN || "http://localhost:8080").trim()}/api/auth/oauth/callback`).trim();
+const OAUTH_REDIRECT_URI = (
+  process.env.OAUTH_REDIRECT_URI ||
+  process.env.BACKEND_URL ||
+  `http://localhost:${process.env.PORT || 8080}`
+).replace(/\/$/, "") + "/api/auth/oauth/callback";
 
 // Frontend URL for redirecting after OAuth callback (fallback when no return_origin or not in allow list)
 const FRONTEND_URL = (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173").trim();
@@ -105,16 +108,29 @@ function normalizeEmail(email = "") {
 
 async function findOrCreateUser(email, provider, providerId) {
   const normalizedEmail = normalizeEmail(email);
+  const now = new Date().toISOString();
   
   // First, try to find existing user by email
   let user = await dbGet("SELECT * FROM users WHERE email = ?", [normalizedEmail]);
   
   if (user) {
+    // Block OAuth takeover of password-only accounts
+    if (user.password_hash && !user.oauth_provider) {
+      const err = new Error("An account with this email already exists. Please sign in with your password.");
+      err.code = "ACCOUNT_EXISTS_PASSWORD";
+      throw err;
+    }
     // Update OAuth provider info if not set or different
     if (!user.oauth_provider || user.oauth_provider !== provider || user.oauth_id !== providerId) {
       await dbRun(
-        `UPDATE users SET oauth_provider = ?, oauth_id = ?, updated_at = ? WHERE id = ?`,
-        [provider, providerId, new Date().toISOString(), user.id]
+        `UPDATE users SET oauth_provider = ?, oauth_id = ?, email_verified = 1, email_verified_at = COALESCE(email_verified_at, ?), updated_at = ? WHERE id = ?`,
+        [provider, providerId, now, now, user.id]
+      );
+      user = await dbGet("SELECT * FROM users WHERE id = ?", [user.id]);
+    } else if (!user.email_verified) {
+      await dbRun(
+        `UPDATE users SET email_verified = 1, email_verified_at = ?, updated_at = ? WHERE id = ?`,
+        [now, now, user.id]
       );
       user = await dbGet("SELECT * FROM users WHERE id = ?", [user.id]);
     }
@@ -131,13 +147,12 @@ async function findOrCreateUser(email, provider, providerId) {
     return user;
   }
   
-  // Create new user
+  // Create new user (OAuth providers verify email)
   const userId = nanoid(16);
-  const now = new Date().toISOString();
   await dbRun(
-    `INSERT INTO users (id, email, oauth_provider, oauth_id, subscription_tier, subscription_active, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [userId, normalizedEmail, provider, providerId, "free", 1, now, now]
+    `INSERT INTO users (id, email, oauth_provider, oauth_id, email_verified, email_verified_at, subscription_tier, subscription_active, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
+    [userId, normalizedEmail, provider, providerId, now, "free", 1, now, now]
   );
   return await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
 }
@@ -237,6 +252,27 @@ oauthRouter.get("/:provider/authorize", (req, res) => {
   });
 });
 
+function resolveFrontendBase(stored, req) {
+  const returnOrigin = stored?.returnOrigin;
+  if (returnOrigin && ALLOWED_REDIRECT_ORIGINS.includes(returnOrigin)) {
+    return returnOrigin.replace(/\/$/, "");
+  }
+
+  const configured = (process.env.FRONTEND_URL || "").replace(/\/$/, "");
+  if (configured) return configured;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("FRONTEND_URL must be configured in production");
+  }
+
+  if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== "*") {
+    const first = process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)[0];
+    if (first) return first.replace(/\/$/, "");
+  }
+
+  return `${req.protocol}://${req.get("host")}`.replace(/\/$/, "");
+}
+
 /**
  * GET /api/auth/oauth/callback
  * Handles OAuth callback and exchanges code for token
@@ -244,27 +280,13 @@ oauthRouter.get("/:provider/authorize", (req, res) => {
 oauthRouter.get("/callback", async (req, res) => {
   const { code, state, error } = req.query;
   const stored = state ? codeVerifierStore.get(state) : null;
-  const returnOrigin = stored?.returnOrigin || null;
   
-  // Determine frontend URL dynamically if not set
-  // Redirect to same origin user came from (if allowed), else fallback to FRONTEND_URL / CORS_ORIGIN / request host
-  let frontendBase =
-    (returnOrigin && ALLOWED_REDIRECT_ORIGINS.includes(returnOrigin))
-      ? returnOrigin
-      : process.env.FRONTEND_URL;
-
-  if (!frontendBase) {
-    if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== "*") {
-      const first = (process.env.CORS_ORIGIN || "").split(",").map((o) => o.trim()).filter(Boolean)[0];
-      frontendBase = first || `${req.protocol}://${req.get('host')}`;
-    } else {
-      frontendBase = `${req.protocol}://${req.get('host')}`;
-    }
-  }
-
-  // Remove trailing slash if present to avoid double slashes in constructed URLs
-  if (frontendBase.endsWith('/')) {
-    frontendBase = frontendBase.slice(0, -1);
+  let frontendBase;
+  try {
+    frontendBase = resolveFrontendBase(stored, req);
+  } catch (resolveErr) {
+    console.error("[oauth] Frontend URL resolution failed:", resolveErr.message);
+    return res.status(500).send("OAuth misconfigured: FRONTEND_URL required");
   }
 
   console.log(`[oauth] Callback received - code: ${code ? 'present' : 'missing'}, state: ${state ? 'present' : 'missing'}, error: ${error || 'none'}`);
@@ -390,8 +412,11 @@ oauthRouter.get("/callback", async (req, res) => {
     return res.redirect(frontendUrl);
   } catch (err) {
     console.error('[oauth] Callback error:', err);
+    const message = err.code === "ACCOUNT_EXISTS_PASSWORD"
+      ? err.message
+      : (process.env.NODE_ENV === "production" ? "OAuth authentication failed" : (err.message || "OAuth authentication failed"));
     const errorUrl = new URL(`${frontendBase}/index.html`);
-    errorUrl.searchParams.set('oauth_error', encodeURIComponent(err.message || 'OAuth authentication failed'));
+    errorUrl.searchParams.set('oauth_error', encodeURIComponent(message));
     return res.redirect(errorUrl.toString());
   }
 });

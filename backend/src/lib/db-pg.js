@@ -504,6 +504,151 @@ export async function initializeSchema() {
 
     CREATE INDEX IF NOT EXISTS idx_quiz_api_logs_user ON quiz_api_logs(user_id, created_at);
 
+    -- Billing / subscriptions (parity with SQLite migrations 001–005)
+    CREATE TABLE IF NOT EXISTS stripe_customers (
+      id SERIAL PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL UNIQUE,
+      stripe_customer_id VARCHAR(255) NOT NULL UNIQUE,
+      email VARCHAR(255),
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_stripe_user FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_stripe_customers_user ON stripe_customers(user_id);
+    CREATE INDEX IF NOT EXISTS idx_stripe_customers_stripe ON stripe_customers(stripe_customer_id);
+
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      stripe_subscription_id VARCHAR(255) UNIQUE,
+      stripe_customer_id VARCHAR(255),
+      status VARCHAR(50) NOT NULL DEFAULT 'none',
+      plan VARCHAR(50),
+      price_id VARCHAR(255),
+      period_start TIMESTAMP,
+      period_end TIMESTAMP,
+      trial_start TIMESTAMP,
+      trial_end TIMESTAMP,
+      cancel_at_period_end BOOLEAN DEFAULT false,
+      canceled_at TIMESTAMP,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_sub_user FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_sub ON subscriptions(stripe_subscription_id);
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+
+    CREATE TABLE IF NOT EXISTS token_ledger (
+      id SERIAL PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      bucket VARCHAR(50) NOT NULL,
+      tokens_change INTEGER NOT NULL,
+      balance_after INTEGER NOT NULL,
+      expires_at TIMESTAMP,
+      source VARCHAR(50) NOT NULL,
+      reason TEXT,
+      run_id VARCHAR(255),
+      subscription_id VARCHAR(255),
+      stripe_event_id VARCHAR(255),
+      admin_actor VARCHAR(255),
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_ledger_user FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_token_ledger_user ON token_ledger(user_id);
+    CREATE INDEX IF NOT EXISTS idx_token_ledger_bucket ON token_ledger(user_id, bucket);
+    CREATE INDEX IF NOT EXISTS idx_token_ledger_created ON token_ledger(created_at);
+
+    CREATE TABLE IF NOT EXISTS token_balances_cache (
+      user_id VARCHAR(255) PRIMARY KEY,
+      daily_free_remaining INTEGER NOT NULL DEFAULT 0,
+      monthly_remaining INTEGER NOT NULL DEFAULT 0,
+      trial_base_remaining INTEGER NOT NULL DEFAULT 0,
+      total_remaining INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_balance_user FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS stripe_events (
+      id SERIAL PRIMARY KEY,
+      event_id VARCHAR(255) NOT NULL UNIQUE,
+      event_type VARCHAR(100) NOT NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      error TEXT,
+      payload TEXT,
+      retry_count INTEGER DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      processed_at TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_stripe_events_event_id ON stripe_events(event_id);
+
+    CREATE TABLE IF NOT EXISTS checkout_sessions (
+      id VARCHAR(255) PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      stripe_session_id VARCHAR(255) UNIQUE,
+      session_url TEXT,
+      plan VARCHAR(50) NOT NULL,
+      status VARCHAR(50) DEFAULT 'pending',
+      idempotency_key VARCHAR(255),
+      stripe_subscription_id VARCHAR(255),
+      completed_at TIMESTAMP,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_checkout_user FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_checkout_sessions_user ON checkout_sessions(user_id);
+
+    CREATE TABLE IF NOT EXISTS trial_abuse_checks (
+      id SERIAL PRIMARY KEY,
+      user_id VARCHAR(255) NOT NULL,
+      ip_address VARCHAR(100),
+      device_fingerprint VARCHAR(255),
+      email_domain VARCHAR(255),
+      risk_score INTEGER DEFAULT 0,
+      is_disposable_email BOOLEAN DEFAULT false,
+      is_high_velocity_ip BOOLEAN DEFAULT false,
+      is_duplicate_fingerprint BOOLEAN DEFAULT false,
+      requires_payment_method BOOLEAN DEFAULT false,
+      trial_blocked BOOLEAN DEFAULT false,
+      blocked_reason TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_abuse_user FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS ip_rate_limits (
+      ip_address VARCHAR(100) PRIMARY KEY,
+      registration_count INTEGER NOT NULL DEFAULT 0,
+      trial_count INTEGER NOT NULL DEFAULT 0,
+      last_registration TIMESTAMP,
+      last_trial TIMESTAMP,
+      blocked_until TIMESTAMP,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS coupons (
+      id SERIAL PRIMARY KEY,
+      code VARCHAR(100) NOT NULL UNIQUE,
+      plan VARCHAR(50) NOT NULL DEFAULT 'monthly',
+      max_redemptions INTEGER NOT NULL DEFAULT 10,
+      times_redeemed INTEGER NOT NULL DEFAULT 0,
+      duration_days INTEGER NOT NULL DEFAULT 30,
+      active BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      expires_at TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
+
+    CREATE TABLE IF NOT EXISTS coupon_redemptions (
+      id SERIAL PRIMARY KEY,
+      coupon_id INTEGER NOT NULL,
+      user_id VARCHAR(255) NOT NULL,
+      redeemed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_coupon FOREIGN KEY (coupon_id) REFERENCES coupons(id),
+      CONSTRAINT fk_coupon_user FOREIGN KEY (user_id) REFERENCES users(id),
+      CONSTRAINT uq_coupon_user UNIQUE (coupon_id, user_id)
+    );
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_plan_usage_user_date ON plan_usage(user_id, date, feature_type);
     CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at);
@@ -518,6 +663,18 @@ export async function initializeSchema() {
     await db.exec("ALTER TABLE question_sessions ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'en';");
     await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(100) DEFAULT 'UTC';");
     await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone_updated_at TIMESTAMP;");
+    await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;");
+    await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP;");
+    await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_used BOOLEAN DEFAULT false;");
+    await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMP;");
+    await db.exec("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS project_id VARCHAR(255);");
+    await db.exec("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS round_label TEXT;");
+    await db.run(
+      `INSERT INTO coupons (code, plan, max_redemptions, duration_days, active)
+       VALUES (?, 'monthly', 10, 30, true)
+       ON CONFLICT (code) DO NOTHING`,
+      ["QUIZALL-DEE1636310A6"]
+    );
     console.log('[quizall] PostgreSQL schema initialized');
   } catch (err) {
     console.error('[quizall] Failed to initialize PostgreSQL schema:', err);

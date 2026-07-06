@@ -13,15 +13,17 @@
  */
 
 import { Router } from "express";
+import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
-import { requireAuth } from "./auth.js";
-import { db } from "../lib/db.js";
+import { requireAuth, TOKEN_SECRET, JWT_VERIFY_OPTIONS } from "./auth.js";
+import { dbGet, dbRun } from "../lib/dbHelpers.js";
 import { stripeService } from "../lib/stripeService.js";
 import { tokenLedger } from "../lib/tokenLedger.js";
 import { trialAntiAbuse } from "../lib/trialAntiAbuse.js";
 import { shouldInjectError, injectDelay, InjectedError } from "../lib/errorInjector.js";
 import { getUserPlan, getDailyUsage } from "../lib/planLimits.js";
 import { getNextLocalMidnightIso, normalizeTimeZone } from "../lib/timezone.js";
+import { createSafeErrorResponse } from "../lib/secureError.js";
 import {
   PLANS,
   FEATURES,
@@ -80,86 +82,98 @@ billingRouter.get("/plans", (req, res) => {
  * GET /api/billing/status
  * Returns current subscription and token status for logged-in user
  */
-billingRouter.get("/status", requireAuth, (req, res) => {
-  try {
-    const userId = req.user.sub;
-    
-    // Get subscription status
-    const subscription = stripeService.getSubscriptionStatus(userId);
-    
-    // Ensure free users have daily tokens
-    // For users without subscription, this will grant them daily tokens
-    let balances;
-    if (subscription.status === 'none' || !subscription.status) {
-      balances = tokenLedger.ensureFreeUserTokens(userId);
-    } else {
-      balances = tokenLedger.getTokenBalances(userId);
-    }
-    
-    // Get user plan and usage
-    const plan = getUserPlan(userId);
-    const promptUsage = getDailyUsage(userId, 'prompt_optimization');
-    const wizardUsage = getDailyUsage(userId, 'question_wizard');
-    
-    // Get user info
-    const user = db.prepare(`
-      SELECT email, email_verified, trial_used, trial_started_at, created_at, timezone
-      FROM users WHERE id = ?
-    `).get(userId);
-    
-    // Calculate days remaining in trial
-    let trialDaysRemaining = null;
-    if (subscription.status === "trialing" && subscription.trialEnd) {
-      const trialEnd = new Date(subscription.trialEnd);
-      const now = new Date();
-      trialDaysRemaining = Math.max(0, Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24)));
-    }
-    
-    const tz = normalizeTimeZone(user?.timezone);
+billingRouter.get("/status", requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const stripeConfigured = isStripeConfigured();
 
-    res.json({
-      ok: true,
-      plan: plan, // 'free', 'monthly', 'yearly', or 'trial'
-      timezone: tz,
-      nextResetAt: getNextLocalMidnightIso(tz),
-      subscription: {
-        status: subscription.status,
-        plan: subscription.plan,
-        periodEnd: subscription.periodEnd,
-        trialEnd: subscription.trialEnd,
-        trialDaysRemaining,
-        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-        canStartTrial: !user?.trial_used && FEATURES.trialsEnabled,
-        emailVerified: !!user?.email_verified,
-      },
-      limits: {
-        promptOptimization: {
-          daily: plan === 'free' ? 8 : DAILY_PROMPT_OPTIMIZATIONS_PER_DAY
-        },
-        questionWizard: {
-          daily: plan === 'free' ? 5 : DAILY_QUESTION_WIZARD_SESSIONS_PER_DAY
-        }
-      },
-      usage: {
-        promptOptimization: promptUsage,
-        questionWizard: wizardUsage
-      },
-      tokens: {
-        total: balances.total,
-        totalFormatted: formatTokens(balances.total),
-        daily_free: balances.daily_free,
-        monthly: balances.monthly,
-        trial_base: balances.trial_base,
-      },
-      user: {
-        email: user?.email,
-        createdAt: user?.created_at,
-      },
-    });
+  let subscription = { status: "none", plan: "free", periodEnd: null, trialEnd: null, cancelAtPeriodEnd: false };
+  try {
+    subscription = (await stripeService.getSubscriptionStatus(userId)) || subscription;
   } catch (err) {
-    console.error("[billing] Status error:", err);
-    res.status(500).json({ ok: false, error: "Failed to get billing status" });
+    console.error("[billing] subscription lookup failed:", err);
   }
+
+  let balances = { total: 0, daily_free: 0, monthly: 0, trial_base: 0 };
+  try {
+    balances =
+      subscription.status === "none" || !subscription.status
+        ? await tokenLedger.ensureFreeUserTokens(userId)
+        : await tokenLedger.getTokenBalances(userId);
+  } catch (err) {
+    console.error("[billing] token balance failed:", err);
+  }
+
+  let plan = "free";
+  let promptUsage = 0;
+  let wizardUsage = 0;
+  try {
+    plan = await getUserPlan(userId);
+    promptUsage = await getDailyUsage(userId, "prompt_optimization");
+    wizardUsage = await getDailyUsage(userId, "question_wizard");
+  } catch (err) {
+    console.error("[billing] plan/usage lookup failed:", err);
+  }
+
+  let user = null;
+  try {
+    user = await dbGet(
+      `SELECT email, email_verified, trial_used, trial_started_at, created_at, timezone
+       FROM users WHERE id = ?`,
+      [userId]
+    );
+  } catch (err) {
+    console.error("[billing] user lookup failed:", err);
+  }
+
+  let trialDaysRemaining = null;
+  if (subscription.status === "trialing" && subscription.trialEnd) {
+    const trialEnd = new Date(subscription.trialEnd);
+    const now = new Date();
+    trialDaysRemaining = Math.max(0, Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24)));
+  }
+
+  const tz = normalizeTimeZone(user?.timezone);
+
+  res.json({
+    ok: true,
+    stripeConfigured,
+    plan,
+    timezone: tz,
+    nextResetAt: getNextLocalMidnightIso(tz),
+    subscription: {
+      status: subscription.status || "none",
+      plan: subscription.plan || plan || "free",
+      periodEnd: subscription.periodEnd || null,
+      trialEnd: subscription.trialEnd || null,
+      trialDaysRemaining,
+      cancelAtPeriodEnd: !!subscription.cancelAtPeriodEnd,
+      canStartTrial: !user?.trial_used && FEATURES.trialsEnabled,
+      emailVerified: !!user?.email_verified,
+    },
+    limits: {
+      promptOptimization: {
+        daily: plan === "free" ? 8 : DAILY_PROMPT_OPTIMIZATIONS_PER_DAY,
+      },
+      questionWizard: {
+        daily: plan === "free" ? 5 : DAILY_QUESTION_WIZARD_SESSIONS_PER_DAY,
+      },
+    },
+    usage: {
+      promptOptimization: promptUsage,
+      questionWizard: wizardUsage,
+    },
+    tokens: {
+      total: balances.total || 0,
+      totalFormatted: formatTokens(balances.total || 0),
+      daily_free: balances.daily_free || 0,
+      monthly: balances.monthly || 0,
+      trial_base: balances.trial_base || 0,
+    },
+    user: {
+      email: user?.email || null,
+      createdAt: user?.created_at || null,
+    },
+  });
 });
 
 // =============================================
@@ -202,13 +216,14 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
       `checkout_${userId}_${plan}_${Math.floor(Date.now() / 3600000)}`;
     
     // Check for existing pending session (within 1 hour)
-    const existingSession = db.prepare(`
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+    const existingSession = await dbGet(`
       SELECT stripe_session_id, session_url, created_at 
       FROM checkout_sessions 
       WHERE user_id = ? AND plan = ? AND status = 'pending'
-        AND created_at > datetime('now', '-1 hour')
+        AND created_at > ?
       ORDER BY created_at DESC LIMIT 1
-    `).get(userId, plan);
+    `, [userId, plan, oneHourAgo]);
     
     if (existingSession) {
       console.log(`[billing] Reusing existing session for user ${userId}`);
@@ -221,7 +236,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     }
     
     // Get user email
-    const user = db.prepare("SELECT email, trial_used FROM users WHERE id = ?").get(userId);
+    const user = await dbGet("SELECT email, trial_used FROM users WHERE id = ?", [userId]);
     if (!user) {
       return res.status(404).json({ ok: false, error: "User not found" });
     }
@@ -243,12 +258,13 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     }
     
     // Save session to DB
+    const now = new Date().toISOString();
     const sessionId = nanoid(16);
-    db.prepare(`
+    await dbRun(`
       INSERT INTO checkout_sessions 
         (id, user_id, stripe_session_id, session_url, plan, status, idempotency_key, created_at)
-      VALUES (?, ?, ?, ?, ?, 'pending', ?, datetime('now'))
-    `).run(sessionId, userId, session.sessionId, session.url, plan, effectiveIdempotencyKey);
+      VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
+    `, [sessionId, userId, session.sessionId, session.url, plan, effectiveIdempotencyKey, now]);
     
     console.log(`[billing] Created checkout session ${session.sessionId} for user ${userId}`);
     
@@ -259,11 +275,7 @@ billingRouter.post("/checkout-session", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("[billing] Checkout session error:", err);
-    res.status(500).json({ 
-      ok: false, 
-      error: "Failed to create checkout session",
-      message: err.message,
-    });
+    res.status(500).json(createSafeErrorResponse(err, "Failed to create checkout session"));
   }
 });
 
@@ -294,11 +306,11 @@ billingRouter.get("/verify-session/:sessionId", requireAuth, async (req, res) =>
     }
     
     // Check local DB session
-    const dbSession = db.prepare(`
+    const dbSession = await dbGet(`
       SELECT status, stripe_session_id, plan 
       FROM checkout_sessions 
       WHERE stripe_session_id = ? AND user_id = ?
-    `).get(sessionId, userId);
+    `, [sessionId, userId]);
     
     if (!dbSession) {
       return res.status(404).json({
@@ -309,7 +321,7 @@ billingRouter.get("/verify-session/:sessionId", requireAuth, async (req, res) =>
     
     // If already completed, return success immediately
     if (dbSession.status === 'completed') {
-      const subscription = stripeService.getSubscriptionStatus(userId);
+      const subscription = await stripeService.getSubscriptionStatus(userId);
       return res.json({
         ok: true,
         status: 'completed',
@@ -322,14 +334,15 @@ billingRouter.get("/verify-session/:sessionId", requireAuth, async (req, res) =>
     
     if (stripeSession.payment_status === 'paid' && stripeSession.status === 'complete') {
       // Update session status
-      db.prepare(`
+      const completedAt = new Date().toISOString();
+      await dbRun(`
         UPDATE checkout_sessions 
-        SET status = 'completed', completed_at = datetime('now')
+        SET status = 'completed', completed_at = ?
         WHERE stripe_session_id = ?
-      `).run(sessionId);
+      `, [completedAt, sessionId]);
       
       // Verify subscription status
-      const subscription = stripeService.getSubscriptionStatus(userId);
+      const subscription = await stripeService.getSubscriptionStatus(userId);
       
       return res.json({
         ok: true,
@@ -337,11 +350,11 @@ billingRouter.get("/verify-session/:sessionId", requireAuth, async (req, res) =>
         subscriptionStatus: subscription?.status || 'inactive',
       });
     } else if (stripeSession.status === 'expired') {
-      db.prepare(`
+      await dbRun(`
         UPDATE checkout_sessions 
         SET status = 'expired'
         WHERE stripe_session_id = ?
-      `).run(sessionId);
+      `, [sessionId]);
       
       return res.json({
         ok: false,
@@ -358,11 +371,7 @@ billingRouter.get("/verify-session/:sessionId", requireAuth, async (req, res) =>
     }
   } catch (err) {
     console.error("[billing] Verify session error:", err);
-    res.status(500).json({
-      ok: false,
-      error: "Verification failed",
-      message: err.message,
-    });
+    res.status(500).json(createSafeErrorResponse(err, "Verification failed"));
   }
 });
 
@@ -430,13 +439,13 @@ billingRouter.post("/start-trial", requireAuth, async (req, res) => {
     const ipAddress = req.ip || req.connection.remoteAddress;
     
     // Get user email
-    const user = db.prepare("SELECT email, trial_used FROM users WHERE id = ?").get(userId);
+    const user = await dbGet("SELECT email, trial_used FROM users WHERE id = ?", [userId]);
     if (!user) {
       return res.status(404).json({ ok: false, error: "User not found" });
     }
     
     // Check trial eligibility
-    const eligibility = trialAntiAbuse.checkTrialEligibility({
+    const eligibility = await trialAntiAbuse.checkTrialEligibility({
       userId,
       email: user.email,
       ipAddress,
@@ -477,36 +486,37 @@ billingRouter.post("/start-trial", requireAuth, async (req, res) => {
     }
     
     // Low risk - grant trial directly
-    tokenLedger.grantTrialTokens(userId);
+    await tokenLedger.grantTrialTokens(userId);
     
     // Mark trial as used and record IP
-    db.prepare(`
+    const trialNow = new Date().toISOString();
+    await dbRun(`
       UPDATE users 
-      SET trial_used = 1, trial_started_at = datetime('now'), updated_at = datetime('now')
+      SET trial_used = 1, trial_started_at = ?, updated_at = ?
       WHERE id = ?
-    `).run(userId);
+    `, [trialNow, trialNow, userId]);
     
-    trialAntiAbuse.incrementTrialCount(ipAddress);
-    trialAntiAbuse.recordFingerprint(userId, fingerprint, ipAddress);
+    await trialAntiAbuse.incrementTrialCount(ipAddress);
+    await trialAntiAbuse.recordFingerprint(userId, fingerprint, ipAddress);
     
     // Create a trial subscription record
     const now = new Date();
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 14);
     
-    db.prepare(`
+    await dbRun(`
       INSERT INTO subscriptions (
         user_id, status, plan, trial_start, trial_end, created_at, updated_at
       ) VALUES (?, 'trialing', 'trial', ?, ?, ?, ?)
-    `).run(
+    `, [
       userId,
       now.toISOString(),
       trialEnd.toISOString(),
       now.toISOString(),
-      now.toISOString()
-    );
+      now.toISOString(),
+    ]);
     
-    const balances = tokenLedger.getTokenBalances(userId);
+    const balances = await tokenLedger.getTokenBalances(userId);
     
     res.json({
       ok: true,
@@ -537,7 +547,7 @@ billingRouter.post("/start-trial", requireAuth, async (req, res) => {
  * POST /api/billing/redeem-coupon
  * Redeems a coupon code to activate a subscription without Stripe checkout.
  */
-billingRouter.post("/redeem-coupon", requireAuth, (req, res) => {
+billingRouter.post("/redeem-coupon", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
     const { code } = req.body;
@@ -549,9 +559,10 @@ billingRouter.post("/redeem-coupon", requireAuth, (req, res) => {
     const normalizedCode = code.trim().toUpperCase();
 
     // Look up the coupon
-    const coupon = db.prepare(
-      "SELECT * FROM coupons WHERE code = ? AND active = 1"
-    ).get(normalizedCode);
+    const coupon = await dbGet(
+      "SELECT * FROM coupons WHERE code = ? AND active = 1",
+      [normalizedCode]
+    );
 
     if (!coupon) {
       return res.status(404).json({ ok: false, error: "Invalid or expired coupon code" });
@@ -568,16 +579,17 @@ billingRouter.post("/redeem-coupon", requireAuth, (req, res) => {
     }
 
     // Check if user already redeemed this coupon
-    const existing = db.prepare(
-      "SELECT id FROM coupon_redemptions WHERE coupon_id = ? AND user_id = ?"
-    ).get(coupon.id, userId);
+    const existing = await dbGet(
+      "SELECT id FROM coupon_redemptions WHERE coupon_id = ? AND user_id = ?",
+      [coupon.id, userId]
+    );
 
     if (existing) {
       return res.status(400).json({ ok: false, error: "You have already redeemed this coupon" });
     }
 
     // Check user exists
-    const user = db.prepare("SELECT id, email FROM users WHERE id = ?").get(userId);
+    const user = await dbGet("SELECT id, email FROM users WHERE id = ?", [userId]);
     if (!user) {
       return res.status(404).json({ ok: false, error: "User not found" });
     }
@@ -588,42 +600,43 @@ billingRouter.post("/redeem-coupon", requireAuth, (req, res) => {
     periodEnd.setDate(periodEnd.getDate() + coupon.duration_days);
 
     // Record the redemption
-    db.prepare(
-      "INSERT INTO coupon_redemptions (coupon_id, user_id) VALUES (?, ?)"
-    ).run(coupon.id, userId);
+    await dbRun(
+      "INSERT INTO coupon_redemptions (coupon_id, user_id) VALUES (?, ?)",
+      [coupon.id, userId]
+    );
 
-    // Increment coupon usage
-    db.prepare(
-      "UPDATE coupons SET times_redeemed = times_redeemed + 1 WHERE id = ?"
-    ).run(coupon.id);
+    await dbRun(
+      "UPDATE coupons SET times_redeemed = times_redeemed + 1 WHERE id = ?",
+      [coupon.id]
+    );
 
-    // Upsert subscription record (bypass Stripe entirely)
-    const existingSub = db.prepare(
-      "SELECT id FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1"
-    ).get(userId);
+    const existingSub = await dbGet(
+      "SELECT id FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+      [userId]
+    );
 
     if (existingSub) {
-      db.prepare(`
+      await dbRun(`
         UPDATE subscriptions
         SET status = 'active', plan = ?, period_start = ?, period_end = ?, updated_at = ?
         WHERE id = ?
-      `).run(coupon.plan, now.toISOString(), periodEnd.toISOString(), now.toISOString(), existingSub.id);
+      `, [coupon.plan, now.toISOString(), periodEnd.toISOString(), now.toISOString(), existingSub.id]);
     } else {
-      db.prepare(`
+      await dbRun(`
         INSERT INTO subscriptions (user_id, status, plan, period_start, period_end, created_at, updated_at)
         VALUES (?, 'active', ?, ?, ?, ?, ?)
-      `).run(userId, coupon.plan, now.toISOString(), periodEnd.toISOString(), now.toISOString(), now.toISOString());
+      `, [userId, coupon.plan, now.toISOString(), periodEnd.toISOString(), now.toISOString(), now.toISOString()]);
     }
 
-    // Update user tier
-    db.prepare(
-      "UPDATE users SET subscription_tier = ?, subscription_active = 1, updated_at = ? WHERE id = ?"
-    ).run(coupon.plan, now.toISOString(), userId);
+    await dbRun(
+      "UPDATE users SET subscription_tier = ?, subscription_active = 1, updated_at = ? WHERE id = ?",
+      [coupon.plan, now.toISOString(), userId]
+    );
 
     // Grant tokens for the plan
-    tokenLedger.grantSubscriptionTokens(userId, coupon.plan);
+    await tokenLedger.grantSubscriptionTokens(userId, coupon.plan);
 
-    const balances = tokenLedger.getTokenBalances(userId);
+    const balances = await tokenLedger.getTokenBalances(userId);
 
     console.log(`[billing] Coupon ${normalizedCode} redeemed by user ${userId} → plan: ${coupon.plan}`);
 
@@ -651,13 +664,13 @@ billingRouter.post("/redeem-coupon", requireAuth, (req, res) => {
  * GET /api/billing/token-history
  * Returns token usage history for the user
  */
-billingRouter.get("/token-history", requireAuth, (req, res) => {
+billingRouter.get("/token-history", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     const offset = parseInt(req.query.offset) || 0;
     
-    const history = tokenLedger.getTokenHistory(userId, limit, offset);
+    const history = await tokenLedger.getTokenHistory(userId, limit, offset);
     
     res.json({
       ok: true,
@@ -717,7 +730,7 @@ stripeWebhookRouter.post("/webhook", async (req, res) => {
   } catch (err) {
     console.error("[stripe] Webhook processing error:", err);
     // Return 200 to prevent Stripe from retrying (we've logged the error)
-    res.status(200).json({ ok: false, error: err.message });
+    res.status(200).json({ ok: false, error: "Webhook processing failed" });
   }
 });
 
@@ -727,19 +740,28 @@ stripeWebhookRouter.post("/webhook", async (req, res) => {
 
 /**
  * POST /api/billing/verify-email
- * Marks email as verified (in real implementation, this would validate a token)
+ * Validates a signed verification token (from send-verification email link).
  */
-billingRouter.post("/verify-email", requireAuth, (req, res) => {
+billingRouter.post("/verify-email", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
-    const { token } = req.body;
-    
-    // In a real implementation, you would:
-    // 1. Validate the token against a stored verification token
-    // 2. Check token expiration
-    // For MVP, we'll just mark as verified
-    
-    trialAntiAbuse.markEmailVerified(userId);
+    const { token } = req.body || {};
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ ok: false, error: "Verification token required" });
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(token, TOKEN_SECRET, JWT_VERIFY_OPTIONS);
+    } catch {
+      return res.status(400).json({ ok: false, error: "Invalid or expired verification token" });
+    }
+
+    if (payload.purpose !== "email_verify" || payload.sub !== userId) {
+      return res.status(400).json({ ok: false, error: "Invalid verification token" });
+    }
+
+    await trialAntiAbuse.markEmailVerified(userId);
     
     res.json({
       ok: true,
@@ -753,30 +775,41 @@ billingRouter.post("/verify-email", requireAuth, (req, res) => {
 
 /**
  * POST /api/billing/send-verification
- * Sends email verification (placeholder for actual email sending)
+ * Issues a signed verification token (deliver via email in production).
  */
-billingRouter.post("/send-verification", requireAuth, (req, res) => {
+billingRouter.post("/send-verification", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
-    
-    // Get user email
-    const user = db.prepare("SELECT email FROM users WHERE id = ?").get(userId);
+    const user = await dbGet("SELECT email, oauth_provider FROM users WHERE id = ?", [userId]);
     if (!user) {
       return res.status(404).json({ ok: false, error: "User not found" });
     }
-    
-    // In a real implementation, you would:
-    // 1. Generate a verification token
-    // 2. Store the token with expiration
-    // 3. Send an email with the verification link
-    
-    console.log(`[billing] Verification email would be sent to ${user.email}`);
-    
-    res.json({
+
+    if (user.oauth_provider) {
+      await trialAntiAbuse.markEmailVerified(userId);
+      return res.json({ ok: true, message: "Email already verified via OAuth", email: user.email });
+    }
+
+    const verifyToken = jwt.sign(
+      { sub: userId, purpose: "email_verify" },
+      TOKEN_SECRET,
+      { expiresIn: "24h", algorithm: "HS256" }
+    );
+
+    const frontendBase = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+    const verifyUrl = `${frontendBase}/settings.html?verify_token=${encodeURIComponent(verifyToken)}`;
+
+    console.log(`[billing] Verification link for ${user.email}: ${verifyUrl}`);
+
+    const response = {
       ok: true,
       message: "Verification email sent",
       email: user.email,
-    });
+    };
+    if (process.env.NODE_ENV !== "production") {
+      response.devVerifyUrl = verifyUrl;
+    }
+    res.json(response);
   } catch (err) {
     console.error("[billing] Send verification error:", err);
     res.status(500).json({ ok: false, error: "Failed to send verification email" });

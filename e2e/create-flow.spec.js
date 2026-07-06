@@ -6,28 +6,27 @@ async function completeRound(page) {
   const card = page.locator(".quiz-card").last();
   await expect(card).toBeVisible({ timeout: 60000 });
 
-  await card.evaluate((el) => {
-    el.querySelectorAll(".quiz-question").forEach((qEl) => {
-      const options = qEl.querySelectorAll(".option-btn");
-      if (options.length) {
-        const selected = qEl.querySelector(".option-btn.selected");
-        (selected || options[0]).click();
-        return;
-      }
-      const fill = qEl.querySelector(".fill-input");
-      if (fill) {
-        fill.value = "chlorophyll";
-        fill.dispatchEvent(new Event("input", { bubbles: true }));
-        return;
-      }
-      const free = qEl.querySelector(".free-input");
-      if (free) {
-        free.value =
-          "Plants use sunlight water and carbon dioxide to make sugar and release oxygen";
-        free.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-    });
-  });
+  const questions = card.locator(".quiz-question");
+  const count = await questions.count();
+  for (let i = 0; i < count; i++) {
+    const q = questions.nth(i);
+    const option = q.locator(".option-btn").first();
+    if (await option.count()) {
+      await option.click();
+      continue;
+    }
+    const fill = q.locator(".fill-input");
+    if (await fill.count()) {
+      await fill.fill("chlorophyll");
+      continue;
+    }
+    const free = q.locator(".free-input");
+    if (await free.count()) {
+      await free.fill(
+        "Plants use sunlight water and carbon dioxide to make sugar and release oxygen"
+      );
+    }
+  }
 
   await card.locator(".btn-round").click({ force: true });
   await expect(page.locator(".review-score").last()).toBeVisible({ timeout: 30000 });
@@ -37,7 +36,7 @@ test.beforeEach(async ({ page }) => {
   await installMockApi(page);
 });
 
-test("study chat mock flow: login → plan → 3 rounds → note → history → requiz → settings", async ({ page }) => {
+test("study chat mock flow: login → plan → mixed quiz → note → history → requiz → settings", async ({ page }) => {
   const email = `e2e-${Date.now()}@example.com`;
   const password = "testpassword123";
 
@@ -53,14 +52,9 @@ test("study chat mock flow: login → plan → 3 rounds → note → history →
 
   await expect(page.locator("text=Your study plan")).toBeVisible({ timeout: 60000 });
 
-  for (let round = 0; round < 3; round++) {
-    await completeRound(page);
-    const reviewMsg = page.locator(".msg.ai").filter({ has: page.locator(".review-score") }).last();
-    await reviewMsg.locator(".btn-round").click({ force: true });
-    if (round < 2) {
-      await expect(page.locator(".quiz-card").last()).toBeVisible({ timeout: 60000 });
-    }
-  }
+  await completeRound(page);
+  const reviewMsg = page.locator(".msg.ai").filter({ has: page.locator(".review-score") }).last();
+  await reviewMsg.locator(".btn-round").click({ force: true });
 
   await expect(
     page.locator("text=Your study note").or(page.locator("text=Sorry, I couldn't write the note"))

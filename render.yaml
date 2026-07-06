@@ -12,11 +12,19 @@ services:
         value: production
       - key: JWT_SECRET
         generateValue: true
+      - key: SYNC_TOKEN
+        generateValue: true
+      - key: ADMIN_EMAILS
+        sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: CORS_ORIGIN
         sync: false
       - key: FRONTEND_URL
+        sync: false
+      - key: BACKEND_URL
+        sync: false
+      - key: OAUTH_REDIRECT_URI
         sync: false
       - key: DATABASE_URL
         fromDatabase:
@@ -43,6 +51,18 @@ services:
       - path: /*
         name: Cache-Control
         value: no-cache
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
     routes:
       - type: rewrite
         source: /science

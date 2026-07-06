@@ -64,14 +64,20 @@
   // =============================================
 
   function handleOAuthCallback() {
-    // 行业标准：token 经 fragment (#) 回传，不进入 Referer；错误仍用 query
+    // 行业标准：token 仅经 fragment (#) 回传，不进入 Referer/服务器日志
     const hash = window.location.hash.slice(1);
     const search = window.location.search;
     const fromHash = hash ? new URLSearchParams(hash) : null;
     const fromSearch = search ? new URLSearchParams(search) : null;
-    const token = (fromHash && fromHash.get('oauth_token')) || (fromSearch && fromSearch.get('oauth_token'));
-    const success = (fromHash && fromHash.get('oauth_success')) || (fromSearch && fromSearch.get('oauth_success'));
+    const token = fromHash && fromHash.get('oauth_token');
+    const success = fromHash && fromHash.get('oauth_success');
     const error = (fromSearch && fromSearch.get('oauth_error')) || (fromHash && fromHash.get('oauth_error'));
+
+    if (fromSearch && fromSearch.get('oauth_token')) {
+      showError('Invalid OAuth callback: token must not appear in URL query parameters.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
 
     if (error) {
       showError(decodeURIComponent(error));
@@ -122,10 +128,10 @@
     handleCallback: handleOAuthCallback
   };
 
-  // Auto-handle callback on page load（fragment 或 query 任一含 oauth 参数即处理）
+  // Auto-handle callback on page load（仅 fragment 含 oauth 参数时处理）
   const hash = window.location.hash.slice(1);
-  if (window.location.search.includes('oauth_token') || window.location.search.includes('oauth_error') ||
-      (hash && (hash.includes('oauth_token') || hash.includes('oauth_error')))) {
+  if ((hash && (hash.includes('oauth_token') || hash.includes('oauth_error'))) ||
+      window.location.search.includes('oauth_error')) {
     handleOAuthCallback();
   }
 })();

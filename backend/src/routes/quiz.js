@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { nanoid } from "nanoid";
-import { optionalAuth, requireAuth } from "./auth.js";
+import { requireAuth } from "./auth.js";
 import { db, ensureColumn } from "../lib/db.js";
 import { USE_POSTGRES, dbGet, dbRun, dbAll } from "../lib/dbHelpers.js";
 import { chatJsonAnthropic } from "../lib/anthropicClient.js";
@@ -42,6 +42,16 @@ CREATE TABLE IF NOT EXISTS study_projects (
   CONSTRAINT fk_project_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 CREATE INDEX IF NOT EXISTS idx_study_projects_user ON study_projects(user_id, updated_at);
+
+CREATE TABLE IF NOT EXISTS study_folders (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  CONSTRAINT fk_folder_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_study_folders_user ON study_folders(user_id, updated_at);
 
 CREATE TABLE IF NOT EXISTS project_files (
   id TEXT PRIMARY KEY,
@@ -152,6 +162,7 @@ if (!USE_POSTGRES) {
 
 await Promise.resolve(ensureColumn("quiz_results", "project_id", "TEXT"));
 await Promise.resolve(ensureColumn("quiz_results", "round_label", "TEXT"));
+await Promise.resolve(ensureColumn("study_projects", "folder_id", "TEXT"));
 await Promise.resolve(ensureColumn("quiz_questions", "source_reference", "TEXT"));
 await Promise.resolve(ensureColumn("quiz_questions", "topic_node", "TEXT"));
 await Promise.resolve(ensureColumn("quiz_questions", "difficulty", "TEXT"));
@@ -812,7 +823,28 @@ function buildMockAnalysis(content, examTopicHint = "", projectName = "") {
   };
 }
 
-function buildMockQuiz(analysis, allowedTypes, numQuestions, ragSnippets, fallbackSource) {
+function buildTypeQueueFromMix(typeMix, numQuestions, allowedTypes) {
+  if (!typeMix || typeof typeMix !== "object") return null;
+  const queue = [];
+  const entries = [
+    ["multiple_choice", Number(typeMix.multiple_choice) || 0],
+    ["fill_in_the_blank", Number(typeMix.fill_in_the_blank) || 0],
+    ["free_response", Number(typeMix.free_response) || 0],
+    ["true_false", Number(typeMix.true_false) || 0],
+  ].filter(([type, count]) => count > 0 && allowedTypes.includes(type));
+
+  for (const [type, count] of entries) {
+    for (let i = 0; i < count; i++) queue.push(type);
+  }
+
+  if (!queue.length) return null;
+  while (queue.length < numQuestions) {
+    queue.push(allowedTypes[queue.length % allowedTypes.length] || "multiple_choice");
+  }
+  return queue.slice(0, numQuestions);
+}
+
+function buildMockQuiz(analysis, allowedTypes, numQuestions, ragSnippets, fallbackSource, typeMix) {
   const topics = Array.isArray(analysis?.topics) && analysis.topics.length ? analysis.topics : ["General"];
   const sources = Array.isArray(ragSnippets) && ragSnippets.length
     ? ragSnippets.map((item) => item.source || item.fileName || fallbackSource)
@@ -821,13 +853,15 @@ function buildMockQuiz(analysis, allowedTypes, numQuestions, ragSnippets, fallba
   const bloomLevels = ["remember", "understand", "apply", "analyze", "evaluate", "create"];
   const difficulties = ["easy", "medium", "hard"];
 
-  const typeQueue = [];
-  if (allowedTypes.includes("free_response")) {
-    const frqCount = Math.max(1, Math.ceil(numQuestions * 0.4));
-    for (let i = 0; i < frqCount; i++) typeQueue.push("free_response");
-  }
-  while (typeQueue.length < numQuestions) {
-    typeQueue.push(allowedTypes[typeQueue.length % allowedTypes.length] || "multiple_choice");
+  const typeQueue = buildTypeQueueFromMix(typeMix, numQuestions, allowedTypes) || [];
+  if (!typeQueue.length) {
+    if (allowedTypes.includes("free_response")) {
+      const frqCount = Math.max(1, Math.ceil(numQuestions * 0.4));
+      for (let i = 0; i < frqCount; i++) typeQueue.push("free_response");
+    }
+    while (typeQueue.length < numQuestions) {
+      typeQueue.push(allowedTypes[typeQueue.length % allowedTypes.length] || "multiple_choice");
+    }
   }
 
   return typeQueue.slice(0, numQuestions).map((type, index) => {
@@ -898,17 +932,23 @@ function buildMockQuiz(analysis, allowedTypes, numQuestions, ragSnippets, fallba
   });
 }
 
-function buildQuizPrompt(content, analysis, types, numQuestions, sourcePack) {
+function buildQuizPrompt(content, analysis, types, numQuestions, sourcePack, typeMix) {
   const typeList = types.join(", ");
-  const frqPriority = types.includes("free_response")
-    ? "If free_response is allowed, generate at least 40% free_response questions first, then fill the rest with other types."
-    : "";
+  const mixHint =
+    typeMix && typeof typeMix === "object"
+      ? `Distribute questions using this mix (counts): ${JSON.stringify(typeMix)}.`
+      : "";
+  const frqPriority =
+    !mixHint && types.includes("free_response")
+      ? "If free_response is allowed, generate at least 40% free_response questions first, then fill the rest with other types."
+      : "";
 
   return {
     system: [
       "You are an expert quiz generator for exam prep.",
       SIMPLE_LANGUAGE_RULE,
       `Generate exactly ${numQuestions} quiz questions using ONLY these question types: ${typeList}.`,
+      mixHint,
       frqPriority,
       "Use Bloom's Taxonomy levels across questions for balanced cognitive depth.",
       "Return a JSON array where each element has:",
@@ -1118,6 +1158,97 @@ function buildExamPrepNudge() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
+// Project Folders
+// ────────────────────────────────────────────────────────────────────────────────
+
+quizRouter.get("/folders", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const rows = await dbAll(
+      `SELECT id, name, created_at, updated_at
+       FROM study_folders
+       WHERE user_id = ?
+       ORDER BY updated_at DESC`,
+      [userId]
+    );
+    const folders = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+    return res.json({ ok: true, folders });
+  } catch (err) {
+    console.error("[quizall] folders list error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load folders" });
+  }
+});
+
+quizRouter.post("/folders", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const name = normalizeWhitespace(req.body?.name || "");
+    if (!name || name.length < 2 || name.length > 80) {
+      return res.status(400).json({ ok: false, error: "Folder name must be 2-80 characters" });
+    }
+    const folderId = nanoid(12);
+    const now = new Date().toISOString();
+    await dbRun(
+      `INSERT INTO study_folders (id, user_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+      [folderId, userId, name, now, now]
+    );
+    return res.status(201).json({
+      ok: true,
+      folder: { id: folderId, name, createdAt: now, updatedAt: now },
+    });
+  } catch (err) {
+    console.error("[quizall] folders create error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to create folder" });
+  }
+});
+
+quizRouter.patch("/folders/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const folderId = req.params.id;
+    const row = await dbGet(`SELECT id, name FROM study_folders WHERE id = ? AND user_id = ?`, [folderId, userId]);
+    if (!row) return res.status(404).json({ ok: false, error: "Folder not found" });
+
+    const name = normalizeWhitespace(req.body?.name || "");
+    if (!name || name.length < 2 || name.length > 80) {
+      return res.status(400).json({ ok: false, error: "Folder name must be 2-80 characters" });
+    }
+    const now = new Date().toISOString();
+    await dbRun(`UPDATE study_folders SET name = ?, updated_at = ? WHERE id = ? AND user_id = ?`, [
+      name,
+      now,
+      folderId,
+      userId,
+    ]);
+    return res.json({ ok: true, folder: { id: folderId, name, updatedAt: now } });
+  } catch (err) {
+    console.error("[quizall] folders patch error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to update folder" });
+  }
+});
+
+quizRouter.delete("/folders/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const folderId = req.params.id;
+    const row = await dbGet(`SELECT id FROM study_folders WHERE id = ? AND user_id = ?`, [folderId, userId]);
+    if (!row) return res.status(404).json({ ok: false, error: "Folder not found" });
+
+    await dbRun(`UPDATE study_projects SET folder_id = NULL WHERE folder_id = ? AND user_id = ?`, [folderId, userId]);
+    await dbRun(`DELETE FROM study_folders WHERE id = ? AND user_id = ?`, [folderId, userId]);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("[quizall] folders delete error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to delete folder" });
+  }
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
 // Project System
 // ────────────────────────────────────────────────────────────────────────────────
 
@@ -1127,7 +1258,7 @@ quizRouter.get("/projects", requireAuth, async (req, res) => {
     const limit = Math.min(PROJECT_MAX_LIMIT, Math.max(1, Number.parseInt(req.query.limit, 10) || 30));
 
     const rows = await dbAll(
-      `SELECT sp.id, sp.name, sp.exam_name, sp.exam_date, sp.description, sp.created_at, sp.updated_at,
+      `SELECT sp.id, sp.name, sp.exam_name, sp.exam_date, sp.description, sp.folder_id, sp.created_at, sp.updated_at,
               (SELECT COUNT(*) FROM project_files pf WHERE pf.project_id = sp.id) AS file_count,
               (SELECT COUNT(*) FROM quiz_results qr WHERE qr.project_id = sp.id AND qr.user_id = sp.user_id) AS quiz_count,
               (SELECT qr.score FROM quiz_results qr WHERE qr.project_id = sp.id AND qr.user_id = sp.user_id ORDER BY qr.created_at DESC LIMIT 1) AS latest_score,
@@ -1145,6 +1276,7 @@ quizRouter.get("/projects", requireAuth, async (req, res) => {
       examName: row.exam_name,
       examDate: row.exam_date,
       description: row.description,
+      folderId: row.folder_id || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       fileCount: Number(row.file_count) || 0,
@@ -1210,7 +1342,8 @@ quizRouter.patch("/projects/:id", requireAuth, async (req, res) => {
     const body = req.body || {};
     const hasExamDate = Object.prototype.hasOwnProperty.call(body, "examDate");
     const hasName = Object.prototype.hasOwnProperty.call(body, "name");
-    if (!hasExamDate && !hasName) {
+    const hasFolderId = Object.prototype.hasOwnProperty.call(body, "folderId");
+    if (!hasExamDate && !hasName && !hasFolderId) {
       return res.status(400).json({ ok: false, error: "No updatable project field provided" });
     }
 
@@ -1235,6 +1368,18 @@ quizRouter.patch("/projects/:id", requireAuth, async (req, res) => {
       }
       updates.push("exam_date = ?");
       params.push(nextExamDate);
+    }
+
+    if (hasFolderId) {
+      const folderId = body.folderId == null || body.folderId === "" ? null : String(body.folderId);
+      if (folderId) {
+        const folder = await dbGet(`SELECT id FROM study_folders WHERE id = ? AND user_id = ?`, [folderId, userId]);
+        if (!folder) {
+          return res.status(404).json({ ok: false, error: "Folder not found" });
+        }
+      }
+      updates.push("folder_id = ?");
+      params.push(folderId);
     }
 
     const now = new Date().toISOString();
@@ -1813,7 +1958,7 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[quizall] study-plan POST error:", err);
     if (err.code === "ANTHROPIC_DISABLED") {
-      return res.status(503).json({ ok: false, error: "AI service is currently unavailable" });
+      return res.status(503).json({ ok: false, error: "AI service not configured. Set ANTHROPIC_API_KEY." });
     }
     return res.status(500).json({ ok: false, error: "Failed to generate study plan" });
   }
@@ -1899,9 +2044,9 @@ quizRouter.post("/projects/:id/note", requireAuth, async (req, res) => {
 // Quiz Generation
 // ────────────────────────────────────────────────────────────────────────────────
 
-quizRouter.post("/generate", optionalAuth, async (req, res) => {
+quizRouter.post("/generate", requireAuth, async (req, res) => {
   try {
-    const userId = req.user?.sub || null;
+    const userId = req.user.sub;
     const body = req.body || {};
 
     const requestedTypes = Array.isArray(body.types) ? body.types : [];
@@ -1926,16 +2071,25 @@ quizRouter.post("/generate", optionalAuth, async (req, res) => {
       });
     }
 
+    let typeMix = null;
+    if (body.typeMix && typeof body.typeMix === "object") {
+      typeMix = {};
+      for (const [key, val] of Object.entries(body.typeMix)) {
+        const normalized = normalizeType(key);
+        const count = Number.parseInt(val, 10);
+        if (VALID_QUESTION_TYPES.has(normalized) && Number.isInteger(count) && count > 0) {
+          typeMix[normalized] = count;
+        }
+      }
+      if (!Object.keys(typeMix).length) typeMix = null;
+    }
+
     const projectId = normalizeWhitespace(body.projectId || "") || null;
     let project = null;
     let projectFiles = [];
     let projectExamTopics = "";
 
     if (projectId) {
-      if (!userId) {
-        return res.status(401).json({ ok: false, error: "Login required for project-based quiz generation" });
-      }
-
       project = await getProjectForUser(projectId, userId);
       if (!project) {
         return res.status(404).json({ ok: false, error: "Project not found" });
@@ -1975,7 +2129,7 @@ quizRouter.post("/generate", optionalAuth, async (req, res) => {
     const fallbackSource = project ? `${project.name} materials` : "Provided content";
     if (allowMockAi()) {
       const mockAnalysis = buildMockAnalysis(content, examTopicHint, project?.exam_name || project?.name || "");
-      const mockQuiz = buildMockQuiz(mockAnalysis, normalizedTypes, numQuestions, rag.snippets, fallbackSource);
+      const mockQuiz = buildMockQuiz(mockAnalysis, normalizedTypes, numQuestions, rag.snippets, fallbackSource, typeMix);
       const normalizedMockQuiz = normalizeGeneratedQuizPayload(
         mockQuiz,
         normalizedTypes,
@@ -2034,7 +2188,7 @@ quizRouter.post("/generate", optionalAuth, async (req, res) => {
     }
 
     const quizStart = Date.now();
-    const quizPrompt = buildQuizPrompt(content, analysis, normalizedTypes, numQuestions, sourcePackString);
+    const quizPrompt = buildQuizPrompt(content, analysis, normalizedTypes, numQuestions, sourcePackString, typeMix);
     const quizResult = await chatJsonAnthropic({
       system: quizPrompt.system,
       user: quizPrompt.user,

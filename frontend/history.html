@@ -312,7 +312,7 @@
   <script>
   (function () {
     if (!window.authGuard || !window.authGuard.getToken()) {
-      window.location.href = 'index.html';
+      window.location.href = 'index.html?login=1#authSection';
       return;
     }
 
@@ -378,7 +378,7 @@
       const options = ['<option value="">All Projects</option>'];
       state.projects.forEach(function (project) {
         const selected = state.projectId === project.id ? ' selected' : '';
-        options.push('<option value="' + project.id + '"' + selected + '>' + escapeHtml(project.name) + '</option>');
+        options.push('<option value="' + escapeHtml(project.id) + '"' + selected + '>' + escapeHtml(project.name) + '</option>');
       });
       els.projectFilter.innerHTML = options.join('');
     }
@@ -392,7 +392,7 @@
       const html = items.map(function (item) {
         const accuracy = Number(item.accuracy) || 0;
         const projectText = item.projectName || item.projectId || 'Unscoped';
-        return '<article class="item" data-id="' + item.id + '">' +
+        return '<article class="item" data-id="' + escapeHtml(item.id) + '">' +
           '<div>' +
             '<h3 class="item-title">' + escapeHtml(item.subject || 'Quiz') + '</h3>' +
             '<div class="item-meta">' +
@@ -404,7 +404,7 @@
           '</div>' +
           '<div class="row" style="align-items:flex-start;">' +
             '<span class="score ' + scoreClass(accuracy) + '">' + accuracy + '%</span>' +
-            '<button class="btn btn-danger" data-delete="' + item.id + '">Delete</button>' +
+            '<button class="btn btn-danger" data-delete="' + escapeHtml(item.id) + '">Delete</button>' +
           '</div>' +
         '</article>';
       }).join('');

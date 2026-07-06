@@ -11,7 +11,7 @@
  *   - Question Wizard: 30 times/day
  */
 
-import { db } from "./db.js";
+import { dbGet, dbRun } from "./dbHelpers.js";
 import { stripeService } from "./stripeService.js";
 import { getLocalDateKey, normalizeTimeZone } from "./timezone.js";
 import {
@@ -61,24 +61,21 @@ const PLAN_LIMITS = {
  * Get user's effective plan
  * Returns: 'free', 'monthly', 'yearly', or 'trial'
  */
-export function getUserPlan(userId) {
-  if (!userId) {
-    return 'free';
+export async function getUserPlan(userId) {
+  if (!userId) return "free";
+
+  const subscription = await stripeService.getSubscriptionStatus(userId);
+
+  if (
+    subscription.status === SUBSCRIPTION_STATUS.TRIALING ||
+    subscription.status === SUBSCRIPTION_STATUS.ACTIVE
+  ) {
+    if (subscription.plan === "monthly") return "monthly";
+    if (subscription.plan === "yearly") return "yearly";
+    if (subscription.status === SUBSCRIPTION_STATUS.TRIALING) return "trial";
   }
-  
-  const subscription = stripeService.getSubscriptionStatus(userId);
-  
-  // Check subscription status
-  if (subscription.status === SUBSCRIPTION_STATUS.TRIALING || 
-      subscription.status === SUBSCRIPTION_STATUS.ACTIVE) {
-    // Map plan to our internal plan types
-    if (subscription.plan === 'monthly') return 'monthly';
-    if (subscription.plan === 'yearly') return 'yearly';
-    // Trial users get paid plan limits
-    if (subscription.status === SUBSCRIPTION_STATUS.TRIALING) return 'trial';
-  }
-  
-  return 'free';
+
+  return "free";
 }
 
 /**
@@ -123,62 +120,43 @@ export function canUseMode(userId, mode) {
  * @param {string} featureType - 'prompt_optimization' or 'question_wizard'
  * @param {string} date - Date in YYYY-MM-DD format (defaults to today)
  */
-export function getDailyUsage(userId, featureType, date = null) {
+export async function getDailyUsage(userId, featureType, date = null) {
   if (!userId) return 0;
 
   if (!date) {
-    const row = db.prepare("SELECT timezone FROM users WHERE id = ?").get(userId);
+    const row = await dbGet("SELECT timezone FROM users WHERE id = ?", [userId]);
     const tz = normalizeTimeZone(row?.timezone);
     date = getLocalDateKey(tz, new Date());
   }
-  
+
   try {
-    const result = db.prepare(`
-      SELECT COUNT(*) as count
-      FROM plan_usage
-      WHERE user_id = ? 
-        AND feature_type = ? 
-        AND date = ?
-    `).get(userId, featureType, date);
-    
-    const count = result?.count || 0;
-    console.log(`[planLimits] Daily usage for user ${userId}, feature ${featureType}, date ${date}: ${count}`);
-    return count;
+    const result = await dbGet(
+      `SELECT COUNT(*) as count FROM plan_usage
+       WHERE user_id = ? AND feature_type = ? AND date = ?`,
+      [userId, featureType, date]
+    );
+    return Number(result?.count) || 0;
   } catch (err) {
-    console.error(`[planLimits] ❌ Failed to get daily usage:`, err);
+    console.error(`[planLimits] Failed to get daily usage:`, err);
     return 0;
   }
 }
 
-/**
- * Record usage of a feature
- * @param {string} userId - User ID
- * @param {string} featureType - 'prompt_optimization' or 'question_wizard'
- */
-export function recordUsage(userId, featureType) {
+export async function recordUsage(userId, featureType) {
   if (!userId) return;
 
-  const row = db.prepare("SELECT timezone FROM users WHERE id = ?").get(userId);
+  const row = await dbGet("SELECT timezone FROM users WHERE id = ?", [userId]);
   const tz = normalizeTimeZone(row?.timezone);
   const today = getLocalDateKey(tz, new Date());
   const now = new Date().toISOString();
-  
-  console.log(`[planLimits] Recording usage for user ${userId}, feature: ${featureType}, date: ${today}`);
-  
+
   try {
-    db.prepare(`
-      INSERT INTO plan_usage (id, user_id, feature_type, date, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(
-      `usage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      userId,
-      featureType,
-      today,
-      now
+    await dbRun(
+      `INSERT INTO plan_usage (id, user_id, feature_type, date, created_at) VALUES (?, ?, ?, ?, ?)`,
+      [`usage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, userId, featureType, today, now]
     );
-    console.log(`[planLimits] ✅ Usage recorded successfully`);
   } catch (err) {
-    console.error(`[planLimits] ❌ Failed to record usage:`, err);
+    console.error(`[planLimits] Failed to record usage:`, err);
   }
 }
 

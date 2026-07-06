@@ -4,7 +4,6 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import { db } from "./lib/db.js";
 import { authRouter } from "./routes/auth.js";
 import { billingRouter, stripeWebhookRouter } from "./routes/billing.js";
 import { analyticsRouter } from "./routes/analytics.js";
@@ -16,21 +15,30 @@ import { dailyRefreshJob } from "./lib/dailyRefreshJob.js";
 import dailyCompensationJob from "./lib/dailyCompensationJob.js";
 import { FEATURES } from "./lib/subscriptionConfig.js";
 
-dotenv.config();
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
+
 const app = express();
+const isProd = process.env.NODE_ENV === "production";
 
 // 生产环境在 Render 等单层反向代理后：用 1 而非 true，避免 express-rate-limit 报 ERR_ERL_PERMISSIVE_TRUST_PROXY（trust proxy true 会允许伪造 X-Forwarded-For 绕过 IP 限流）
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
 
-// 支持单个域名或逗号分隔多域名，例如：https://quizall.app 或 https://quizall.app,https://www.quizall.app,https://newdomain.com
-const CORS_ORIGIN_RAW = (process.env.CORS_ORIGIN || "*").trim();
+// 生产环境必须显式配置 CORS_ORIGIN，禁止通配符
+const CORS_ORIGIN_RAW = (process.env.CORS_ORIGIN || (isProd ? "" : "*")).trim();
 const CORS_ALLOWED = CORS_ORIGIN_RAW === "*" ? ["*"] : CORS_ORIGIN_RAW.split(",").map((o) => o.trim()).filter(Boolean);
+if (isProd && (!CORS_ORIGIN_RAW || CORS_ORIGIN_RAW === "*")) {
+  console.error("[quizall] WARNING: CORS_ORIGIN must be set to explicit origin(s) in production. Cross-origin requests will be blocked.");
+}
 app.use(cors({
-  origin: CORS_ALLOWED[0] === "*" ? "*" : (origin, cb) => {
+  origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    const ok = CORS_ALLOWED.includes(origin) || CORS_ALLOWED.includes("*");
+    if (!isProd && CORS_ALLOWED[0] === "*") return cb(null, true);
+    if (isProd && (CORS_ALLOWED.length === 0 || CORS_ALLOWED[0] === "*")) return cb(null, false);
+    const ok = CORS_ALLOWED.includes(origin);
     if (!ok) console.warn(`[quizall] CORS blocked origin: "${origin}" (allowed: ${CORS_ALLOWED.join(", ")})`);
     cb(null, ok);
   },
@@ -86,9 +94,28 @@ const quizGenerateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const analyticsTrackLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { ok: false, error: "Too many analytics events." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const couponRedeemLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { ok: false, error: "Too many coupon attempts. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
+
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/quiz/generate', quizGenerateLimiter);
+app.use('/api/analytics/track', analyticsTrackLimiter);
+app.use('/api/billing/redeem-coupon', couponRedeemLimiter);
 app.use('/api/', apiLimiter);
 
 app.use((req, res, next) => {
@@ -109,7 +136,6 @@ app.get("/api/settings", (req, res) => {
   res.json({
     ok: true,
     settings: {
-      env: process.env.NODE_ENV || "development",
       features: {
         quizGeneration: true,
         fileUpload: true,
@@ -153,13 +179,16 @@ if (FEATURES.subscriptionsEnabled) {
 }
 
 app.get("/", (req, res) => {
+  if (isProd) {
+    return res.json({ ok: true, service: "QuizAll Backend API", status: "running" });
+  }
   res.json({
     ok: true,
     service: "QuizAll Backend API",
     version: "1.0.0",
     status: "running",
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "production",
+    environment: process.env.NODE_ENV || "development",
     availableEndpoints: {
       health: "GET /api/health",
       settings: "GET /api/settings",

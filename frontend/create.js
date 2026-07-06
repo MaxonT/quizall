@@ -2,11 +2,9 @@
   "use strict";
 
   const API_BASE = window.authGuard?.API_BASE || window.QUIZALL_API_BASE || "http://localhost:8080";
-  const ROUNDS = [
-    { key: "mcq", label: "Round 1 · Multiple Choice", short: "Round 1", types: ["multiple_choice"], numQuestions: 5 },
-    { key: "fib", label: "Round 2 · Fill in the Blank", short: "Round 2", types: ["fill_in_the_blank"], numQuestions: 5 },
-    { key: "frq", label: "Round 3 · Short Answer", short: "Round 3", types: ["free_response"], numQuestions: 3 },
-  ];
+  const CONTENT_MIN_LENGTH = 30;
+  const TYPE_MIX_KEY = "quizall.typeMix";
+  const DEFAULT_TYPE_MIX = { mcq: 54, fib: 31, frq: 15, totalQuestions: 13 };
 
   const state = {
     projectId: null,
@@ -19,6 +17,8 @@
     isProcessing: false,
     viewOnly: false,
     materialPreview: "",
+    folders: [],
+    folderExpanded: {},
   };
 
   const els = {
@@ -37,6 +37,17 @@
     chatMessages: document.getElementById("chatMessages"),
     chatInner: document.getElementById("chatInner"),
     composerInput: document.getElementById("composerInput"),
+    mixBtn: document.getElementById("mixBtn"),
+    mixPanel: document.getElementById("mixPanel"),
+    mixPreview: document.getElementById("mixPreview"),
+    mixMcq: document.getElementById("mixMcq"),
+    mixFib: document.getElementById("mixFib"),
+    mixFrq: document.getElementById("mixFrq"),
+    mixMcqPct: document.getElementById("mixMcqPct"),
+    mixFibPct: document.getElementById("mixFibPct"),
+    mixFrqPct: document.getElementById("mixFrqPct"),
+    mixTotal: document.getElementById("mixTotal"),
+    composerHint: document.getElementById("composerHint"),
     attachBtn: document.getElementById("attachBtn"),
     sendBtn: document.getElementById("sendBtn"),
     fileInput: null,
@@ -45,6 +56,8 @@
     projectItemMenu: document.getElementById("projectItemMenu"),
     projectMenuRename: document.getElementById("projectMenuRename"),
     projectMenuDelete: document.getElementById("projectMenuDelete"),
+    projectMenuMove: document.getElementById("projectMenuMove"),
+    folderMoveSubmenu: document.getElementById("folderMoveSubmenu"),
     sampleLink: document.getElementById("sampleLink"),
     settingsOverlay: document.getElementById("settingsOverlay"),
     settingsBody: document.getElementById("settingsBody"),
@@ -77,10 +90,177 @@
   }
 
   async function api(path, options) {
-    const res = await window.authGuard.fetchWithAuth(`${API_BASE}${path}`, options || {});
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
-    return data;
+    try {
+      const res = await window.authGuard.fetchWithAuth(`${API_BASE}${path}`, options || {});
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.error || `Request failed (${res.status})`);
+        if (res.status === 503) err.code = "SERVICE_UNAVAILABLE";
+        throw err;
+      }
+      return data;
+    } catch (err) {
+      if (err.code) throw err;
+      const wrapped = new Error(err.message || "Request failed");
+      wrapped.code = err.code || (err.message?.includes("无法连接") ? "NETWORK_ERROR" : undefined);
+      wrapped.apiBase = err.apiBase || API_BASE;
+      throw wrapped;
+    }
+  }
+
+  function loadTypeMix() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(TYPE_MIX_KEY) || "null");
+      if (raw && typeof raw === "object") {
+        return {
+          mcq: Number(raw.mcq) || DEFAULT_TYPE_MIX.mcq,
+          fib: Number(raw.fib) || DEFAULT_TYPE_MIX.fib,
+          frq: Number(raw.frq) || DEFAULT_TYPE_MIX.frq,
+          totalQuestions: Math.min(20, Math.max(5, Number(raw.totalQuestions) || DEFAULT_TYPE_MIX.totalQuestions)),
+        };
+      }
+    } catch {
+      /* ignore */
+    }
+    return { ...DEFAULT_TYPE_MIX };
+  }
+
+  function saveTypeMix(mix) {
+    localStorage.setItem(TYPE_MIX_KEY, JSON.stringify(mix));
+  }
+
+  function normalizeMixWeights(changedKey, mcq, fib, frq) {
+    const keys = ["mcq", "fib", "frq"];
+    const vals = { mcq, fib, frq };
+    const otherKeys = keys.filter((k) => k !== changedKey);
+    const changed = Math.min(80, Math.max(10, Number(vals[changedKey]) || 10));
+    const remaining = 100 - changed;
+    const otherSum = otherKeys.reduce((sum, k) => sum + (Number(vals[k]) || 10), 0) || 1;
+    const next = { [changedKey]: changed };
+    otherKeys.forEach((k, i) => {
+      next[k] = i === otherKeys.length - 1
+        ? remaining - otherKeys.slice(0, -1).reduce((s, kk) => s + next[kk], 0)
+        : Math.max(10, Math.round((Number(vals[k]) / otherSum) * remaining));
+    });
+    const total = next.mcq + next.fib + next.frq;
+    if (total !== 100) next.frq += 100 - total;
+    return next;
+  }
+
+  function allocateQuestionCounts(total, mix) {
+    const weights = [
+      { type: "multiple_choice", w: mix.mcq },
+      { type: "fill_in_the_blank", w: mix.fib },
+      { type: "free_response", w: mix.frq },
+    ];
+    const minEach = total >= 3 ? 1 : 0;
+    let remaining = total - minEach * 3;
+    if (remaining < 0) remaining = 0;
+    const raw = weights.map((item) => ({
+      type: item.type,
+      count: minEach,
+      frac: (item.w / 100) * remaining,
+    }));
+    raw.forEach((item) => {
+      item.count += Math.floor(item.frac);
+    });
+    let left = total - raw.reduce((s, item) => s + item.count, 0);
+    const byRemainder = raw
+      .map((item) => ({ type: item.type, rem: item.frac - Math.floor(item.frac) }))
+      .sort((a, b) => b.rem - a.rem);
+    for (let i = 0; left > 0; i++) {
+      raw.find((r) => r.type === byRemainder[i % byRemainder.length].type).count += 1;
+      left -= 1;
+    }
+    const counts = { mcq: 0, fib: 0, frq: 0 };
+    raw.forEach((item) => {
+      if (item.type === "multiple_choice") counts.mcq = item.count;
+      if (item.type === "fill_in_the_blank") counts.fib = item.count;
+      if (item.type === "free_response") counts.frq = item.count;
+    });
+    return counts;
+  }
+
+  function getMixedRoundConfig() {
+    const mix = loadTypeMix();
+    const total = mix.totalQuestions;
+    const counts = allocateQuestionCounts(total, mix);
+    const preview = `${counts.mcq} MCQ · ${counts.fib} Fill · ${counts.frq} FRQ`;
+    return {
+      key: "mixed",
+      label: "Mixed Quiz",
+      short: "Mixed quiz",
+      types: ["multiple_choice", "fill_in_the_blank", "free_response"],
+      numQuestions: total,
+      typeMix: {
+        multiple_choice: counts.mcq,
+        fill_in_the_blank: counts.fib,
+        free_response: counts.frq,
+      },
+      preview,
+    };
+  }
+
+  function updateMixPanelUi() {
+    const mix = loadTypeMix();
+    if (els.mixMcq) els.mixMcq.value = String(mix.mcq);
+    if (els.mixFib) els.mixFib.value = String(mix.fib);
+    if (els.mixFrq) els.mixFrq.value = String(mix.frq);
+    if (els.mixTotal) els.mixTotal.value = String(mix.totalQuestions);
+    if (els.mixMcqPct) els.mixMcqPct.textContent = `${mix.mcq}%`;
+    if (els.mixFibPct) els.mixFibPct.textContent = `${mix.fib}%`;
+    if (els.mixFrqPct) els.mixFrqPct.textContent = `${mix.frq}%`;
+    if (els.mixPreview) els.mixPreview.textContent = getMixedRoundConfig().preview;
+  }
+
+  function onMixSliderChange(changedKey) {
+    const mcq = Number(els.mixMcq?.value || DEFAULT_TYPE_MIX.mcq);
+    const fib = Number(els.mixFib?.value || DEFAULT_TYPE_MIX.fib);
+    const frq = Number(els.mixFrq?.value || DEFAULT_TYPE_MIX.frq);
+    const normalized = normalizeMixWeights(changedKey, mcq, fib, frq);
+    const totalQuestions = Math.min(20, Math.max(5, Number(els.mixTotal?.value) || DEFAULT_TYPE_MIX.totalQuestions));
+    saveTypeMix({ ...normalized, totalQuestions });
+    updateMixPanelUi();
+  }
+
+  function showComposerError(message) {
+    if (!els.composerHint) return;
+    els.composerHint.classList.add("is-error");
+    els.composerHint.dataset.errorMsg = message;
+    const sampleBtn = els.composerHint.querySelector("#sampleLink");
+    els.composerHint.textContent = "";
+    const span = document.createElement("span");
+    span.textContent = message + " ";
+    els.composerHint.appendChild(span);
+    if (sampleBtn) els.composerHint.appendChild(sampleBtn);
+  }
+
+  function clearComposerError() {
+    if (!els.composerHint) return;
+    if (!els.composerHint.classList.contains("is-error")) return;
+    els.composerHint.classList.remove("is-error");
+    els.composerHint.innerHTML =
+      'QuizAll builds a plan, quizzes you in one mixed round, then writes your note. <button type="button" class="hint-link" id="sampleLink">Try a sample</button>';
+    const sampleLink = document.getElementById("sampleLink");
+    if (sampleLink) {
+      sampleLink.addEventListener("click", () => {
+        els.composerInput.value = SAMPLE_TEXT;
+        autosizeComposer();
+        els.composerInput.focus();
+        clearComposerError();
+      });
+    }
+  }
+
+  async function validateComposerContent(text, files) {
+    let combined = text.trim().length;
+    if (combined >= CONTENT_MIN_LENGTH) return true;
+    for (const file of files) {
+      const extracted = await extractText(file);
+      combined += String(extracted || "").trim().length;
+      if (combined >= CONTENT_MIN_LENGTH) return true;
+    }
+    return combined >= CONTENT_MIN_LENGTH;
   }
 
   function scrollToBottom() {
@@ -161,7 +341,7 @@
       `<p>${escapeHtml(plan.summary || "Here is a simple plan based on your material.")}</p>` +
       (topics ? `<div class="topic-tags">${topics}</div>` : "") +
       (steps ? `<ul class="plan-steps">${steps}</ul>` : "") +
-      (opts.includeNextStep === false ? "" : `<p class="meta-line" style="margin-top:14px;">Starting <strong>Round 1</strong>…</p>`)
+      (opts.includeNextStep === false ? "" : `<p class="meta-line" style="margin-top:14px;">Starting your <strong>mixed quiz</strong>…</p>`)
     );
   }
 
@@ -173,7 +353,7 @@
       `<div class="note-section-label">What you know</div><ul class="note-list">${list(note.what_you_know)}</ul>` +
       `<div class="note-section-label">What to review</div><ul class="note-list">${list(note.what_to_review)}</ul>` +
       `<div class="note-section-label">Key takeaways</div><ul class="note-list">${list(note.key_takeaways)}</ul>` +
-      `<p class="science-link-wrap">Curious why this 3-round method works? <a href="science/index.html" target="_blank" rel="noopener noreferrer" class="science-link">See the science →</a></p>`
+      `<p class="science-link-wrap">Curious why this method works? <a href="science/index.html" target="_blank" rel="noopener noreferrer" class="science-link">See the science →</a></p>`
     );
   }
 
@@ -399,7 +579,7 @@
 
     const proceedLabel = isLast
       ? `Write my note ${icon("i-arrow-right")}`
-      : `Start ${escapeHtml(ROUNDS[state.roundIndex + 1].short)} ${icon("i-arrow-right")}`;
+      : `Continue ${icon("i-arrow-right")}`;
 
     const html =
       `<h3>${escapeHtml(roundConfig.short)} results</h3>` +
@@ -449,6 +629,7 @@
     if (projectMenuAnchor) projectMenuAnchor.classList.remove("is-open");
     projectMenuTargetId = null;
     projectMenuAnchor = null;
+    els.folderMoveSubmenu?.classList.add("hidden");
     els.projectList?.querySelectorAll(".project-row.menu-open").forEach((row) => row.classList.remove("menu-open"));
   }
 
@@ -513,8 +694,79 @@
     });
   }
 
+  function renderProjectRow(p) {
+    return (
+      `<div class="project-row${p.id === state.projectId ? " is-active" : ""}">` +
+      `<button type="button" class="project-item" data-id="${escapeHtml(p.id)}">` +
+      `<span class="pi-name">${escapeHtml(p.name)}</span>` +
+      `<span class="pi-meta">${escapeHtml(projectMeta(p))}</span>` +
+      `</button>` +
+      `<button type="button" class="project-more" data-id="${escapeHtml(p.id)}" aria-label="Session options" title="Session options">` +
+      `<svg class="icon"><use href="#i-more-horizontal"></use></svg>` +
+      `</button>` +
+      `</div>`
+    );
+  }
+
+  async function loadFolders() {
+    try {
+      const data = await api("/api/quiz/folders");
+      state.folders = data.folders || [];
+    } catch {
+      state.folders = [];
+    }
+  }
+
+  async function createFolder() {
+    const name = window.prompt("New project name");
+    if (name == null) return;
+    const trimmed = name.trim();
+    if (trimmed.length < 2) return;
+    await api("/api/quiz/folders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    await loadProjects();
+  }
+
+  async function moveProjectToFolder(projectId, folderId) {
+    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ folderId: folderId || null }),
+    });
+    closeProjectMenu();
+    await loadProjects();
+  }
+
+  function renderFolderMoveSubmenu(projectId) {
+    if (!els.folderMoveSubmenu) return;
+    const items = [
+      `<button type="button" class="folder-move-item" data-folder="">Unfiled</button>`,
+      ...state.folders.map(
+        (f) =>
+          `<button type="button" class="folder-move-item" data-folder="${escapeHtml(f.id)}">${escapeHtml(f.name)}</button>`
+      ),
+    ];
+    els.folderMoveSubmenu.innerHTML = items.join("");
+    els.folderMoveSubmenu.classList.remove("hidden");
+    els.folderMoveSubmenu.querySelectorAll(".folder-move-item").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const folderId = btn.getAttribute("data-folder") || null;
+        try {
+          await moveProjectToFolder(projectId, folderId);
+        } catch (err) {
+          window.alert(err.message || "Could not move session");
+        }
+      });
+    });
+  }
+
   async function loadProjects() {
     try {
+      await loadFolders();
       const data = await api("/api/quiz/projects?limit=50");
       const projects = data.projects || [];
 
@@ -522,40 +774,53 @@
 
       if (!projects.length) {
         els.projectList.innerHTML =
+          '<div class="sidebar-section-head"><span>Projects</span><button type="button" class="btn-text" id="newFolderBtn">+ New project</button></div>' +
           '<div class="project-list-label">Recent sessions</div>' +
           '<div class="project-empty">No sessions yet.<br>Start one from the box on the right.</div>';
+        document.getElementById("newFolderBtn")?.addEventListener("click", createFolder);
         return;
       }
 
-      const order = ["Today", "Yesterday", "Previous 7 days", "Previous 30 days", "Earlier"];
-      const groups = {};
+      const folderMap = {};
+      state.folders.forEach((f) => {
+        folderMap[f.id] = { folder: f, projects: [] };
+      });
+      const unfiled = [];
       projects.forEach((p) => {
-        const label = groupLabelFor(p.updatedAt || p.createdAt);
-        (groups[label] = groups[label] || []).push(p);
+        if (p.folderId && folderMap[p.folderId]) folderMap[p.folderId].projects.push(p);
+        else unfiled.push(p);
       });
 
-      let html = "";
-      order.forEach((label) => {
-        const list = groups[label];
-        if (!list || !list.length) return;
-        html += `<div class="project-group-label">${label}</div>`;
-        html += list
-          .map(
-            (p) =>
-              `<div class="project-row${p.id === state.projectId ? " is-active" : ""}">` +
-              `<button type="button" class="project-item" data-id="${escapeHtml(p.id)}">` +
-              `<span class="pi-name">${escapeHtml(p.name)}</span>` +
-              `<span class="pi-meta">${escapeHtml(projectMeta(p))}</span>` +
-              `</button>` +
-              `<button type="button" class="project-more" data-id="${escapeHtml(p.id)}" aria-label="Session options" title="Session options">` +
-              `<svg class="icon"><use href="#i-more-horizontal"></use></svg>` +
-              `</button>` +
-              `</div>`
-          )
-          .join("");
+      let html =
+        '<div class="sidebar-section-head"><span>Projects</span><button type="button" class="btn-text" id="newFolderBtn">+ New project</button></div>';
+
+      state.folders.forEach((folder) => {
+        const group = folderMap[folder.id];
+        const list = group?.projects || [];
+        const expanded = state.folderExpanded[folder.id] !== false;
+        html += `<div class="folder-group${expanded ? " is-open" : ""}" data-folder-id="${escapeHtml(folder.id)}">`;
+        html += `<button type="button" class="folder-toggle" data-folder-id="${escapeHtml(folder.id)}">`;
+        html += `${icon("i-folder")}<span>${escapeHtml(folder.name)}</span><span class="folder-count">${list.length}</span></button>`;
+        html += `<div class="folder-sessions">`;
+        if (!list.length) html += '<div class="folder-empty">No sessions yet</div>';
+        else html += list.map(renderProjectRow).join("");
+        html += `</div></div>`;
       });
+
+      html += `<div class="project-group-label">Unfiled</div>`;
+      if (!unfiled.length) html += '<div class="folder-empty">All sessions are in projects</div>';
+      else html += unfiled.map(renderProjectRow).join("");
 
       els.projectList.innerHTML = html;
+      document.getElementById("newFolderBtn")?.addEventListener("click", createFolder);
+      els.projectList.querySelectorAll(".folder-toggle").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const folderId = btn.getAttribute("data-folder-id");
+          const currentlyOpen = state.folderExpanded[folderId] !== false;
+          state.folderExpanded[folderId] = !currentlyOpen;
+          btn.closest(".folder-group")?.classList.toggle("is-open", state.folderExpanded[folderId]);
+        });
+      });
       bindProjectListEvents();
     } catch (err) {
       console.error(err);
@@ -676,7 +941,7 @@
       state.studyPlan = data.studyPlan;
       state.analysis = data.analysis;
       appendMessage("ai", formatStudyPlanHtml(data.studyPlan));
-      await startRound(0);
+      await startMixedQuiz();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Sorry, I couldn't make a study plan: ${escapeHtml(err.message)}</p>`);
@@ -692,6 +957,7 @@
         projectId: state.projectId,
         types: roundConfig.types,
         numQuestions: roundConfig.numQuestions,
+        typeMix: roundConfig.typeMix,
         analysis: state.analysis,
         content: state.materialPreview || undefined,
       }),
@@ -752,14 +1018,9 @@
     return { correct, total: results.length, results };
   }
 
-  async function startRound(index) {
-    if (index >= ROUNDS.length) {
-      await finishAllRounds();
-      return;
-    }
-
-    const roundConfig = ROUNDS[index];
-    state.roundIndex = index;
+  async function startMixedQuiz() {
+    const roundConfig = getMixedRoundConfig();
+    state.roundIndex = 0;
     const typing = appendTyping();
 
     try {
@@ -769,14 +1030,13 @@
 
       renderQuizCard(roundConfig, questions, async (answers) => {
         const { correct, total, results } = await saveRoundHistory(roundConfig, questions, answers);
-        const isLast = index >= ROUNDS.length - 1;
-        renderRoundReview(roundConfig, results, correct, total, isLast, async () => {
-          await startRound(index + 1);
+        renderRoundReview(roundConfig, results, correct, total, true, async () => {
+          await finishAllRounds();
         });
       });
     } catch (err) {
       removeTyping(typing);
-      appendMessage("ai", `<p>Sorry, this round failed: ${escapeHtml(err.message)}</p>`);
+      appendMessage("ai", `<p>Sorry, the quiz failed: ${escapeHtml(err.message)}</p>`);
       setProcessing(false);
     }
   }
@@ -816,6 +1076,14 @@
     const text = els.composerInput.value.trim();
     const hasFiles = state.pendingFiles.length > 0;
     if (!text && !hasFiles) return;
+
+    clearComposerError();
+    const filesToCheck = state.pendingFiles.slice();
+    const contentOk = await validateComposerContent(text, filesToCheck);
+    if (!contentOk) {
+      showComposerError(`Please add at least ${CONTENT_MIN_LENGTH} characters of study material before sending.`);
+      return;
+    }
 
     setConversationActive(true);
     setActiveNav("navHome");
@@ -968,9 +1236,9 @@
     state.materialPreview = buildContentFromPlan(state.studyPlan);
     appendMessage(
       "ai",
-      `<p>Let's go again — three fresh rounds on <strong>${escapeHtml(state.studyPlan.subject || state.projectName)}</strong>.</p>`
+      `<p>Let's go again — one fresh mixed quiz on <strong>${escapeHtml(state.studyPlan.subject || state.projectName)}</strong>.</p>`
     );
-    await startRound(0);
+    await startMixedQuiz();
   }
 
   function resetNewChat() {
@@ -1032,6 +1300,21 @@
         window.location.href = "index.html";
       });
     } catch (err) {
+      const token = window.authGuard?.getToken();
+      const jwtEmail = token ? decodeJwtEmail(token) : null;
+      if (jwtEmail && (err.code === "NETWORK_ERROR" || /failed to fetch/i.test(err.message || ""))) {
+        els.settingsBody.innerHTML =
+          `<div class="set-banner warn">无法连接服务器，请检查网络或稍后再试。<span class="set-debug">API: ${escapeHtml(API_BASE)}</span></div>` +
+          `<div class="set-row"><span class="set-k">Email</span><span class="set-v">${escapeHtml(jwtEmail)}</span></div>` +
+          `<div class="set-row"><span class="set-k">Plan</span><span class="set-v"><span class="badge">unknown</span></span></div>` +
+          `<p class="set-note">Showing email from your saved login. Full account details need a server connection.</p>` +
+          `<div class="set-actions"><button type="button" class="set-btn danger" id="setLogout">Log out</button></div>`;
+        document.getElementById("setLogout").addEventListener("click", () => {
+          window.authGuard.clearToken();
+          window.location.href = "index.html";
+        });
+        return;
+      }
       els.settingsBody.innerHTML = `<div class="settings-loading">Could not load account: ${escapeHtml(err.message)}</div>`;
     }
   }
@@ -1072,30 +1355,49 @@
     try {
       const data = await api("/api/billing/status");
       const sub = data.subscription || {};
-      const periodEnd = sub.currentPeriodEnd || sub.current_period_end;
+      const planLabel = sub.plan || data.plan || "free";
+      const periodEnd = sub.periodEnd || sub.currentPeriodEnd || sub.current_period_end;
+      const stripeConfigured = !!data.stripeConfigured;
+
+      let actionsHtml = `<a class="set-btn" href="subscription.html" target="_blank" rel="noopener">View plans</a>`;
+      if (stripeConfigured) {
+        actionsHtml =
+          `<button type="button" class="set-btn primary" id="setPortal">Manage subscription</button>` +
+          actionsHtml;
+      } else {
+        actionsHtml =
+          `<p class="set-note">Billing is not enabled on this server yet. You are on the free plan.</p>` +
+          actionsHtml;
+      }
+
       els.settingsBody.innerHTML =
-        `<div class="set-row"><span class="set-k">Plan</span><span class="set-v"><span class="badge">${escapeHtml(sub.plan || "free")}</span></span></div>` +
+        `<div class="set-row"><span class="set-k">Plan</span><span class="set-v"><span class="badge">${escapeHtml(planLabel)}</span></span></div>` +
         `<div class="set-row"><span class="set-k">Status</span><span class="set-v">${escapeHtml(sub.status || "none")}</span></div>` +
         (periodEnd
           ? `<div class="set-row"><span class="set-k">Renews</span><span class="set-v">${escapeHtml(new Date(periodEnd).toLocaleDateString())}</span></div>`
           : "") +
-        `<div class="set-actions">` +
-        `<button type="button" class="set-btn primary" id="setPortal">Manage subscription</button>` +
-        `<a class="set-btn" href="subscription.html" target="_blank" rel="noopener">View plans</a>` +
-        `</div>`;
-      document.getElementById("setPortal").addEventListener("click", async (e) => {
-        const btn = e.currentTarget;
-        btn.disabled = true;
-        try {
-          const res = await api("/api/billing/portal-session", { method: "POST" });
-          if (res.url) window.location.href = res.url;
-        } catch (err) {
-          btn.disabled = false;
-          btn.textContent = "Unavailable on free plan";
-        }
-      });
+        `<div class="set-actions">${actionsHtml}</div>`;
+
+      const portalBtn = document.getElementById("setPortal");
+      if (portalBtn) {
+        portalBtn.addEventListener("click", async (e) => {
+          const btn = e.currentTarget;
+          btn.disabled = true;
+          try {
+            const res = await api("/api/billing/portal-session", { method: "POST" });
+            if (res.url) window.location.href = res.url;
+          } catch {
+            btn.disabled = false;
+            btn.textContent = "Unavailable on free plan";
+          }
+        });
+      }
     } catch (err) {
-      els.settingsBody.innerHTML = `<div class="settings-loading">Could not load billing: ${escapeHtml(err.message)}</div>`;
+      const msg =
+        err.code === "NETWORK_ERROR"
+          ? `无法连接服务器，请检查网络或稍后再试。（${API_BASE}）`
+          : err.message;
+      els.settingsBody.innerHTML = `<div class="settings-loading">Could not load billing: ${escapeHtml(msg)}</div>`;
     }
   }
 
@@ -1212,6 +1514,18 @@
         }
       });
     }
+    if (els.projectMenuMove) {
+      els.projectMenuMove.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = projectMenuTargetId;
+        if (!id) return;
+        if (els.folderMoveSubmenu?.classList.contains("hidden")) {
+          renderFolderMoveSubmenu(id);
+        } else {
+          els.folderMoveSubmenu.classList.add("hidden");
+        }
+      });
+    }
     if (els.projectItemMenu) {
       els.projectItemMenu.addEventListener("click", (e) => e.stopPropagation());
     }
@@ -1221,9 +1535,43 @@
         els.composerInput.value = SAMPLE_TEXT;
         autosizeComposer();
         els.composerInput.focus();
+        clearComposerError();
       });
     }
-    els.composerInput.addEventListener("input", autosizeComposer);
+
+    if (els.mixBtn && els.mixPanel) {
+      els.mixBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const open = els.mixPanel.classList.toggle("hidden");
+        const isOpen = !open;
+        els.mixBtn.classList.toggle("is-active", isOpen);
+        els.mixBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      });
+      document.addEventListener("click", () => {
+        els.mixPanel.classList.add("hidden");
+        els.mixBtn.classList.remove("is-active");
+        els.mixBtn.setAttribute("aria-expanded", "false");
+      });
+      els.mixPanel.addEventListener("click", (e) => e.stopPropagation());
+      [["mixMcq", "mcq"], ["mixFib", "fib"], ["mixFrq", "frq"]].forEach(([elKey, mixKey]) => {
+        const el = els[elKey];
+        if (!el) return;
+        el.addEventListener("input", () => onMixSliderChange(mixKey));
+      });
+      if (els.mixTotal) {
+        els.mixTotal.addEventListener("change", () => {
+          const mix = loadTypeMix();
+          mix.totalQuestions = Math.min(20, Math.max(5, Number(els.mixTotal.value) || DEFAULT_TYPE_MIX.totalQuestions));
+          saveTypeMix(mix);
+          updateMixPanelUi();
+        });
+      }
+    }
+
+    els.composerInput.addEventListener("input", () => {
+      autosizeComposer();
+      clearComposerError();
+    });
     els.composerInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -1299,6 +1647,7 @@
     if (!initAuth()) return;
     bindEvents();
     renderWelcome();
+    updateMixPanelUi();
     loadProjects();
     autosizeComposer();
     els.composerInput.focus();

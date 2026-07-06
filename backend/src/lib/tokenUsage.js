@@ -27,62 +27,37 @@ import {
  * Should be placed BEFORE the run handler
  */
 export function requireTokens(estimatedTokens = 1000) {
-  return (req, res, next) => {
-    // Skip if enforcement is disabled
-    if (!FEATURES.enforceTokenLimits) {
-      return next();
-    }
-    
+  return async (req, res, next) => {
+    if (!FEATURES.enforceTokenLimits) return next();
+
     const userId = req.user?.sub;
-    
     if (!userId) {
-      return res.status(401).json({
-        ok: false,
-        error: "UNAUTHORIZED",
-        message: "Authentication required",
-      });
+      return res.status(401).json({ ok: false, error: "UNAUTHORIZED", message: "Authentication required" });
     }
-    
-    // Get user's subscription status
-    const subscription = stripeService.getSubscriptionStatus(userId);
-    
-    // Check if user has an active subscription or trial
-    const allowedStatuses = [
-      SUBSCRIPTION_STATUS.ACTIVE,
-      SUBSCRIPTION_STATUS.TRIALING,
-    ];
-    
+
+    const subscription = await stripeService.getSubscriptionStatus(userId);
+    const allowedStatuses = [SUBSCRIPTION_STATUS.ACTIVE, SUBSCRIPTION_STATUS.TRIALING];
+
     if (!allowedStatuses.includes(subscription.status)) {
-      // Check if they have any remaining tokens (could be free tier)
-      const balances = tokenLedger.getTokenBalances(userId);
-      
+      const balances = await tokenLedger.getTokenBalances(userId);
       if (balances.total < estimatedTokens) {
         return res.status(402).json({
           ok: false,
           error: "SUBSCRIPTION_REQUIRED",
           message: "Please subscribe or start a free trial to continue",
-          subscription: {
-            status: subscription.status,
-            currentBalance: balances.total,
-            estimatedUsage: estimatedTokens,
-          },
+          subscription: { status: subscription.status, currentBalance: balances.total, estimatedUsage: estimatedTokens },
           upgradeUrl: "/subscription",
         });
       }
     }
-    
-    // Check token balance
-    if (!tokenLedger.hasEnoughTokens(userId, estimatedTokens)) {
-      const balances = tokenLedger.getTokenBalances(userId);
-      
+
+    if (!(await tokenLedger.hasEnoughTokens(userId, estimatedTokens))) {
+      const balances = await tokenLedger.getTokenBalances(userId);
       return res.status(402).json({
         ok: false,
         error: "INSUFFICIENT_TOKENS",
         message: "Not enough tokens. Please wait for daily refresh or upgrade your plan.",
-        subscription: {
-          status: subscription.status,
-          plan: subscription.plan,
-        },
+        subscription: { status: subscription.status, plan: subscription.plan },
         tokens: {
           available: balances.total,
           estimated: estimatedTokens,
@@ -93,11 +68,9 @@ export function requireTokens(estimatedTokens = 1000) {
         upgradeUrl: "/subscription",
       });
     }
-    
-    // Store balances in request for later use
-    req.tokenBalances = tokenLedger.getTokenBalances(userId);
+
+    req.tokenBalances = await tokenLedger.getTokenBalances(userId);
     req.subscription = subscription;
-    
     next();
   };
 }
@@ -110,7 +83,7 @@ export function requireTokens(estimatedTokens = 1000) {
  * Spend tokens after a successful run
  * Call this after getting the actual token usage from the model
  */
-export function spendTokensForRun({
+export async function spendTokensForRun({
   userId,
   runId,
   inputTokens,
@@ -121,7 +94,7 @@ export function spendTokensForRun({
   const usage = calculateCreditsSpent(inputTokens, outputTokens, options);
   
   // Attempt to spend tokens
-  const result = tokenLedger.spendTokens({
+  const result = await tokenLedger.spendTokens({
     userId,
     creditsToSpend: usage.creditsSpent,
     runId,
@@ -148,9 +121,9 @@ export function spendTokensForRun({
 /**
  * Get full token status for a user (for API response)
  */
-export function getTokenStatus(userId) {
-  const subscription = stripeService.getSubscriptionStatus(userId);
-  const balances = tokenLedger.getTokenBalances(userId);
+export async function getTokenStatus(userId) {
+  const subscription = await stripeService.getSubscriptionStatus(userId);
+  const balances = await tokenLedger.getTokenBalances(userId);
   
   return {
     subscription: {
@@ -191,8 +164,8 @@ export function buildTokenBreakdown(usage) {
 /**
  * Attach token info to run response
  */
-export function attachTokenInfo(response, userId, usage) {
-  const balances = tokenLedger.getTokenBalances(userId);
+export async function attachTokenInfo(response, userId, usage) {
+  const balances = await tokenLedger.getTokenBalances(userId);
   
   response.tokenUsage = buildTokenBreakdown(usage);
   response.creditsRemaining = balances.total;

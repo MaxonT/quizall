@@ -4,7 +4,7 @@
 
 const SAMPLE_PLAN = {
   subject: "Photosynthesis",
-  summary: "This material is mainly about photosynthesis. We'll quiz you in three short rounds.",
+  summary: "This material is mainly about photosynthesis. We'll quiz you in one mixed round.",
   topics: ["Sunlight", "Chlorophyll", "Glucose", "Oxygen"],
   key_concepts: [{ concept: "Chlorophyll", detail: "Green pigment in leaves." }],
   plan: [{ title: "Learn Sunlight", why: "Core idea.", estimated_minutes: 5 }],
@@ -26,42 +26,39 @@ export async function installMockApi(page) {
     rounds: [],
   };
 
-  let roundCounter = 0;
+  function mixedQuestions(typeMix, numQuestions) {
+    const mcq = Number(typeMix?.multiple_choice) || 7;
+    const fib = Number(typeMix?.fill_in_the_blank) || 4;
+    const frq = Number(typeMix?.free_response) || 2;
+    const total = numQuestions || mcq + fib + frq;
+    const questions = [];
 
-  function mcqQuestions() {
-    return Array.from({ length: 5 }, (_, i) => ({
-      type: "multiple_choice",
-      question: `MCQ ${i + 1}: What do plants use to make food?`,
-      options: ["Sunlight", "Rocks", "Plastic", "Metal"],
-      correct_answer: 0,
-      explanation: "Plants use sunlight in photosynthesis.",
-    }));
-  }
-
-  function fibQuestions() {
-    return Array.from({ length: 5 }, (_, i) => ({
-      type: "fill_in_the_blank",
-      question: `Fill ${i + 1}: The green pigment is called ___.`,
-      correct_answer: "chlorophyll",
-      explanation: "Chlorophyll captures light energy.",
-    }));
-  }
-
-  function frqQuestions() {
-    return Array.from({ length: 3 }, (_, i) => ({
-      type: "free_response",
-      question: `Short answer ${i + 1}: Explain photosynthesis in simple words.`,
-      correct_answer: "Plants use sunlight water and carbon dioxide to make sugar and release oxygen",
-      explanation: "Keep it simple: inputs → sugar + oxygen.",
-    }));
-  }
-
-  function nextRoundQuestions() {
-    const idx = roundCounter % 3;
-    roundCounter += 1;
-    if (idx === 0) return { label: "Round 1 · Multiple Choice", questions: mcqQuestions() };
-    if (idx === 1) return { label: "Round 2 · Fill in the Blank", questions: fibQuestions() };
-    return { label: "Round 3 · Short Answer", questions: frqQuestions() };
+    for (let i = 0; i < mcq && questions.length < total; i++) {
+      questions.push({
+        type: "multiple_choice",
+        question: `MCQ ${i + 1}: What do plants use to make food?`,
+        options: ["Sunlight", "Rocks", "Plastic", "Metal"],
+        correct_answer: 0,
+        explanation: "Plants use sunlight in photosynthesis.",
+      });
+    }
+    for (let i = 0; i < fib && questions.length < total; i++) {
+      questions.push({
+        type: "fill_in_the_blank",
+        question: `Fill ${i + 1}: The green pigment is called ___.`,
+        correct_answer: "chlorophyll",
+        explanation: "Chlorophyll captures light energy.",
+      });
+    }
+    for (let i = 0; i < frq && questions.length < total; i++) {
+      questions.push({
+        type: "free_response",
+        question: `Short answer ${i + 1}: Explain photosynthesis in simple words.`,
+        correct_answer: "Plants use sunlight water and carbon dioxide to make sugar and release oxygen",
+        explanation: "Keep it simple: inputs → sugar + oxygen.",
+      });
+    }
+    return questions.slice(0, total);
   }
 
   await page.route("**/api/**", async (route) => {
@@ -85,10 +82,18 @@ export async function installMockApi(page) {
     if (path === "/api/billing/status" && method === "GET") {
       return json({
         ok: true,
+        stripeConfigured: false,
         subscription: { plan: "free", status: "none" },
         usage: { promptOptimization: 1, questionWizard: 0 },
         limits: { promptOptimization: { daily: 10 }, questionWizard: { daily: 5 } },
       });
+    }
+    if (path === "/api/quiz/folders" && method === "GET") {
+      return json({ ok: true, folders: [] });
+    }
+    if (path === "/api/quiz/folders" && method === "POST") {
+      const body = route.request().postDataJSON();
+      return json({ ok: true, folder: { id: "folder-1", name: body?.name || "Project" } }, 201);
     }
     if (path === "/api/quiz/study-streak" && method === "GET") {
       return json({
@@ -105,6 +110,7 @@ export async function installMockApi(page) {
         {
           id: session.id,
           name: session.name,
+          folderId: null,
           fileCount: 0,
           quizCount: session.rounds.length,
           latestAccuracy: session.rounds.length ? 80 : null,
@@ -129,7 +135,7 @@ export async function installMockApi(page) {
       return json({ ok: true, note: SAMPLE_NOTE });
     }
     if (path.match(/\/api\/quiz\/projects\/[^/]+\/note$/) && method === "GET") {
-      return session.rounds.length >= 3
+      return session.rounds.length >= 1
         ? json({ ok: true, note: SAMPLE_NOTE })
         : json({ ok: false, error: "No note" }, 404);
     }
@@ -137,15 +143,16 @@ export async function installMockApi(page) {
       return json({ ok: true, project: { id: session.id, name: session.name }, files: [] });
     }
     if (path === "/api/quiz/generate" && method === "POST") {
-      const round = nextRoundQuestions();
-      return json({ ok: true, quiz: round.questions, meta: { mock: true } });
+      const body = route.request().postDataJSON();
+      const questions = mixedQuestions(body?.typeMix, body?.numQuestions);
+      return json({ ok: true, quiz: questions, meta: { mock: true } });
     }
     if (path === "/api/quiz/history" && method === "POST") {
       const body = route.request().postDataJSON();
       const questions = body?.questions || [];
       const correct = questions.filter((q) => q.isCorrect).length;
       session.rounds.push({
-        roundLabel: body?.roundLabel || `Round ${session.rounds.length + 1}`,
+        roundLabel: body?.roundLabel || "Mixed Quiz",
         score: correct,
         total: questions.length,
         questions,

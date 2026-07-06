@@ -1844,26 +1844,45 @@
       return !!localStorage.getItem(TOKEN_KEY);
     }
 
-    function showView() {
+    function showView(options) {
+      options = options || {};
       var authSection = document.getElementById("authSection");
       if (isLoggedIn()) {
-        // 登录后直接进入 AI 对话工作区（产品主入口）
-        window.location.replace("create.html");
-        return;
-      }
-      if (false) {
+        if (options.redirectToWorkspace) {
+          window.location.replace("create.html");
+          return;
+        }
         document.body.classList.add("logged-in-home");
         $dashboard.classList.remove("idx-hidden");
         $landing.classList.add("idx-hidden");
         if (authSection) authSection.classList.add("idx-hidden");
         renderScienceWidget();
         loadDashboard();
-      } else {
-        document.body.classList.remove("logged-in-home");
-        $dashboard.classList.add("idx-hidden");
-        $landing.classList.remove("idx-hidden");
-        if (authSection) authSection.classList.remove("idx-hidden");
+        return;
       }
+      document.body.classList.remove("logged-in-home");
+      $dashboard.classList.add("idx-hidden");
+      $landing.classList.remove("idx-hidden");
+      if (authSection) authSection.classList.remove("idx-hidden");
+    }
+
+    function bindProtectedNavLinks() {
+      document.querySelectorAll('a[href="create.html"], a[href="history.html"]').forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          if (!isLoggedIn()) {
+            e.preventDefault();
+            var authEl = document.getElementById("authSection");
+            if (authEl) authEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            showAuthMsg("请先登录后再使用此功能", "error");
+            isRegMode = false;
+            $loginForm.classList.remove("idx-hidden");
+            $regForm.classList.add("idx-hidden");
+            $toggle.innerHTML = 'Don\'t have an account? <a id="toggleToRegister">Sign up</a>';
+            var toggleLink = document.getElementById("toggleToRegister");
+            if (toggleLink) toggleLink.addEventListener("click", $toRegister.onclick);
+          }
+        });
+      });
     }
 
     // ─── OAuth Callback（支持 fragment # 与 query，与后端 OAuth 2.0 实践一致）──
@@ -1872,9 +1891,15 @@
       var search = window.location.search;
       var fromHash = hash ? new URLSearchParams(hash) : null;
       var fromSearch = search ? new URLSearchParams(search) : null;
-      var token = (fromHash && fromHash.get("oauth_token")) || (fromSearch && fromSearch.get("oauth_token"));
-      var ok = (fromHash && fromHash.get("oauth_success")) || (fromSearch && fromSearch.get("oauth_success"));
+      var token = fromHash && fromHash.get("oauth_token");
+      var ok = fromHash && fromHash.get("oauth_success");
       var err = (fromSearch && fromSearch.get("oauth_error")) || (fromHash && fromHash.get("oauth_error"));
+
+      if (fromSearch && fromSearch.get("oauth_token")) {
+        showAuthMsg("Invalid OAuth callback: token must not appear in URL query.", "error");
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
 
       if (err) {
         showAuthMsg(decodeURIComponent(err), "error");
@@ -1885,12 +1910,13 @@
         localStorage.setItem(TOKEN_KEY, token);
         window.dispatchEvent(new CustomEvent("authStateChanged"));
         window.history.replaceState({}, document.title, window.location.pathname);
-        showView();
+        showView({ redirectToWorkspace: true });
       }
     }
 
     var hash = window.location.hash.slice(1);
-    if (window.location.search.includes("oauth_token") || window.location.search.includes("oauth_error") || (hash && (hash.includes("oauth_token") || hash.includes("oauth_error")))) {
+    if ((hash && (hash.includes("oauth_token") || hash.includes("oauth_error"))) ||
+        window.location.search.includes("oauth_error")) {
       handleOAuthCallback();
     }
 
@@ -1955,7 +1981,7 @@
         if (!res.ok || !data.token) throw new Error(data.error || "Login failed");
         localStorage.setItem(TOKEN_KEY, data.token);
         window.dispatchEvent(new CustomEvent("authStateChanged"));
-        showView();
+        showView({ redirectToWorkspace: true });
       } catch (err) {
         showAuthMsg(err.message, "error");
       } finally {
@@ -1986,7 +2012,7 @@
         if (data.token) {
           localStorage.setItem(TOKEN_KEY, data.token);
           window.dispatchEvent(new CustomEvent("authStateChanged"));
-          showView();
+          showView({ redirectToWorkspace: true });
         } else {
           showAuthMsg("Account created! Please sign in.", "success");
           isRegMode = false;
@@ -2162,6 +2188,11 @@
     // ─── Init ──────────────────────────────────
     renderTrustMarquee();
     renderLandingHeatmapPreview();
+    bindProtectedNavLinks();
+    if (new URLSearchParams(window.location.search).get("login") === "1") {
+      var authSection = document.getElementById("authSection");
+      if (authSection) authSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     showView();
   })();
   </script>

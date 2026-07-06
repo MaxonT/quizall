@@ -4,20 +4,26 @@ import bcrypt from "bcryptjs";
 import { db } from "../lib/db.js";
 import { nanoid } from "nanoid";
 import { getNextLocalMidnightIso, normalizeTimeZone } from "../lib/timezone.js";
+import {
+  isDisposableEmail,
+  isRegistrationRateLimited,
+  incrementRegistrationCount,
+} from "../lib/trialAntiAbuse.js";
 
 export const authRouter = Router();
 
 const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
 
-let TOKEN_SECRET = process.env.JWT_SECRET;
+const TOKEN_SECRET = process.env.JWT_SECRET;
 if (!TOKEN_SECRET) {
   if (process.env.NODE_ENV === "development") {
-    console.warn("[quizall] WARNING: JWT_SECRET not set. Using insecure dev secret.");
-    TOKEN_SECRET = "dev";
+    console.warn("[quizall] WARNING: JWT_SECRET not set. Set JWT_SECRET before deploying.");
+    throw new Error("[quizall] FATAL: JWT_SECRET must be set (even in development).");
   } else {
     throw new Error("[quizall] FATAL: JWT_SECRET must be set in production.");
   }
 }
+const JWT_VERIFY_OPTIONS = { algorithms: ["HS256"] };
 const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 const PASSWORD_MIN_LENGTH = 8;
 const BCRYPT_ROUNDS = 10;
@@ -67,6 +73,10 @@ async function dbRun(sql, params = []) {
   return db.prepare(sql).run(...params);
 }
 
+function clientIp(req) {
+  return req.ip || req.socket?.remoteAddress || "unknown";
+}
+
 authRouter.post("/register", async (req, res) => {
   try {
     const { email, password } = req.body || {};
@@ -76,6 +86,13 @@ authRouter.post("/register", async (req, res) => {
     const normalizedEmail = normalizeEmail(email);
     if (!EMAIL_REGEX.test(normalizedEmail)) {
       return res.status(400).json({ ok: false, error: "Email is invalid" });
+    }
+    if (isDisposableEmail(normalizedEmail)) {
+      return res.status(400).json({ ok: false, error: "Disposable email addresses are not allowed" });
+    }
+    const ipAddress = clientIp(req);
+    if (await isRegistrationRateLimited(ipAddress)) {
+      return res.status(429).json({ ok: false, error: "Too many registrations from this network. Try again tomorrow." });
     }
     if (!password || typeof password !== "string" || password.length < PASSWORD_MIN_LENGTH) {
       return res.status(400).json({
@@ -99,6 +116,7 @@ authRouter.post("/register", async (req, res) => {
     );
 
     const row = await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
+    await incrementRegistrationCount(ipAddress);
     return sendAuthResponse(res, row);
   } catch (err) {
     console.error("[quizall] register error", err);
@@ -189,7 +207,7 @@ export function requireAuth(req, res, next) {
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ ok: false, error: "Missing token" });
   try {
-    req.user = jwt.verify(token, TOKEN_SECRET);
+    req.user = jwt.verify(token, TOKEN_SECRET, JWT_VERIFY_OPTIONS);
     next();
   } catch (err) {
     return res.status(401).json({ ok: false, error: "Invalid token" });
@@ -201,7 +219,9 @@ export function optionalAuth(req, _res, next) {
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return next();
   try {
-    req.user = jwt.verify(token, TOKEN_SECRET);
+    req.user = jwt.verify(token, TOKEN_SECRET, JWT_VERIFY_OPTIONS);
   } catch (_) {}
   next();
 }
+
+export { TOKEN_SECRET, JWT_VERIFY_OPTIONS };

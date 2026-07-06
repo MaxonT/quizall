@@ -86,7 +86,16 @@
 
     const headers = new Headers(options.headers || {});
     headers.set("Authorization", `Bearer ${token}`);
-    const res = await fetch(url, { ...options, headers });
+    let res;
+    try {
+      res = await fetch(url, { ...options, headers });
+    } catch (fetchErr) {
+      const netErr = new Error("无法连接服务器，请检查网络或稍后再试");
+      netErr.code = "NETWORK_ERROR";
+      netErr.apiBase = API_BASE;
+      netErr.cause = fetchErr;
+      throw netErr;
+    }
     if (res.status === 401) {
       clearToken();
       showLoginRequired();
