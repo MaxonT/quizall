@@ -8,6 +8,7 @@
 
   const state = {
     folders: [],
+    projects: [],
     activeFolderId: null,
   };
 
@@ -27,6 +28,9 @@
     avatarEmail: document.getElementById("avatarEmail"),
     avatarMenu: document.getElementById("avatarMenu"),
     folderGrid: document.getElementById("folderGrid"),
+    folderSessionsSection: document.getElementById("folderSessionsSection"),
+    activeFolderName: document.getElementById("activeFolderName"),
+    folderSessionsList: document.getElementById("folderSessionsList"),
     newFolderBtn: document.getElementById("newFolderBtn"),
     folderDialog: document.getElementById("folderDialog"),
     folderDialogInput: document.getElementById("folderDialogInput"),
@@ -147,9 +151,58 @@
     }
   }
 
+  function sessionMeta(project) {
+    const bits = [];
+    if (project.quizCount > 0) bits.push(`${project.quizCount} ${project.quizCount === 1 ? "round" : "rounds"}`);
+    else if (project.fileCount > 0) bits.push(`${project.fileCount} ${project.fileCount === 1 ? "file" : "files"}`);
+    if (project.latestAccuracy != null && project.quizCount > 0) bits.push(`${project.latestAccuracy}%`);
+    return bits.length ? bits.join(" · ") : "Draft session";
+  }
+
   function setActiveFolder(folderId) {
     state.activeFolderId = folderId;
     renderFolders();
+    renderFolderSessions();
+  }
+
+  function renderFolderSessions() {
+    if (!els.folderSessionsSection || !els.folderSessionsList) return;
+
+    if (!state.activeFolderId) {
+      els.folderSessionsSection.classList.add("hidden");
+      return;
+    }
+
+    const folder = state.folders.find((f) => f.id === state.activeFolderId);
+    if (!folder) {
+      els.folderSessionsSection.classList.add("hidden");
+      return;
+    }
+
+    els.folderSessionsSection.classList.remove("hidden");
+    if (els.activeFolderName) els.activeFolderName.textContent = folder.name;
+
+    const sessions = state.projects.filter((p) => p.folderId === state.activeFolderId);
+
+    if (!sessions.length) {
+      els.folderSessionsList.innerHTML =
+        `<div class="projects-session-empty">` +
+        `<p>No sessions in <strong>${escapeHtml(folder.name)}</strong> yet.</p>` +
+        `<p class="projects-session-hint">Start a study session, then move it here from History.</p>` +
+        `<a href="create.html" class="projects-session-cta">Start a study session</a>` +
+        `</div>`;
+      return;
+    }
+
+    els.folderSessionsList.innerHTML = sessions
+      .map(
+        (p) =>
+          `<a class="projects-session-row" href="create.html?project=${encodeURIComponent(p.id)}">` +
+          `<span class="projects-session-name">${escapeHtml(p.name)}</span>` +
+          `<span class="projects-session-meta">${escapeHtml(sessionMeta(p))}</span>` +
+          `</a>`
+      )
+      .join("");
   }
 
   function renderFolders() {
@@ -189,7 +242,7 @@
         setActiveFolder(state.activeFolderId === id ? null : id);
       });
     });
-    document.getElementById("newFolderCard")?.addEventListener("click", openFolderDialog);
+    document.getElementById("newFolderCard")?.addEventListener("click", createFolder);
   }
 
   async function loadData() {
@@ -204,10 +257,16 @@
     projects.forEach((p) => {
       if (p.folderId) folderCounts[p.folderId] = (folderCounts[p.folderId] || 0) + 1;
     });
+    state.projects = projects;
     state.folders = folders.map((f) => ({ ...f, sessionCount: folderCounts[f.id] || 0 }));
+
+    if (state.activeFolderId && !state.folders.some((f) => f.id === state.activeFolderId)) {
+      state.activeFolderId = null;
+    }
 
     updateNavCounts(state.folders, projects.length);
     renderFolders();
+    renderFolderSessions();
   }
 
   function closeFolderDialog(value) {
@@ -239,12 +298,13 @@
     if (name == null) return;
     const trimmed = name.trim();
     if (trimmed.length < 2) return;
-    await api("/api/quiz/folders", {
+    const data = await api("/api/quiz/folders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: trimmed }),
     });
     await loadData();
+    if (data.folder?.id) setActiveFolder(data.folder.id);
   }
 
   function bindEvents() {
@@ -288,6 +348,18 @@
     });
     els.avatarMenu?.addEventListener("click", (e) => e.stopPropagation());
 
+    document.getElementById("menuSettings")?.addEventListener("click", () => {
+      els.avatarMenu?.classList.add("hidden");
+      window.location.href = "create.html#settings/account";
+    });
+    document.getElementById("menuUsage")?.addEventListener("click", () => {
+      els.avatarMenu?.classList.add("hidden");
+      window.location.href = "create.html#settings/usage";
+    });
+    document.getElementById("menuBilling")?.addEventListener("click", () => {
+      els.avatarMenu?.classList.add("hidden");
+      window.location.href = "create.html#settings/billing";
+    });
     document.getElementById("menuLogout")?.addEventListener("click", () => {
       window.authGuard.clearToken();
       window.location.href = "index.html";

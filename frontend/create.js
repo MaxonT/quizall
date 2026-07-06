@@ -24,7 +24,7 @@
     roundIndex: -1,
     roundResults: [],
     isProcessing: false,
-    viewOnly: false,
+    resumedSession: false,
     materialPreview: "",
     folders: [],
   };
@@ -389,22 +389,28 @@
     els.chatMain.classList.toggle("has-messages", !!active);
   }
 
+  function refreshComposerDisabled() {
+    const disabled = state.isProcessing;
+    els.sendBtn.disabled = disabled;
+    els.attachBtn.disabled = disabled;
+    els.composerInput.disabled = disabled;
+    if (els.mixBtn) els.mixBtn.disabled = disabled;
+  }
+
   function setProcessing(on) {
     state.isProcessing = !!on;
-    els.sendBtn.disabled = on || state.viewOnly;
-    els.attachBtn.disabled = on || state.viewOnly;
-    els.composerInput.disabled = on || state.viewOnly;
-    if (els.mixBtn) els.mixBtn.disabled = on || state.viewOnly;
+    refreshComposerDisabled();
     if (on) closeMixPanel();
   }
 
-  function setViewOnly(on) {
-    state.viewOnly = !!on;
+  function setResumedSession(on) {
+    state.resumedSession = !!on;
     els.viewOnlyBanner?.classList.toggle("hidden", !on);
-    els.sendBtn.disabled = on || state.isProcessing;
-    els.attachBtn.disabled = on || state.isProcessing;
-    els.composerInput.disabled = on || state.isProcessing;
-    if (els.mixBtn) els.mixBtn.disabled = on || state.isProcessing;
+    const textEl = document.getElementById("viewOnlyBannerText");
+    if (textEl) {
+      textEl.textContent = on ? "Continuing saved session" : "Viewing a saved session";
+    }
+    refreshComposerDisabled();
   }
 
   function appendMessage(role, html) {
@@ -1263,7 +1269,7 @@
   }
 
   async function handleSend() {
-    if (state.isProcessing || state.viewOnly) return;
+    if (state.isProcessing) return;
 
     const text = els.composerInput.value.trim();
     const hasFiles = state.pendingFiles.length > 0;
@@ -1273,7 +1279,9 @@
     closeMixPanel();
     const filesToCheck = state.pendingFiles.slice();
     const combinedContent = await buildMaterialContent(text, filesToCheck);
-    if (combinedContent.length < CONTENT_MIN_LENGTH) {
+    const continuing = !!(state.resumedSession && state.projectId);
+
+    if (!continuing && combinedContent.length < CONTENT_MIN_LENGTH) {
       const userPreview = hasFiles
         ? `Uploaded ${filesToCheck.length} file(s)${text ? " + pasted text" : ""}`
         : text;
@@ -1284,16 +1292,18 @@
     setConversationActive(true);
     setActiveNav("navHome");
     setProcessing(true);
-    state.roundIndex = -1;
-    state.roundResults = [];
-    state.analysis = null;
-    state.studyPlan = null;
-    state.materialPreview = combinedContent;
+    if (!continuing) {
+      state.roundIndex = -1;
+      state.roundResults = [];
+      state.analysis = null;
+      state.studyPlan = null;
+    }
+    if (combinedContent) state.materialPreview = combinedContent;
 
     const userPreview = hasFiles
       ? `Uploaded ${state.pendingFiles.length} file(s)${text ? ` + pasted text` : ""}`
       : text.slice(0, 600) + (text.length > 600 ? "…" : "");
-    appendMessage("user", `<p>${escapeHtml(userPreview)}</p>`);
+    if (userPreview) appendMessage("user", `<p>${escapeHtml(userPreview)}</p>`);
 
     els.composerInput.value = "";
     autosizeComposer();
@@ -1302,18 +1312,21 @@
     renderAttachmentsBar();
 
     try {
-      const project = await createProject(autoProjectName());
-      state.projectId = project.id;
-      state.projectName = project.name;
-      await loadHistorySidebar();
+      if (!continuing) {
+        const project = await createProject(autoProjectName());
+        state.projectId = project.id;
+        state.projectName = project.name;
+        state.resumedSession = false;
+        await loadHistorySidebar();
+      }
 
       if (filesToUpload.length) {
         const typing = appendTyping("Reading your files…");
-        await uploadFilesToProject(project.id, filesToUpload);
+        await uploadFilesToProject(state.projectId, filesToUpload);
         removeTyping(typing);
       }
 
-      await runStudyPlan(project.id, combinedContent);
+      await runStudyPlan(state.projectId, combinedContent || state.materialPreview || undefined);
     } catch (err) {
       appendMessage("ai", `<p>Something went wrong: ${escapeHtml(err.message)}</p>`);
       setProcessing(false);
@@ -1326,7 +1339,7 @@
     state.roundResults = [];
     state.analysis = null;
     state.studyPlan = null;
-    setViewOnly(true);
+    setResumedSession(true);
     setActiveNav("navHistory");
     setConversationActive(true);
     if (window.innerWidth < SIDEBAR_BP_MOBILE) closeSidebarIfMobile();
@@ -1345,6 +1358,12 @@
         const planRes = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/study-plan`);
         if (planRes.studyPlan) {
           state.studyPlan = planRes.studyPlan;
+          state.analysis = {
+            subject: planRes.studyPlan.subject,
+            topics: planRes.studyPlan.topics || [],
+            key_concepts: planRes.studyPlan.key_concepts || [],
+          };
+          state.materialPreview = buildContentFromPlan(planRes.studyPlan);
           appendMessage("ai", formatStudyPlanHtml(planRes.studyPlan, { includeNextStep: false }));
           planLoaded = true;
         }
@@ -1353,7 +1372,10 @@
       }
 
       if (!planLoaded && detail.files?.length) {
-        appendMessage("ai", `<p>This session has ${detail.files.length} uploaded file(s), but no study plan was saved.</p>`);
+        appendMessage(
+          "ai",
+          `<p>This session has ${detail.files.length} uploaded file(s), but no study plan was saved yet.</p>`
+        );
       }
 
       let roundsLoaded = false;
@@ -1362,6 +1384,18 @@
           `/api/quiz/history?projectId=${encodeURIComponent(projectId)}&limit=10&order=asc&includeQuestions=1`
         );
         const rounds = historyRes.results || [];
+        state.roundResults = rounds.map((round) => ({
+          label: round.roundLabel || "Round",
+          correct: round.score,
+          total: round.total,
+          missed: (round.questions || [])
+            .filter((q) => !q.is_correct && !q.isCorrect)
+            .map((q) => ({
+              question: q.question,
+              userAnswer: q.user_answer ?? q.userAnswer ?? "",
+              correctAnswer: q.correct_answer ?? q.correctAnswer ?? "",
+            })),
+        }));
         rounds.forEach((round) => {
           if (!round.questions?.length) return;
           roundsLoaded = true;
@@ -1385,9 +1419,27 @@
         }
       } catch {
         if (planLoaded && !roundsLoaded) {
-          appendMessage("ai", `<p class="meta-line">Quiz rounds weren't finished in this session.</p>`);
+          const msg = appendMessage(
+            "ai",
+            `<p>Your study plan is ready, but quiz rounds weren't finished.</p>` +
+              `<button type="button" class="btn-round continue-quiz-btn">Start quiz</button>`
+          );
+          msg.querySelector(".continue-quiz-btn")?.addEventListener("click", async (e) => {
+            e.currentTarget.disabled = true;
+            setProcessing(true);
+            await startMixedQuiz();
+          });
         } else if (planLoaded && roundsLoaded && !noteLoaded) {
-          appendMessage("ai", `<p class="meta-line">Rounds are saved, but no study note was generated yet.</p>`);
+          const msg = appendMessage(
+            "ai",
+            `<p>Rounds are saved, but no study note was generated yet.</p>` +
+              `<button type="button" class="btn-round continue-note-btn">Generate study note</button>`
+          );
+          msg.querySelector(".continue-note-btn")?.addEventListener("click", async (e) => {
+            e.currentTarget.disabled = true;
+            setProcessing(true);
+            await finishAllRounds();
+          });
         }
       }
 
@@ -1401,10 +1453,28 @@
           e.currentTarget.disabled = true;
           requizProject();
         });
+      } else if (detail.files?.length) {
+        const msg = appendMessage(
+          "ai",
+          `<p>Pick up where you left off — I'll build your study plan from the uploaded files.</p>` +
+            `<button type="button" class="btn-round continue-plan-btn">Generate study plan</button>` +
+            `<p class="meta-line">Or paste more material below and press send.</p>`
+        );
+        msg.querySelector(".continue-plan-btn")?.addEventListener("click", async (e) => {
+          e.currentTarget.disabled = true;
+          setProcessing(true);
+          await runStudyPlan(state.projectId);
+        });
       } else {
-        appendMessage("ai", `<p class="meta-line">This is a saved session. Click "New study session" to start fresh.</p>`);
+        const msg = appendMessage(
+          "ai",
+          `<p>This session has no study material yet.</p>` +
+            `<button type="button" class="btn-round new-session-btn">Start new session</button>`
+        );
+        msg.querySelector(".new-session-btn")?.addEventListener("click", resetNewChat);
       }
       await loadHistorySidebar();
+      els.composerInput.focus();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Could not load session: ${escapeHtml(err.message)}</p>`);
@@ -1420,7 +1490,7 @@
 
   async function requizProject() {
     if (!state.projectId || !state.studyPlan || state.isProcessing) return;
-    setViewOnly(false);
+    setResumedSession(true);
     setProcessing(true);
     state.roundIndex = -1;
     state.roundResults = [];
@@ -1446,7 +1516,7 @@
     state.pendingFiles = [];
     state.roundIndex = -1;
     state.roundResults = [];
-    setViewOnly(false);
+    setResumedSession(false);
     setActiveNav("navHome");
     els.composerInput.value = "";
     autosizeComposer();
@@ -1672,7 +1742,6 @@
 
   function triggerUpload() {
     if (state.isProcessing) return;
-    if (state.viewOnly) resetNewChat();
     (els.fileInput || ensureFileInput()).click();
   }
 

@@ -1956,12 +1956,16 @@ html[data-theme="light"] .mix-panel {
   padding: 6px;
   border-radius: 14px;
   border: 1px solid var(--c-border-strong);
-  background: linear-gradient(165deg, rgba(22, 22, 28, 0.98) 0%, rgba(12, 12, 16, 0.99) 100%);
+  background: var(--c-bg-elevated);
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
   z-index: 1000;
   animation: popIn 0.2s var(--ease);
+}
+
+html[data-theme="light"] .popup-menu {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 #avatarMenu.popup-menu {
@@ -2686,6 +2690,61 @@ html[data-theme="light"] .mix-panel {
   display: flex;
   align-items: stretch;
   gap: 0;
+}
+
+a.projects-session-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-panel);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+a.projects-session-row:hover {
+  background: var(--c-panel-hover);
+  border-color: var(--c-border-strong);
+  transform: translateY(-1px);
+}
+
+.projects-session-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--c-text);
+}
+
+.projects-session-meta {
+  font-size: 0.75rem;
+  color: var(--c-text-faint);
+}
+
+.projects-session-hint {
+  margin: 6px 0 14px;
+  font-size: 0.82rem;
+  color: var(--c-text-dim);
+}
+
+.projects-session-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: linear-gradient(120deg, var(--g1), var(--g2));
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.25);
+}
+
+.projects-session-cta:hover {
+  opacity: 0.95;
 }
 
 .projects-session-card {

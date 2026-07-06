@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="theme.css" />
-  <link rel="stylesheet" href="create.css?v=7" />
+  <link rel="stylesheet" href="create.css?v=10" />
   <script src="config.js"></script>
   <script src="lib/authGuard.js"></script>
 </head>
@@ -108,6 +108,13 @@
             <h2 class="projects-section-title" id="foldersTitle">Your projects</h2>
             <div class="projects-folder-grid" id="folderGrid"></div>
           </section>
+
+          <section class="projects-section hidden" id="folderSessionsSection" aria-labelledby="sessionsTitle">
+            <h2 class="projects-section-title" id="sessionsTitle">
+              Sessions in <span id="activeFolderName"></span>
+            </h2>
+            <div class="projects-session-list" id="folderSessionsList"></div>
+          </section>
         </div>
       </div>
     </main>
@@ -137,6 +144,6 @@
     <button type="button" class="danger" id="menuLogout"><svg class="icon"><use href="#i-logout"></use></svg> Log out</button>
   </div>
 
-  <script src="projects.js?v=2"></script>
+  <script src="projects.js?v=3"></script>
 </body>
 </html>
