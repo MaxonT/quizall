@@ -2033,7 +2033,10 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
 
     const typedContent = String(req.body?.content || "").trim();
     const projectContent = await getProjectCombinedContent(projectId, userId);
-    let content = typedContent || projectContent;
+    let content =
+      typedContent.length >= CONTENT_MIN_LENGTH
+        ? typedContent
+        : projectContent || typedContent;
     const projectFiles = await getProjectFiles(projectId, userId);
     const hasUploadedMaterial = projectFiles.length > 0;
     const fileNames = projectFiles.map((f) => f.file_name).filter(Boolean);

@@ -1280,12 +1280,14 @@
 
   async function runStudyPlan(projectId, contentHint, options = {}) {
     const skipQuiz = !!options.skipQuiz;
+    const planContent =
+      contentHint && String(contentHint).trim().length >= CONTENT_MIN_LENGTH ? contentHint : undefined;
     const typing = appendTyping("Building your study plan…");
     try {
       const data = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/study-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: contentHint || undefined }),
+        body: JSON.stringify({ content: planContent }),
       });
       removeTyping(typing);
       state.studyPlan = data.studyPlan;
@@ -1671,6 +1673,50 @@
     els.composerInput.style.height = Math.min(els.composerInput.scrollHeight, 200) + "px";
   }
 
+  async function handleShortChatMessage(text) {
+    setConversationActive(true);
+    setActiveNav("navHome");
+    appendMessage("user", `<p>${escapeHtml(text)}</p>`);
+    setProcessing(true);
+
+    const inTrainingMode = loadQuizMode() === "training";
+    const hasPlan = !!(state.studyPlan && state.analysis);
+
+    if (hasPlan && inTrainingMode) {
+      appendMessage("ai", `<p>Starting <strong>training mode</strong> — one question at a time.</p>`);
+      await startTrainingLoop();
+      return;
+    }
+
+    if (hasPlan) {
+      appendMessage(
+        "ai",
+        `<p>Got it. Tap <strong>Quiz me again</strong> when you want another round, or paste more notes to refresh your plan.</p>`
+      );
+      setProcessing(false);
+      return;
+    }
+
+    if (state.projectId && state.hasUploadedMaterial) {
+      setProcessing(true);
+      await runStudyPlan(state.projectId, undefined);
+      return;
+    }
+
+    appendMessage(
+      "ai",
+      "<p>Paste your notes or attach a file — then short prompts like this will work to start training or quiz you.</p>" +
+        '<p class="meta-line"><button type="button" class="hint-link sample-inline">Try a sample</button></p>'
+    );
+    const sampleBtn = els.chatInner.querySelector(".sample-inline:last-of-type");
+    sampleBtn?.addEventListener("click", () => {
+      els.composerInput.value = SAMPLE_TEXT;
+      autosizeComposer();
+      els.composerInput.focus();
+    });
+    setProcessing(false);
+  }
+
   function respondNeedMoreMaterial(userPreview) {
     setConversationActive(true);
     setActiveNav("navHome");
@@ -1704,12 +1750,22 @@
     const filesToCheck = state.pendingFiles.slice();
     const combinedContent = await buildMaterialContent(text, filesToCheck);
     const continuing = !!(state.resumedSession && state.projectId);
+    const shortContent = combinedContent.length < CONTENT_MIN_LENGTH;
 
-    if (!continuing && combinedContent.length < CONTENT_MIN_LENGTH) {
+    if (!continuing && shortContent) {
       const userPreview = hasFiles
         ? `Uploaded ${filesToCheck.length} file(s)${text ? " + pasted text" : ""}`
         : text;
       respondNeedMoreMaterial(userPreview);
+      return;
+    }
+
+    if (continuing && shortContent && !hasFiles) {
+      els.composerInput.value = "";
+      autosizeComposer();
+      state.pendingFiles = [];
+      renderAttachmentsBar();
+      await handleShortChatMessage(text);
       return;
     }
 
