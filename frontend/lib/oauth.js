@@ -39,7 +39,7 @@
         data = JSON.parse(text);
       } catch (e) {
         console.error("[oauth] Response is not JSON (got HTML?):", text.slice(0, 200));
-        throw new Error("API 返回了非 JSON 响应，请确认后端地址配置正确（config.js 中的 RENDER_BACKEND_URL）");
+        throw new Error("API returned a non-JSON response. Check backend URL in config.js (RENDER_BACKEND_URL).");
       }
       console.log(`[oauth] Response data:`, data);
 

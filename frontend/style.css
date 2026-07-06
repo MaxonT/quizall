@@ -4426,16 +4426,6 @@ body.qa-cursor-enabled .qa-cursor-ring {
 }
 .command-header .welcome-name { margin: 0 0 4px; font-size: 1.6rem; }
 .command-header .welcome-email { margin: 0 0 8px; color: var(--muted); font-size: 0.9rem; }
-.command-sub { color: var(--muted); margin: 0 0 16px; }
-.today-strip {
-  padding: 10px 16px;
-  margin: 0 0 20px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  font-size: 0.9rem;
-  color: var(--muted);
-}
 .science-widget-compact .science-tip-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .mix-exam-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .mix-exam-preset {

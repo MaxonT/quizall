@@ -389,5 +389,8 @@
     "confirm_password": "确认密码",
     "manage": "管理",
     "already_free_plan": "您已经在使用免费计划"
+  },
+  "home": {
+    "login_required": "请先登录后再使用此功能"
   }
 }

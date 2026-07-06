@@ -472,5 +472,8 @@
   "outcome": {
     "copy": "복사",
     "copied": "복사됨!"
+  },
+  "home": {
+    "login_required": "이 기능을 사용하려면 로그인하세요."
   }
 }

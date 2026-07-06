@@ -551,14 +551,37 @@
         els.creditsBarFill.style.width = `${pct}%`;
         els.creditsBarFill.classList.toggle("is-low", balance < 10);
       }
-      if (els.creditsResetNote && status.nextResetAt) {
-        const dt = new Date(status.nextResetAt);
+      if (els.creditsResetNote && (c.nextResetAt || status.nextResetAt)) {
+        const dt = new Date(c.nextResetAt || status.nextResetAt);
         els.creditsResetNote.textContent = `Resets ${dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
       }
       els.sidebarCredits?.classList.toggle("is-empty", balance <= 0);
+      if (balance <= 0 && els.composerInput) {
+        els.composerInput.placeholder = "No credits left — upgrade or wait for daily refresh";
+      }
     } catch {
       els.creditsValue.textContent = "— / —";
     }
+  }
+
+  function showCreditToast(amount, label) {
+    if (!amount || amount <= 0) return;
+    let toast = document.getElementById("creditToast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "creditToast";
+      toast.className = "credit-toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = `−${amount} Credits · ${label || "Usage"}`;
+    toast.classList.add("is-visible");
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => toast.classList.remove("is-visible"), 2800);
+  }
+
+  async function handleCreditResponse(data, label) {
+    if (data?.creditsDebited) showCreditToast(data.creditsDebited, label);
+    await refreshCredits();
   }
 
   function appendMessage(role, html, msgType = "message") {
@@ -1358,6 +1381,7 @@
         state.projectName = sanitizeSessionName(data.studyPlan.session_name);
       }
       appendMessage("ai", formatStudyPlanHtml(data.studyPlan));
+      await handleCreditResponse(data, "Study plan");
       await loadHistorySidebar();
       if (state.hasUploadedMaterial && !skipQuiz) {
         await tryBuildExamMap(projectId);
@@ -1509,7 +1533,7 @@
       }),
     });
     state.mindmap = data.mindmap;
-    await refreshCredits();
+    await handleCreditResponse(data, "Exam map");
     return data;
   }
 
@@ -1669,7 +1693,7 @@
         examPreset: state.examPreset || "general",
       }),
     });
-    await refreshCredits();
+    await handleCreditResponse(data, "Quiz round");
     return data.quiz || [];
   }
 
@@ -1690,7 +1714,7 @@
         examPreset: state.examPreset || "general",
       }),
     });
-    await refreshCredits();
+    await handleCreditResponse(data, isRefill ? "Training refill" : "Training pack");
     return data.quiz || data.questions || [];
   }
 

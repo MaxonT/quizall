@@ -41,12 +41,13 @@ const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
 // OAuth redirect URI should be the backend callback URL
 // If OAUTH_REDIRECT_URI is explicitly set, use it directly
-// Otherwise, construct it from CORS_ORIGIN
-const OAUTH_REDIRECT_URI = (
-  process.env.OAUTH_REDIRECT_URI ||
-  process.env.BACKEND_URL ||
-  `http://localhost:${process.env.PORT || 8080}`
-).replace(/\/$/, "") + "/api/auth/oauth/callback";
+// Otherwise, construct it from BACKEND_URL
+const OAUTH_REDIRECT_URI = process.env.OAUTH_REDIRECT_URI
+  ? process.env.OAUTH_REDIRECT_URI.trim().replace(/\/$/, "")
+  : (
+    process.env.BACKEND_URL ||
+    `http://localhost:${process.env.PORT || 8080}`
+  ).replace(/\/$/, "") + "/api/auth/oauth/callback";
 
 // Frontend URL for redirecting after OAuth callback (fallback when no return_origin or not in allow list)
 const FRONTEND_URL = (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173").trim();

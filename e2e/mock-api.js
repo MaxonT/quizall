@@ -55,13 +55,15 @@ const SAMPLE_MINDMAP = {
 
 /** @param {import('@playwright/test').Page} page */
 export async function installMockApi(page) {
-  /** @type {{ id: string; name: string; rounds: Array<{ roundLabel: string; score: number; total: number; questions: MockQuestion[] }>; mindmap: object | null; files: Array<{ id: string; name: string }> }} */
+  /** @type {{ id: string; name: string; rounds: Array<{ roundLabel: string; score: number; total: number; questions: MockQuestion[] }>; mindmap: object | null; files: Array<{ id: string; name: string }>; transcript: { messages: object[]; trainingState: object | null } | null; trainingBatch: number }} */
   const session = {
     id: "mock-project-1",
     name: "Study · Mock",
     rounds: [],
     mindmap: null,
     files: [],
+    transcript: null,
+    trainingBatch: 0,
   };
 
   function mixedQuestions(typeMix, numQuestions) {
@@ -128,8 +130,31 @@ export async function installMockApi(page) {
         ok: true,
         stripeConfigured: false,
         subscription: { plan: "free", status: "none" },
+        credits: {
+          balance: 80,
+          dailyAllowance: 80,
+          dailyRemaining: 80,
+          dailyUsed: 0,
+          poolRemaining: 0,
+          nextResetAt: new Date(Date.now() + 86400000).toISOString(),
+        },
+        creditCosts: {
+          studyPlan: 12,
+          examMap: 15,
+          quizTesting: 20,
+          trainingBatch: 10,
+          trainingRefill: 8,
+          studyNote: 10,
+          fileUpload: 3,
+        },
         usage: { promptOptimization: 1, questionWizard: 0 },
         limits: { promptOptimization: { daily: 10 }, questionWizard: { daily: 5 } },
+      });
+    }
+    if (path === "/api/billing/credit-history" && method === "GET") {
+      return json({
+        ok: true,
+        items: [{ id: "h1", credits: 12, reason: "Study plan", createdAt: new Date().toISOString() }],
       });
     }
     if (path === "/api/quiz/folders" && method === "GET") {
@@ -256,6 +281,25 @@ export async function installMockApi(page) {
         })),
       });
     }
+    if (path.match(/\/api\/quiz\/projects\/[^/]+\/transcript$/) && method === "GET") {
+      if (!session.transcript) {
+        return json({ ok: true, messages: [], trainingState: null, updatedAt: null });
+      }
+      return json({
+        ok: true,
+        messages: session.transcript.messages,
+        trainingState: session.transcript.trainingState,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+    if (path.match(/\/api\/quiz\/projects\/[^/]+\/transcript$/) && method === "PUT") {
+      const body = route.request().postDataJSON();
+      session.transcript = {
+        messages: body?.messages || [],
+        trainingState: body?.trainingState ?? null,
+      };
+      return json({ ok: true, updatedAt: new Date().toISOString() });
+    }
     if (path.match(/\/api\/quiz\/projects\/[^/]+$/) && method === "GET") {
       return json({
         ok: true,
@@ -269,23 +313,27 @@ export async function installMockApi(page) {
     if (path === "/api/quiz/generate" && method === "POST") {
       const body = route.request().postDataJSON();
       if (body?.mode === "training") {
+        const batchSize = Math.min(10, Math.max(1, Number(body?.batchSize) || 5));
+        session.trainingBatch += 1;
+        const base = (session.trainingBatch - 1) * batchSize;
+        const quiz = Array.from({ length: batchSize }, (_, i) => ({
+          type: "multiple_choice",
+          question: `Training Q${base + i + 1}: What do plants use to make food?`,
+          options: ["Sunlight", "Rocks", "Plastic", "Metal"],
+          correct_answer: 0,
+          explanation: "Plants use sunlight in photosynthesis.",
+          importance: "core",
+          topic_focus: "Sunlight",
+          source_citation: "notes.pdf p.1",
+          scenario1: "Growing plants near a window",
+          scenario2: "Explaining why plants need light",
+        }));
         return json({
           ok: true,
-          quiz: [
-            {
-              type: "multiple_choice",
-              question: "What do plants use to make food?",
-              options: ["Sunlight", "Rocks", "Plastic", "Metal"],
-              correct_answer: 0,
-              explanation: "Plants use sunlight in photosynthesis.",
-              importance: "core",
-              topic_focus: "Sunlight",
-              source_citation: "notes.pdf p.1",
-              scenario1: "Growing plants near a window",
-              scenario2: "Explaining why plants need light",
-            },
-          ],
-          meta: { mock: true, mode: "training" },
+          quiz,
+          questions: quiz,
+          creditsDebited: body?.isRefill ? 8 : 10,
+          meta: { mock: true, mode: "training", batchSize },
         });
       }
       const questions = mixedQuestions(body?.typeMix, body?.numQuestions);

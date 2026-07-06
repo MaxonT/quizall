@@ -12,7 +12,15 @@
   }
 
   const TOKEN_KEY = "quizall.token";
-  const LOGIN_REQUIRED_MESSAGE = "Please log in first";
+  const LOGIN_REQUIRED_MESSAGE = "Please sign in to use this feature.";
+
+  function getLoginRequiredMessage() {
+    if (typeof window !== "undefined" && window.i18n && typeof window.i18n.t === "function") {
+      const translated = window.i18n.t("home.login_required");
+      if (translated && translated !== "home.login_required") return translated;
+    }
+    return LOGIN_REQUIRED_MESSAGE;
+  }
 
   function getToken() {
     return localStorage.getItem(TOKEN_KEY);
@@ -25,7 +33,7 @@
 
   function showLoginRequired() {
     if (typeof window.showToast === "function") {
-      window.showToast(LOGIN_REQUIRED_MESSAGE, "error");
+      window.showToast(getLoginRequiredMessage(), "error");
       return;
     }
 
@@ -53,7 +61,7 @@
       document.body.appendChild(el);
     }
 
-    el.textContent = LOGIN_REQUIRED_MESSAGE;
+    el.textContent = getLoginRequiredMessage();
     requestAnimationFrame(() => {
       el.style.opacity = "1";
     });

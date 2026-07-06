@@ -411,5 +411,8 @@
     "confirm_password": "Confirm Password",
     "manage": "Manage",
     "already_free_plan": "You are already on the free plan"
+  },
+  "home": {
+    "login_required": "Please sign in to use this feature."
   }
 }

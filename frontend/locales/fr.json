@@ -472,5 +472,8 @@
   "outcome": {
     "copy": "Copier",
     "copied": "Copié !"
+  },
+  "home": {
+    "login_required": "Veuillez vous connecter pour utiliser cette fonctionnalité."
   }
 }

@@ -46,7 +46,7 @@ test.beforeEach(async ({ page }) => {
   await installMockApi(page);
 });
 
-test("training mode: plan → single MCQ training card", async ({ page }) => {
+test("training mode: plan → training loop artifact with MCQ", async ({ page }) => {
   await registerAndOpenCreate(page);
   await page.evaluate(() => localStorage.setItem("quizall.quizMode", "training"));
   await page.reload();
@@ -55,10 +55,37 @@ test("training mode: plan → single MCQ training card", async ({ page }) => {
   await page.click("#sampleLink");
   await page.click("#sendBtn");
   await expect(page.locator("text=Your study plan")).toBeVisible({ timeout: 60000 });
-  await expect(page.locator("text=Training mode").or(page.locator(".training-artifact"))).toBeVisible({
-    timeout: 60000,
-  });
-  await expect(page.locator(".training-artifact .option-btn").first()).toBeVisible();
+  await expect(page.locator("#training-loop")).toBeVisible({ timeout: 60000 });
+  await expect(page.locator("#trainingLoopActive .option-btn").first()).toBeVisible();
+});
+
+test("training mode: 10 answers persist in history after reload", async ({ page }) => {
+  await registerAndOpenCreate(page);
+  await page.evaluate(() => localStorage.setItem("quizall.quizMode", "training"));
+  await page.reload();
+  await page.click("#sampleLink");
+  await page.click("#sendBtn");
+  await expect(page.locator("#training-loop")).toBeVisible({ timeout: 60000 });
+
+  for (let i = 0; i < 10; i++) {
+    const active = page.locator("#trainingLoopActive .option-btn").first();
+    await expect(active).toBeVisible({ timeout: 30000 });
+    await active.click();
+    await page.waitForTimeout(1000);
+  }
+
+  await expect(page.locator("#trainingLoopHistory details")).toHaveCount(10, { timeout: 15000 });
+
+  await page.waitForResponse(
+    (res) => res.url().includes("/transcript") && res.request().method() === "PUT",
+    { timeout: 10000 }
+  ).catch(() => {});
+
+  await page.reload();
+  await expect(page.locator("#composerInput")).toBeVisible({ timeout: 15000 });
+  await page.locator(".project-session").first().click();
+  await expect(page.locator("#training-loop")).toBeVisible({ timeout: 30000 });
+  await expect(page.locator("#trainingLoopHistory details")).toHaveCount(10, { timeout: 15000 });
 });
 
 test("session resume: short prompt continues without blocking composer", async ({ page }) => {

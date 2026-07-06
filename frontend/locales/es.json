@@ -343,5 +343,8 @@
   "examples": {
     "title": "Ve QuizAll en flujos de trabajo reales",
     "subtitle": "Convierte solicitudes comerciales desordenadas en especificaciones de prompts ejecutables, pruebas e informes."
+  },
+  "home": {
+    "login_required": "Inicia sesión para usar esta función."
   }
 }
