@@ -678,6 +678,15 @@ export async function initializeSchema() {
     await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMP;");
     await db.exec("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS project_id VARCHAR(255);");
     await db.exec("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS round_label TEXT;");
+    // quiz_shares: migrate new columns (public library feature); DO block is a no-op on fresh DBs
+    await db.run(`DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'quiz_shares') THEN
+    ALTER TABLE quiz_shares ADD COLUMN IF NOT EXISTS is_public INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE quiz_shares ADD COLUMN IF NOT EXISTS subject_category TEXT;
+    ALTER TABLE quiz_shares ADD COLUMN IF NOT EXISTS view_count INTEGER NOT NULL DEFAULT 0;
+  END IF;
+END $$`);
     await db.exec(`
       CREATE TABLE IF NOT EXISTS oauth_pkce_states (
         state VARCHAR(64) PRIMARY KEY,
