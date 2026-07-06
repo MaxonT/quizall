@@ -12,6 +12,7 @@ import { adminRouter } from "./routes/admin.js";
 import { oauthRouter } from "./routes/oauth.js";
 import { quizRouter } from "./routes/quiz.js";
 import { quizTranscriptRouter } from "./routes/quizTranscript.js";
+import { classroomRouter } from "./routes/classroom.js";
 import { dailyRefreshJob } from "./lib/dailyRefreshJob.js";
 import dailyCompensationJob from "./lib/dailyCompensationJob.js";
 import { FEATURES } from "./lib/subscriptionConfig.js";
@@ -165,6 +166,9 @@ console.log(`[quizall]   ✓ /api/auth`);
 app.use("/api/quiz", quizRouter);
 app.use("/api/quiz", quizTranscriptRouter);
 console.log(`[quizall]   ✓ /api/quiz`);
+
+app.use("/api/classroom", classroomRouter);
+console.log(`[quizall]   ✓ /api/classroom`);
 
 app.use("/api/billing", billingRouter);
 console.log(`[quizall]   ✓ /api/billing`);

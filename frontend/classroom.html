@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuizAll Classroom — Teach & Track Student Mastery</title>
+  <meta name="description" content="Create classes, assign AI-generated quizzes, and track every student's mastery — QuizAll for teachers." />
+  <link rel="canonical" href="https://quizall.app/classroom.html" />
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <script src="lib/authGuard.js"></script>
+  <style>
+    .cls-page { max-width: 1080px; margin: 0 auto; padding: 0 20px 80px; }
+    .cls-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); max-width: 1080px; margin: 0 auto; gap: 12px; flex-wrap: wrap; }
+    .cls-nav-brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-weight: 600; }
+    .cls-nav-brand img { width: 26px; height: 26px; }
+    .cls-nav-links { display: flex; gap: 20px; align-items: center; }
+    .cls-nav-links a { text-decoration: none; color: var(--text-muted); font-size: 0.9rem; }
+    .cls-nav-links a:hover, .cls-nav-links a.active { color: var(--text); }
+
+    .cls-hero { padding: 40px 0 24px; }
+    .cls-hero h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 700; margin-bottom: 8px; }
+    .cls-hero p { color: var(--text-muted); max-width: 620px; }
+    .cls-tier-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; background: var(--accent-bg, rgba(124,106,240,0.15)); color: var(--accent, #7c6af0); margin-left: 10px; vertical-align: middle; }
+
+    .cls-section { margin-top: 32px; }
+    .cls-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; }
+    .cls-section-head h2 { font-size: 1.15rem; font-weight: 650; }
+
+    .cls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .cls-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+    .cls-card h3 { font-size: 1.05rem; font-weight: 600; }
+    .cls-card .muted { color: var(--text-muted); font-size: 0.85rem; }
+    .cls-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 2px; font-weight: 700; font-size: 1.1rem; color: var(--accent, #7c6af0); background: var(--surface-2, rgba(124,106,240,0.08)); padding: 4px 10px; border-radius: 8px; display: inline-block; }
+    .cls-card-stats { display: flex; gap: 16px; font-size: 0.82rem; color: var(--text-muted); }
+    .cls-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+
+    .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent, #7c6af0); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 0.88rem; font-weight: 500; cursor: pointer; text-decoration: none; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-ghost { display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 0.84rem; cursor: pointer; }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+    .btn-danger { color: #ef4444; border-color: rgba(239,68,68,0.4); }
+    .btn-danger:hover { background: rgba(239,68,68,0.08); }
+
+    .cls-empty { color: var(--text-muted); font-size: 0.9rem; padding: 20px 0; }
+
+    .cls-join { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .cls-join input { text-transform: uppercase; letter-spacing: 2px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; color: var(--text); width: 160px; outline: none; }
+    .cls-join input:focus { border-color: var(--accent, #7c6af0); }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 640px; max-height: 88vh; overflow-y: auto; padding: 24px; }
+    .modal h3 { font-size: 1.2rem; margin-bottom: 16px; }
+    .modal label { display: block; font-size: 0.85rem; color: var(--text-muted); margin: 12px 0 5px; }
+    .modal input, .modal textarea, .modal select { width: 100%; background: var(--surface-2, rgba(0,0,0,0.2)); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 0.9rem; font-family: inherit; outline: none; box-sizing: border-box; }
+    .modal textarea { min-height: 130px; resize: vertical; line-height: 1.5; }
+    .modal input:focus, .modal textarea:focus { border-color: var(--accent, #7c6af0); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .modal-error { color: #ef4444; font-size: 0.82rem; margin-top: 10px; min-height: 1em; }
+
+    /* Report table */
+    .report-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .report-table th, .report-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+    .report-table th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .mastery-pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 0.78rem; font-weight: 600; }
+    .m-green { background: rgba(52,211,153,0.16); color: #34d399; }
+    .m-yellow { background: rgba(251,191,36,0.16); color: #fbbf24; }
+    .m-red { background: rgba(248,113,113,0.16); color: #f87171; }
+    .m-gray { background: var(--surface-2, rgba(148,163,184,0.14)); color: var(--text-muted); }
+
+    /* Inline quiz */
+    .quiz-q { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+    .quiz-q p { font-weight: 500; margin-bottom: 10px; }
+    .quiz-opt { display: block; width: 100%; text-align: left; background: var(--surface-2, rgba(0,0,0,0.18)); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; margin-bottom: 6px; color: var(--text); cursor: pointer; font-size: 0.88rem; }
+    .quiz-opt:hover { border-color: var(--accent, #7c6af0); }
+    .quiz-opt.selected { border-color: var(--accent, #7c6af0); background: var(--accent-bg, rgba(124,106,240,0.14)); }
+    .quiz-opt.correct { border-color: #34d399; background: rgba(52,211,153,0.14); }
+    .quiz-opt.wrong { border-color: #f87171; background: rgba(248,113,113,0.14); }
+
+    .assignment-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .assignment-row:last-child { border-bottom: none; }
+    .assignment-row .a-meta { color: var(--text-muted); font-size: 0.8rem; }
+
+    @media (max-width: 600px) { .cls-grid { grid-template-columns: 1fr; } .cls-nav-links { display: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="cls-nav">
+      <a href="index.html" class="cls-nav-brand"><img src="assets/quizall-icon.svg" alt="QuizAll" /> QuizAll</a>
+      <div class="cls-nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="create.html">Create Quiz</a>
+        <a href="library.html">Library</a>
+        <a href="classroom.html" class="active">Classroom</a>
+      </div>
+      <button id="themeToggle" class="btn-ghost" style="border:none;padding:6px 10px;" title="Toggle theme"><span class="theme-icon">🌙</span></button>
+    </nav>
+  </header>
+
+  <main class="cls-page">
+    <section class="cls-hero">
+      <h1>Classroom <span id="tierBadge"></span></h1>
+      <p>Create a class, share the join code with your students, assign AI-generated quizzes, and track everyone's mastery in one place.</p>
+    </section>
+
+    <!-- Teacher: my classes -->
+    <section class="cls-section" id="teachSection">
+      <div class="cls-section-head">
+        <h2>Classes you teach</h2>
+        <button class="btn-primary" id="createClassBtn">+ New class</button>
+      </div>
+      <div id="taughtGrid" class="cls-grid"></div>
+      <div class="cls-empty" id="taughtEmpty" style="display:none;">You haven't created any classes yet. Click “New class” to start.</div>
+    </section>
+
+    <!-- Student: join + enrolled -->
+    <section class="cls-section" id="learnSection">
+      <div class="cls-section-head">
+        <h2>Classes you're in</h2>
+        <div class="cls-join">
+          <input type="text" id="joinCodeInput" placeholder="CODE" maxlength="6" autocomplete="off" />
+          <button class="btn-ghost" id="joinBtn">Join class</button>
+        </div>
+      </div>
+      <div id="enrolledGrid" class="cls-grid"></div>
+      <div class="cls-empty" id="enrolledEmpty" style="display:none;">Enter a class code above to join your first class.</div>
+    </section>
+  </main>
+
+  <!-- Create class modal -->
+  <div class="modal-overlay" id="createClassModal">
+    <div class="modal">
+      <h3>Create a class</h3>
+      <label for="className">Class name</label>
+      <input type="text" id="className" placeholder="e.g. AP Biology — Period 3" maxlength="80" />
+      <label for="classDesc">Description (optional)</label>
+      <input type="text" id="classDesc" placeholder="What is this class about?" maxlength="200" />
+      <div class="modal-error" id="createClassError"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" data-close-modal>Cancel</button>
+        <button class="btn-primary" id="createClassConfirm">Create class</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add assignment modal -->
+  <div class="modal-overlay" id="assignModal">
+    <div class="modal">
+      <h3>New assignment</h3>
+      <label for="assignTitle">Title</label>
+      <input type="text" id="assignTitle" placeholder="e.g. Chapter 4 — Cell Respiration" maxlength="120" />
+      <label for="assignContent">Study material (students are quizzed on this)</label>
+      <textarea id="assignContent" placeholder="Paste the notes, summary, or reading the quiz should be based on…"></textarea>
+      <label for="assignTopics">Focus topics (optional)</label>
+      <input type="text" id="assignTopics" placeholder="e.g. glycolysis, Krebs cycle, electron transport" maxlength="200" />
+      <label for="assignNum">Number of questions</label>
+      <select id="assignNum">
+        <option value="5">5 questions</option>
+        <option value="10" selected>10 questions</option>
+        <option value="15">15 questions</option>
+        <option value="20">20 questions</option>
+      </select>
+      <div class="modal-error" id="assignError"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" data-close-modal>Cancel</button>
+        <button class="btn-primary" id="assignConfirm">Create assignment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Class detail modal (assignments list / report) -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal" id="detailModalBody"></div>
+  </div>
+
+  <!-- Quiz-taking modal -->
+  <div class="modal-overlay" id="quizModal">
+    <div class="modal" id="quizModalBody"></div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+    const API_BASE = (window.authGuard?.API_BASE || window.QUIZALL_API_BASE || window.location.origin).replace(/\/$/, "");
+
+    if (!window.authGuard?.getToken || !window.authGuard.getToken()) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    const el = (id) => document.getElementById(id);
+
+    function esc(text) {
+      const d = document.createElement("div");
+      d.textContent = String(text ?? "");
+      return d.innerHTML;
+    }
+
+    async function api(path, options) {
+      const res = await window.authGuard.fetchWithAuth(`${API_BASE}${path}`, options || {});
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.message || data.error || `Request failed (${res.status})`);
+        err.code = data.error;
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    }
+
+    function openModal(id) { el(id).classList.add("open"); }
+    function closeModal(id) { el(id).classList.remove("open"); }
+    document.querySelectorAll("[data-close-modal]").forEach((b) =>
+      b.addEventListener("click", () => b.closest(".modal-overlay").classList.remove("open"))
+    );
+    document.querySelectorAll(".modal-overlay").forEach((ov) =>
+      ov.addEventListener("click", (e) => { if (e.target === ov) ov.classList.remove("open"); })
+    );
+
+    function masteryClass(pct) {
+      if (pct == null) return "m-gray";
+      if (pct >= 80) return "m-green";
+      if (pct >= 60) return "m-yellow";
+      return "m-red";
+    }
+
+    // ── Load role + classes ──
+    async function loadAll() {
+      try {
+        const role = await api("/api/classroom/role");
+        if (role.isTeacherTier) {
+          el("tierBadge").innerHTML = '<span class="cls-tier-badge">Teacher plan</span>';
+        }
+      } catch (_) { /* ignore */ }
+
+      try {
+        const data = await api("/api/classroom/classes");
+        renderTaught(data.taught || []);
+        renderEnrolled(data.enrolled || []);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderTaught(classes) {
+      const grid = el("taughtGrid");
+      el("taughtEmpty").style.display = classes.length ? "none" : "block";
+      grid.innerHTML = classes.map((c) => `
+        <div class="cls-card">
+          <h3>${esc(c.name)}</h3>
+          ${c.description ? `<div class="muted">${esc(c.description)}</div>` : ""}
+          <div class="muted">Join code: <span class="cls-code">${esc(c.joinCode)}</span></div>
+          <div class="cls-card-stats">
+            <span>${c.memberCount} student${c.memberCount !== 1 ? "s" : ""}</span>
+            <span>${c.assignmentCount} assignment${c.assignmentCount !== 1 ? "s" : ""}</span>
+          </div>
+          <div class="cls-card-actions">
+            <button class="btn-ghost" data-assign="${esc(c.id)}">+ Assignment</button>
+            <button class="btn-ghost" data-report="${esc(c.id)}">View report</button>
+            <button class="btn-ghost btn-danger" data-del="${esc(c.id)}" data-name="${esc(c.name)}">Delete</button>
+          </div>
+        </div>`).join("");
+
+      grid.querySelectorAll("[data-assign]").forEach((b) =>
+        b.addEventListener("click", () => openAssignModal(b.dataset.assign)));
+      grid.querySelectorAll("[data-report]").forEach((b) =>
+        b.addEventListener("click", () => openReport(b.dataset.report)));
+      grid.querySelectorAll("[data-del]").forEach((b) =>
+        b.addEventListener("click", () => deleteClass(b.dataset.del, b.dataset.name)));
+    }
+
+    function renderEnrolled(classes) {
+      const grid = el("enrolledGrid");
+      el("enrolledEmpty").style.display = classes.length ? "none" : "block";
+      grid.innerHTML = classes.map((c) => `
+        <div class="cls-card">
+          <h3>${esc(c.name)}</h3>
+          ${c.description ? `<div class="muted">${esc(c.description)}</div>` : ""}
+          <div class="cls-card-stats"><span>${c.assignmentCount} assignment${c.assignmentCount !== 1 ? "s" : ""}</span></div>
+          <div class="cls-card-actions">
+            <button class="btn-primary" data-open="${esc(c.id)}" data-name="${esc(c.name)}">Open assignments</button>
+          </div>
+        </div>`).join("");
+      grid.querySelectorAll("[data-open]").forEach((b) =>
+        b.addEventListener("click", () => openStudentClass(b.dataset.open, b.dataset.name)));
+    }
+
+    // ── Create class ──
+    el("createClassBtn").addEventListener("click", () => {
+      el("className").value = "";
+      el("classDesc").value = "";
+      el("createClassError").textContent = "";
+      openModal("createClassModal");
+      el("className").focus();
+    });
+
+    el("createClassConfirm").addEventListener("click", async () => {
+      const name = el("className").value.trim();
+      const description = el("classDesc").value.trim();
+      if (name.length < 2) { el("createClassError").textContent = "Please enter a class name."; return; }
+      el("createClassConfirm").disabled = true;
+      try {
+        await api("/api/classroom/classes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, description }),
+        });
+        closeModal("createClassModal");
+        await loadAll();
+      } catch (err) {
+        el("createClassError").textContent = err.message || "Could not create class.";
+      } finally {
+        el("createClassConfirm").disabled = false;
+      }
+    });
+
+    // ── Delete class ──
+    async function deleteClass(id, name) {
+      if (!confirm(`Delete “${name}” and all its assignments? This cannot be undone.`)) return;
+      try {
+        await api(`/api/classroom/classes/${encodeURIComponent(id)}`, { method: "DELETE" });
+        await loadAll();
+      } catch (err) {
+        alert(err.message || "Could not delete class.");
+      }
+    }
+
+    // ── Join class ──
+    el("joinBtn").addEventListener("click", joinClass);
+    el("joinCodeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") joinClass(); });
+    async function joinClass() {
+      const code = el("joinCodeInput").value.trim().toUpperCase();
+      if (!code) return;
+      el("joinBtn").disabled = true;
+      try {
+        const data = await api("/api/classroom/join", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        });
+        el("joinCodeInput").value = "";
+        await loadAll();
+        if (data.class) openStudentClass(data.class.id, data.class.name);
+      } catch (err) {
+        alert(err.message || "Could not join class.");
+      } finally {
+        el("joinBtn").disabled = false;
+      }
+    }
+
+    // ── Add assignment ──
+    let assignClassId = null;
+    function openAssignModal(classId) {
+      assignClassId = classId;
+      el("assignTitle").value = "";
+      el("assignContent").value = "";
+      el("assignTopics").value = "";
+      el("assignNum").value = "10";
+      el("assignError").textContent = "";
+      openModal("assignModal");
+      el("assignTitle").focus();
+    }
+
+    el("assignConfirm").addEventListener("click", async () => {
+      const title = el("assignTitle").value.trim();
+      const content = el("assignContent").value.trim();
+      const examTopics = el("assignTopics").value.trim();
+      const numQuestions = Number(el("assignNum").value);
+      if (title.length < 2) { el("assignError").textContent = "Please enter a title."; return; }
+      if (content.length < 30) { el("assignError").textContent = "Please add at least 30 characters of study material."; return; }
+      el("assignConfirm").disabled = true;
+      try {
+        await api(`/api/classroom/classes/${encodeURIComponent(assignClassId)}/assignments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, content, examTopics, numQuestions }),
+        });
+        closeModal("assignModal");
+        await loadAll();
+      } catch (err) {
+        el("assignError").textContent = err.message || "Could not create assignment.";
+      } finally {
+        el("assignConfirm").disabled = false;
+      }
+    });
+
+    // ── Teacher report ──
+    async function openReport(classId) {
+      const body = el("detailModalBody");
+      body.innerHTML = `<h3>Loading report…</h3>`;
+      openModal("detailModal");
+      try {
+        const data = await api(`/api/classroom/classes/${encodeURIComponent(classId)}/report`);
+        const assignments = data.assignments || [];
+        const students = data.students || [];
+        const headCols = assignments.map((a) => `<th title="${esc(a.title)}">${esc(a.title.slice(0, 14))}${a.title.length > 14 ? "…" : ""}</th>`).join("");
+        const rows = students.length
+          ? students.map((s) => {
+              const cells = s.perAssignment.map((p) =>
+                `<td>${p.accuracy == null ? '<span class="mastery-pill m-gray">—</span>' : `<span class="mastery-pill ${masteryClass(p.accuracy)}">${p.accuracy}%</span>`}</td>`
+              ).join("");
+              return `<tr>
+                <td>${esc(s.email)}</td>
+                <td>${s.completionPercent}%</td>
+                <td>${s.avgAccuracy == null ? '<span class="mastery-pill m-gray">—</span>' : `<span class="mastery-pill ${masteryClass(s.avgAccuracy)}">${s.avgAccuracy}%</span>`}</td>
+                ${cells}
+              </tr>`;
+            }).join("")
+          : `<tr><td colspan="${3 + assignments.length}" class="muted">No students have joined yet.</td></tr>`;
+
+        body.innerHTML = `
+          <h3>${esc(data.className)} — Mastery report</h3>
+          <div style="overflow-x:auto;">
+            <table class="report-table">
+              <thead><tr><th>Student</th><th>Done</th><th>Avg</th>${headCols}</tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          <div class="modal-actions"><button class="btn-ghost" data-close-report>Close</button></div>`;
+        body.querySelector("[data-close-report]").addEventListener("click", () => closeModal("detailModal"));
+      } catch (err) {
+        body.innerHTML = `<h3>Report</h3><p class="muted">${esc(err.message || "Could not load report.")}</p>
+          <div class="modal-actions"><button class="btn-ghost" data-close-report>Close</button></div>`;
+        body.querySelector("[data-close-report]").addEventListener("click", () => closeModal("detailModal"));
+      }
+    }
+
+    // ── Student: open class assignments ──
+    async function openStudentClass(classId, className) {
+      const body = el("detailModalBody");
+      body.innerHTML = `<h3>Loading…</h3>`;
+      openModal("detailModal");
+      try {
+        const data = await api(`/api/classroom/classes/${encodeURIComponent(classId)}/assignments`);
+        const assignments = data.assignments || [];
+        const list = assignments.length
+          ? assignments.map((a) => {
+              const done = a.submission
+                ? `<span class="mastery-pill ${masteryClass(a.submission.accuracy)}">${a.submission.accuracy}%</span>`
+                : `<span class="mastery-pill m-gray">Not done</span>`;
+              return `<div class="assignment-row">
+                <div>
+                  <div>${esc(a.title)}</div>
+                  <div class="a-meta">${a.numQuestions} questions${a.examTopics ? " · " + esc(a.examTopics) : ""}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  ${done}
+                  <button class="btn-primary" data-take="${esc(a.id)}">${a.submission ? "Retake" : "Take quiz"}</button>
+                </div>
+              </div>`;
+            }).join("")
+          : `<div class="cls-empty">No assignments yet. Check back soon.</div>`;
+
+        body.innerHTML = `
+          <h3>${esc(className || data.className)}</h3>
+          ${list}
+          <div class="modal-actions"><button class="btn-ghost" data-close-detail>Close</button></div>`;
+        body.querySelector("[data-close-detail]").addEventListener("click", () => closeModal("detailModal"));
+        body.querySelectorAll("[data-take]").forEach((b) =>
+          b.addEventListener("click", () => startAssignmentQuiz(b.dataset.take)));
+      } catch (err) {
+        body.innerHTML = `<h3>Class</h3><p class="muted">${esc(err.message || "Could not load.")}</p>
+          <div class="modal-actions"><button class="btn-ghost" data-close-detail>Close</button></div>`;
+        body.querySelector("[data-close-detail]").addEventListener("click", () => closeModal("detailModal"));
+      }
+    }
+
+    // ── Student: take an assignment quiz inline ──
+    async function startAssignmentQuiz(assignmentId) {
+      closeModal("detailModal");
+      const body = el("quizModalBody");
+      body.innerHTML = `<h3>Generating your quiz…</h3><p class="muted">This uses a few credits, just like a normal quiz.</p>`;
+      openModal("quizModal");
+      try {
+        const a = (await api(`/api/classroom/assignments/${encodeURIComponent(assignmentId)}`)).assignment;
+        const gen = await api("/api/quiz/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "testing",
+            content: a.content,
+            examTopics: a.examTopics || "",
+            types: ["multiple_choice"],
+            numQuestions: a.numQuestions,
+          }),
+        });
+        const quiz = (gen.quiz || gen.questions || []).filter((q) => (q.type === "multiple_choice") && Array.isArray(q.options));
+        if (!quiz.length) throw new Error("Could not generate questions for this assignment.");
+        renderQuiz(assignmentId, a.title, quiz);
+      } catch (err) {
+        body.innerHTML = `<h3>Quiz</h3><p class="muted">${esc(err.message || "Could not start quiz.")}</p>
+          <div class="modal-actions"><button class="btn-ghost" data-close-quiz>Close</button></div>`;
+        body.querySelector("[data-close-quiz]").addEventListener("click", () => closeModal("quizModal"));
+      }
+    }
+
+    function renderQuiz(assignmentId, title, quiz) {
+      const answers = new Array(quiz.length).fill(null);
+      const body = el("quizModalBody");
+
+      function paint() {
+        const qs = quiz.map((q, i) => {
+          const opts = q.options.map((opt, oi) =>
+            `<button type="button" class="quiz-opt ${answers[i] === oi ? "selected" : ""}" data-q="${i}" data-o="${oi}">${esc(opt)}</button>`
+          ).join("");
+          return `<div class="quiz-q"><p>${i + 1}. ${esc(q.question)}</p>${opts}</div>`;
+        }).join("");
+        body.innerHTML = `
+          <h3>${esc(title)}</h3>
+          ${qs}
+          <div class="modal-actions">
+            <button class="btn-ghost" data-close-quiz>Cancel</button>
+            <button class="btn-primary" id="submitQuiz">Submit</button>
+          </div>`;
+        body.querySelectorAll(".quiz-opt").forEach((b) =>
+          b.addEventListener("click", () => {
+            answers[Number(b.dataset.q)] = Number(b.dataset.o);
+            paint();
+          }));
+        body.querySelector("[data-close-quiz]").addEventListener("click", () => closeModal("quizModal"));
+        el("submitQuiz").addEventListener("click", () => grade());
+      }
+
+      function correctIndex(q) {
+        const c = q.correct_answer ?? q.correctAnswer;
+        const n = Number.parseInt(String(c), 10);
+        return Number.isInteger(n) ? n : 0;
+      }
+
+      async function grade() {
+        if (answers.some((a) => a == null)) {
+          if (!confirm("Some questions are unanswered. Submit anyway?")) return;
+        }
+        let score = 0;
+        quiz.forEach((q, i) => { if (answers[i] === correctIndex(q)) score += 1; });
+        const total = quiz.length;
+
+        // Show graded state
+        body.querySelectorAll(".quiz-opt").forEach((b) => (b.disabled = true));
+        quiz.forEach((q, i) => {
+          const ci = correctIndex(q);
+          body.querySelectorAll(`.quiz-opt[data-q="${i}"]`).forEach((b) => {
+            const oi = Number(b.dataset.o);
+            if (oi === ci) b.classList.add("correct");
+            else if (oi === answers[i]) b.classList.add("wrong");
+          });
+        });
+
+        const pct = Math.round((score / total) * 100);
+        let submitMsg = "";
+        try {
+          await api(`/api/classroom/assignments/${encodeURIComponent(assignmentId)}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ score, total }),
+          });
+          submitMsg = "Your score was sent to your teacher.";
+        } catch (err) {
+          submitMsg = "Score could not be saved: " + (err.message || "error");
+        }
+
+        const banner = document.createElement("div");
+        banner.innerHTML = `
+          <div style="margin-top:16px;padding:14px 16px;border-radius:10px;background:var(--surface-2,rgba(124,106,240,0.08));">
+            <strong>You scored ${score}/${total} (${pct}%).</strong>
+            <div class="muted" style="margin-top:4px;">${esc(submitMsg)}</div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-primary" data-done>Done</button>
+          </div>`;
+        body.appendChild(banner);
+        banner.querySelector("[data-done]").addEventListener("click", async () => {
+          closeModal("quizModal");
+          await loadAll();
+        });
+      }
+
+      paint();
+    }
+
+    // Theme toggle
+    el("themeToggle").addEventListener("click", () => {
+      const html = document.documentElement;
+      const next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      html.setAttribute("data-theme", next);
+      localStorage.setItem("theme", next);
+      document.querySelector(".theme-icon").textContent = next === "dark" ? "🌙" : "☀️";
+    });
+    const savedTheme = document.documentElement.getAttribute("data-theme") || "dark";
+    const themeIcon = document.querySelector(".theme-icon");
+    if (themeIcon) themeIcon.textContent = savedTheme === "dark" ? "🌙" : "☀️";
+
+    loadAll();
+  })();
+  </script>
+</body>
+</html>

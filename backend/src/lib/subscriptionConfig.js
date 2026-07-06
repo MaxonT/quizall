@@ -59,7 +59,17 @@ export const CREDIT_ALLOWANCE = {
   free: Number(process.env.CREDIT_ALLOWANCE_FREE || 80),
   trial: Number(process.env.CREDIT_ALLOWANCE_TRIAL || 120),
   paid: Number(process.env.CREDIT_ALLOWANCE_PAID || 150),
+  teacher: Number(process.env.CREDIT_ALLOWANCE_TEACHER || 400),
 };
+
+// =============================================
+// Teacher / Classroom (B2B) tier
+// =============================================
+
+export const TEACHER_PRICE_USD = Number(process.env.TEACHER_PRICE_USD || 29);
+export const STRIPE_PRICE_TEACHER = process.env.STRIPE_PRICE_TEACHER || "price_teacher_29usd";
+// Daily free tokens for teacher-tier accounts
+export const TEACHER_DAILY_TOKENS = Number(process.env.TEACHER_DAILY_TOKENS || 120000);
 
 export const CREDIT_COSTS = {
   fileUpload: Number(process.env.CREDIT_COST_FILE_UPLOAD || 3),

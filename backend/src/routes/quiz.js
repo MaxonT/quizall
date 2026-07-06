@@ -2355,6 +2355,161 @@ quizRouter.post("/projects/:id/note", requireAuth, async (req, res) => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────────
+// YouTube transcript → study material
+// ────────────────────────────────────────────────────────────────────────────────
+
+function extractYouTubeId(input = "") {
+  const url = String(input).trim();
+  // Direct 11-char id
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  const patterns = [
+    /(?:youtube\.com\/watch\?[^ ]*?[?&]v=)([a-zA-Z0-9_-]{11})/,
+    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function decodeHtmlEntities(text = "") {
+  return String(text)
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)));
+}
+
+function parseTranscriptXml(xml = "") {
+  const segments = [];
+  const re = /<text[^>]*>([\s\S]*?)<\/text>/g;
+  let match;
+  while ((match = re.exec(xml)) !== null) {
+    const raw = match[1].replace(/<[^>]+>/g, "");
+    const decoded = decodeHtmlEntities(raw).replace(/\s+/g, " ").trim();
+    if (decoded) segments.push(decoded);
+  }
+  return segments.join(" ");
+}
+
+async function fetchYouTubeTranscript(videoId) {
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+
+  const watchRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, { headers });
+  if (!watchRes.ok) {
+    const err = new Error(`YouTube returned ${watchRes.status}`);
+    err.code = "YT_FETCH_FAILED";
+    throw err;
+  }
+  const html = await watchRes.text();
+
+  // Extract title
+  let title = "";
+  const titleMatch = html.match(/<meta name="title" content="([^"]*)"/);
+  if (titleMatch) title = decodeHtmlEntities(titleMatch[1]);
+
+  // Extract caption tracks from ytInitialPlayerResponse
+  const capMatch = html.match(/"captionTracks":(\[.*?\])/);
+  if (!capMatch) {
+    const err = new Error("No captions available for this video.");
+    err.code = "YT_NO_CAPTIONS";
+    throw err;
+  }
+
+  let tracks;
+  try {
+    tracks = JSON.parse(capMatch[1].replace(/\\u0026/g, "&"));
+  } catch {
+    const err = new Error("Could not parse caption data.");
+    err.code = "YT_PARSE_FAILED";
+    throw err;
+  }
+
+  if (!Array.isArray(tracks) || !tracks.length) {
+    const err = new Error("No captions available for this video.");
+    err.code = "YT_NO_CAPTIONS";
+    throw err;
+  }
+
+  // Prefer English, then any manually created, then first
+  const pick =
+    tracks.find((t) => /^en\b|^en-/.test(t.languageCode || "")) ||
+    tracks.find((t) => t.kind !== "asr") ||
+    tracks[0];
+
+  const baseUrl = String(pick.baseUrl || "").replace(/\\u0026/g, "&");
+  if (!baseUrl) {
+    const err = new Error("Caption track URL missing.");
+    err.code = "YT_NO_CAPTIONS";
+    throw err;
+  }
+
+  const xmlRes = await fetch(baseUrl, { headers });
+  if (!xmlRes.ok) {
+    const err = new Error(`Caption download failed (${xmlRes.status}).`);
+    err.code = "YT_FETCH_FAILED";
+    throw err;
+  }
+  const xml = await xmlRes.text();
+  const transcript = parseTranscriptXml(xml);
+
+  if (!transcript || transcript.length < 30) {
+    const err = new Error("Transcript was empty or too short.");
+    err.code = "YT_EMPTY";
+    throw err;
+  }
+
+  return { title, transcript };
+}
+
+quizRouter.post("/youtube", requireAuth, async (req, res) => {
+  try {
+    const rawUrl = normalizeWhitespace(req.body?.url || "");
+    if (!rawUrl) {
+      return res.status(400).json({ ok: false, error: "A YouTube URL is required." });
+    }
+
+    const videoId = extractYouTubeId(rawUrl);
+    if (!videoId) {
+      return res.status(400).json({ ok: false, error: "That doesn't look like a valid YouTube URL." });
+    }
+
+    const { title, transcript } = await fetchYouTubeTranscript(videoId);
+    const clipped = transcript.slice(0, FILE_TEXT_MAX_LENGTH);
+
+    return res.json({
+      ok: true,
+      videoId,
+      title: title || "YouTube video",
+      transcript: clipped,
+      length: clipped.length,
+    });
+  } catch (err) {
+    console.error("[quizall] youtube transcript error:", err?.code || "", err?.message || err);
+    const messageByCode = {
+      YT_NO_CAPTIONS: "This video has no captions/subtitles, so we can't build a quiz from it. Try another video.",
+      YT_EMPTY: "We couldn't read enough text from this video's captions. Try another video.",
+      YT_FETCH_FAILED: "Couldn't reach YouTube right now. Please try again in a moment.",
+      YT_PARSE_FAILED: "We couldn't read this video's captions. Try another video.",
+    };
+    const message = messageByCode[err?.code] || "Failed to fetch the YouTube transcript.";
+    const statusCode = err?.code === "YT_FETCH_FAILED" ? 502 : 422;
+    return res.status(statusCode).json({ ok: false, error: message, code: err?.code || "YT_ERROR" });
+  }
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
 // Quiz Generation
 // ────────────────────────────────────────────────────────────────────────────────
 

@@ -468,6 +468,24 @@
     return parts.join("\n\n");
   }
 
+  const YOUTUBE_URL_RE = /(?:youtube\.com\/(?:watch\?[^\s]*v=|embed\/|shorts\/|live\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}/i;
+
+  function isYouTubeUrl(text) {
+    const t = String(text || "").trim();
+    // Only treat as a YouTube link if the message is essentially just the URL
+    return YOUTUBE_URL_RE.test(t) && t.split(/\s+/).length <= 3;
+  }
+
+  async function fetchYouTubeTranscript(url) {
+    const data = await api("/api/quiz/youtube", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    if (!data.ok) throw new Error(data.error || "Failed to fetch transcript");
+    return data;
+  }
+
   async function validateComposerContent(text, files) {
     const combined = (await buildMaterialContent(text, files)).length;
     return combined >= CONTENT_MIN_LENGTH;
@@ -2277,6 +2295,13 @@
 
     clearComposerError();
     closeMixPanel();
+
+    // YouTube link → fetch transcript and use it as study material
+    if (!hasFiles && isYouTubeUrl(text)) {
+      await handleYouTubeMessage(text);
+      return;
+    }
+
     const filesToCheck = state.pendingFiles.slice();
     const combinedContent = await buildMaterialContent(text, filesToCheck);
     const continuing = !!(state.resumedSession && state.projectId);
@@ -2348,6 +2373,65 @@
       await runStudyPlan(state.projectId, combinedContent || state.materialPreview || undefined, {
         skipQuiz: continuing && !!state.studyPlan,
       });
+    } catch (err) {
+      appendMessage("ai", `<p>Something went wrong: ${escapeHtml(formatUserError(err))}</p>`);
+      setProcessing(false);
+    }
+  }
+
+  async function handleYouTubeMessage(url) {
+    setConversationActive(true);
+    setActiveNav("navHome");
+    appendMessage("user", `<p>${escapeHtml(url)}</p>`);
+    els.composerInput.value = "";
+    autosizeComposer();
+    setProcessing(true);
+
+    const usageOk = await checkUsageGate();
+    if (!usageOk) {
+      setProcessing(false);
+      return;
+    }
+
+    const typing = appendTyping("Fetching the video transcript…");
+    let transcriptData;
+    try {
+      transcriptData = await fetchYouTubeTranscript(url);
+    } catch (err) {
+      removeTyping(typing);
+      appendMessage(
+        "ai",
+        `<p>${escapeHtml(formatUserError(err))}</p>` +
+          `<p class="meta-line">Tip: the video must have captions/subtitles. Try another video or paste your notes instead.</p>`
+      );
+      setProcessing(false);
+      return;
+    }
+    removeTyping(typing);
+
+    const combinedContent = String(transcriptData.transcript || "");
+    state.materialPreview = combinedContent;
+    state.roundIndex = -1;
+    state.roundResults = [];
+    state.analysis = null;
+    state.studyPlan = null;
+
+    appendMessage(
+      "ai",
+      `<p class="meta-line material-summary">Transcript loaded from <strong>${escapeHtml(
+        transcriptData.title || "YouTube video"
+      )}</strong> (${combinedContent.length.toLocaleString()} chars). Building your study plan…</p>`
+    );
+
+    try {
+      if (!(state.resumedSession && state.projectId)) {
+        const project = await createProject(sanitizeSessionName(transcriptData.title) || autoProjectName());
+        state.projectId = project.id;
+        state.projectName = project.name;
+        state.resumedSession = false;
+        await loadHistorySidebar();
+      }
+      await runStudyPlan(state.projectId, combinedContent);
     } catch (err) {
       appendMessage("ai", `<p>Something went wrong: ${escapeHtml(formatUserError(err))}</p>`);
       setProcessing(false);
