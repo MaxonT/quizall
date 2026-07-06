@@ -26,6 +26,7 @@
     isProcessing: false,
     viewOnly: false,
     materialPreview: "",
+    folders: [],
   };
 
   const els = {
@@ -39,6 +40,8 @@
     navHistory: document.getElementById("navHistory"),
     navProjectsCount: document.getElementById("navProjectsCount"),
     navHistoryCount: document.getElementById("navHistoryCount"),
+    sidebarScroll: document.getElementById("sidebarScroll"),
+    historyList: document.getElementById("historyList"),
     avatarBtn: document.getElementById("avatarBtn"),
     avatarInitials: document.getElementById("avatarInitials"),
     avatarEmail: document.getElementById("avatarEmail"),
@@ -61,6 +64,18 @@
     fileInput: null,
     attachmentsBar: document.getElementById("attachmentsBar"),
     avatarMenu: document.getElementById("avatarMenu"),
+    projectItemMenu: document.getElementById("projectItemMenu"),
+    projectMenuRename: document.getElementById("projectMenuRename"),
+    projectMenuDelete: document.getElementById("projectMenuDelete"),
+    projectMenuMove: document.getElementById("projectMenuMove"),
+    folderMoveSubmenu: document.getElementById("folderMoveSubmenu"),
+    nameDialog: document.getElementById("nameDialog"),
+    nameDialogTitle: document.getElementById("nameDialogTitle"),
+    nameDialogSub: document.getElementById("nameDialogSub"),
+    nameDialogInput: document.getElementById("nameDialogInput"),
+    nameDialogCancel: document.getElementById("nameDialogCancel"),
+    nameDialogConfirm: document.getElementById("nameDialogConfirm"),
+    nameDialogClose: document.getElementById("nameDialogClose"),
     sampleLink: document.getElementById("sampleLink"),
     settingsOverlay: document.getElementById("settingsOverlay"),
     settingsBody: document.getElementById("settingsBody"),
@@ -697,23 +712,220 @@
     });
   }
 
-  async function updateNavCounts() {
+  async function loadHistorySidebar() {
     try {
       const [projectsData, foldersData] = await Promise.all([
         api("/api/quiz/projects?limit=50"),
         api("/api/quiz/folders").catch(() => ({ folders: [] })),
       ]);
       const projects = projectsData.projects || [];
-      const folders = foldersData.folders || [];
+      state.folders = foldersData.folders || [];
+
       if (els.navHistoryCount) {
         els.navHistoryCount.textContent = projects.length ? String(projects.length) : "";
       }
       if (els.navProjectsCount) {
-        els.navProjectsCount.textContent = folders.length ? String(folders.length) : "";
+        els.navProjectsCount.textContent = state.folders.length ? String(state.folders.length) : "";
       }
+
+      if (!els.historyList) return;
+
+      if (!projects.length) {
+        els.historyList.innerHTML =
+          '<div class="project-empty">No sessions yet.<br>Start one from Home.</div>';
+        return;
+      }
+
+      els.historyList.innerHTML = projects.map(renderHistoryRow).join("");
+      bindHistoryListEvents();
     } catch (err) {
       console.error(err);
     }
+  }
+
+  function projectMeta(p) {
+    const bits = [];
+    if (p.quizCount > 0) bits.push(`${p.quizCount} ${p.quizCount === 1 ? "round" : "rounds"}`);
+    else if (p.fileCount > 0) bits.push(`${p.fileCount} ${p.fileCount === 1 ? "file" : "files"}`);
+    if (p.latestAccuracy != null && p.quizCount > 0) bits.push(`${p.latestAccuracy}%`);
+    return bits.length ? bits.join(" · ") : "Draft session";
+  }
+
+  function projectIconId(p) {
+    if (p.quizCount > 0) return "i-target";
+    if (p.fileCount > 0) return "i-file";
+    return "i-notebook";
+  }
+
+  let projectMenuTargetId = null;
+  let projectMenuAnchor = null;
+  let nameDialogResolver = null;
+
+  function closeProjectMenu() {
+    if (!els.projectItemMenu) return;
+    els.projectItemMenu.classList.add("hidden");
+    els.projectItemMenu.style.top = "";
+    els.projectItemMenu.style.left = "";
+    if (projectMenuAnchor) projectMenuAnchor.classList.remove("is-open");
+    projectMenuTargetId = null;
+    projectMenuAnchor = null;
+    els.folderMoveSubmenu?.classList.add("hidden");
+    els.historyList?.querySelectorAll(".project-row.menu-open").forEach((row) => row.classList.remove("menu-open"));
+  }
+
+  function openProjectMenu(projectId, anchorBtn) {
+    if (!els.projectItemMenu || !anchorBtn) return;
+    closeProjectMenu();
+    projectMenuTargetId = projectId;
+    projectMenuAnchor = anchorBtn;
+    anchorBtn.classList.add("is-open");
+    anchorBtn.closest(".project-row")?.classList.add("menu-open");
+
+    const rect = anchorBtn.getBoundingClientRect();
+    els.projectItemMenu.style.top = `${Math.round(rect.bottom + 6)}px`;
+    els.projectItemMenu.style.left = `${Math.max(8, Math.round(rect.right - 168))}px`;
+    els.projectItemMenu.classList.remove("hidden");
+  }
+
+  function closeNameDialog(value) {
+    els.nameDialog?.classList.add("hidden");
+    els.nameDialog?.setAttribute("aria-hidden", "true");
+    if (nameDialogResolver) {
+      const resolve = nameDialogResolver;
+      nameDialogResolver = null;
+      resolve(value);
+    }
+  }
+
+  function openNameDialog({ title, subtitle, value, confirmLabel = "Save" }) {
+    return new Promise((resolve) => {
+      if (!els.nameDialog || !els.nameDialogInput) {
+        resolve(null);
+        return;
+      }
+      nameDialogResolver = resolve;
+      els.nameDialogTitle.textContent = title;
+      els.nameDialogSub.textContent = subtitle || "";
+      els.nameDialogSub.style.display = subtitle ? "" : "none";
+      els.nameDialogInput.value = value || "";
+      els.nameDialogConfirm.textContent = confirmLabel;
+      els.nameDialog.classList.remove("hidden");
+      els.nameDialog.setAttribute("aria-hidden", "false");
+      requestAnimationFrame(() => {
+        els.nameDialogInput.focus();
+        els.nameDialogInput.select();
+      });
+    });
+  }
+
+  async function renameProject(projectId) {
+    const rowBtn = els.historyList?.querySelector(`.project-session[data-id="${CSS.escape(projectId)}"]`);
+    const currentName = rowBtn?.querySelector("span:not(.nav-count)")?.textContent?.trim() || "";
+    const nextName = await openNameDialog({
+      title: "Rename session",
+      subtitle: "Give this study session a name you'll recognize later.",
+      value: currentName,
+      confirmLabel: "Save",
+    });
+    if (nextName == null) return;
+    const name = nextName.trim();
+    if (!name || name.length < 2) return;
+
+    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+
+    if (state.projectId === projectId) state.projectName = name;
+    await loadHistorySidebar();
+  }
+
+  async function deleteProject(projectId) {
+    const rowBtn = els.historyList?.querySelector(`.project-session[data-id="${CSS.escape(projectId)}"]`);
+    const label = rowBtn?.querySelector("span:not(.nav-count)")?.textContent?.trim() || "this session";
+    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
+
+    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, { method: "DELETE" });
+
+    if (state.projectId === projectId) resetNewChat();
+    else await loadHistorySidebar();
+  }
+
+  function bindHistoryListEvents() {
+    if (!els.historyList) return;
+    els.historyList.querySelectorAll(".project-session").forEach((btn) => {
+      btn.addEventListener("click", () => openProject(btn.getAttribute("data-id")));
+    });
+    els.historyList.querySelectorAll(".project-more").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const projectId = btn.getAttribute("data-id");
+        if (els.projectItemMenu?.classList.contains("hidden") || projectMenuTargetId !== projectId) {
+          openProjectMenu(projectId, btn);
+        } else {
+          closeProjectMenu();
+        }
+      });
+    });
+  }
+
+  function renderHistoryRow(p) {
+    const active = p.id === state.projectId;
+    return (
+      `<div class="project-row${active ? " is-active" : ""}">` +
+      `<button type="button" class="nav-item project-session${active ? " is-active" : ""}" data-id="${escapeHtml(p.id)}">` +
+      icon(projectIconId(p)) +
+      `<span>${escapeHtml(p.name)}</span>` +
+      `<span class="nav-count project-meta">${escapeHtml(projectMeta(p))}</span>` +
+      `</button>` +
+      `<button type="button" class="project-more" data-id="${escapeHtml(p.id)}" aria-label="Session options" title="Session options">` +
+      `<svg class="icon"><use href="#i-more-horizontal"></use></svg>` +
+      `</button>` +
+      `</div>`
+    );
+  }
+
+  async function moveProjectToFolder(projectId, folderId) {
+    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ folderId: folderId || null }),
+    });
+    closeProjectMenu();
+    await loadHistorySidebar();
+  }
+
+  function renderFolderMoveSubmenu(projectId) {
+    if (!els.folderMoveSubmenu) return;
+    const items = [
+      `<button type="button" class="folder-move-item" data-folder="">Unfiled</button>`,
+      ...state.folders.map(
+        (f) =>
+          `<button type="button" class="folder-move-item" data-folder="${escapeHtml(f.id)}">${escapeHtml(f.name)}</button>`
+      ),
+    ];
+    els.folderMoveSubmenu.innerHTML = items.join("");
+    els.folderMoveSubmenu.classList.remove("hidden");
+    els.folderMoveSubmenu.querySelectorAll(".folder-move-item").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const folderId = btn.getAttribute("data-folder") || null;
+        try {
+          await moveProjectToFolder(projectId, folderId);
+        } catch (err) {
+          window.alert(err.message || "Could not move session");
+        }
+      });
+    });
+  }
+
+  function focusHistorySidebar() {
+    setActiveNav("navHistory");
+    setSidebarOpen(true);
+    els.sidebarScroll?.scrollTo({ top: 0, behavior: "smooth" });
+    els.historyList?.classList.add("history-highlight");
+    window.setTimeout(() => els.historyList?.classList.remove("history-highlight"), 900);
   }
 
   const SAMPLE_TEXT =
@@ -946,7 +1158,7 @@
       appendMessage("ai", formatNoteHtml(data.note));
       appendMessage("ai", `<p class="meta-line">Session complete. Start a new study session anytime from the left.</p>`);
       setProcessing(false);
-      await updateNavCounts();
+      await loadHistorySidebar();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Sorry, I couldn't write the note: ${escapeHtml(err.message)}</p>`);
@@ -1022,7 +1234,7 @@
       const project = await createProject(autoProjectName());
       state.projectId = project.id;
       state.projectName = project.name;
-      await updateNavCounts();
+      await loadHistorySidebar();
 
       if (filesToUpload.length) {
         const typing = appendTyping();
@@ -1121,7 +1333,7 @@
       } else {
         appendMessage("ai", `<p class="meta-line">This is a saved session. Click "New study session" to start fresh.</p>`);
       }
-      await updateNavCounts();
+      await loadHistorySidebar();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Could not load session: ${escapeHtml(err.message)}</p>`);
@@ -1169,7 +1381,7 @@
     autosizeComposer();
     renderAttachmentsBar();
     renderWelcome();
-    updateNavCounts();
+    loadHistorySidebar();
     els.composerInput.focus();
   }
 
@@ -1406,9 +1618,66 @@
     }
     if (els.navHistory) {
       els.navHistory.addEventListener("click", () => {
-        window.location.href = "projects.html#sessions";
+        focusHistorySidebar();
       });
     }
+
+    if (els.projectMenuRename) {
+      els.projectMenuRename.addEventListener("click", async () => {
+        const id = projectMenuTargetId;
+        closeProjectMenu();
+        if (!id) return;
+        try {
+          await renameProject(id);
+        } catch (err) {
+          window.alert(err.message || "Could not rename session");
+        }
+      });
+    }
+    if (els.projectMenuDelete) {
+      els.projectMenuDelete.addEventListener("click", async () => {
+        const id = projectMenuTargetId;
+        closeProjectMenu();
+        if (!id) return;
+        try {
+          await deleteProject(id);
+        } catch (err) {
+          window.alert(err.message || "Could not delete session");
+        }
+      });
+    }
+    if (els.projectMenuMove) {
+      els.projectMenuMove.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = projectMenuTargetId;
+        if (!id) return;
+        if (els.folderMoveSubmenu?.classList.contains("hidden")) {
+          renderFolderMoveSubmenu(id);
+        } else {
+          els.folderMoveSubmenu.classList.add("hidden");
+        }
+      });
+    }
+    if (els.projectItemMenu) {
+      els.projectItemMenu.addEventListener("click", (e) => e.stopPropagation());
+    }
+
+    const submitNameDialog = () => {
+      const value = els.nameDialogInput?.value ?? "";
+      closeNameDialog(value);
+    };
+    els.nameDialogConfirm?.addEventListener("click", submitNameDialog);
+    els.nameDialogCancel?.addEventListener("click", () => closeNameDialog(null));
+    els.nameDialogClose?.addEventListener("click", () => closeNameDialog(null));
+    els.nameDialog?.addEventListener("click", (e) => {
+      if (e.target === els.nameDialog) closeNameDialog(null);
+    });
+    els.nameDialogInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitNameDialog();
+      }
+    });
 
     if (els.sampleLink) {
       els.sampleLink.addEventListener("click", () => {
@@ -1477,10 +1746,12 @@
 
     els.avatarBtn.addEventListener("click", (e) => {
       e.stopPropagation();
+      closeProjectMenu();
       els.avatarMenu.classList.toggle("hidden");
     });
     document.addEventListener("click", () => {
       els.avatarMenu.classList.add("hidden");
+      closeProjectMenu();
     });
     els.avatarMenu.addEventListener("click", (e) => e.stopPropagation());
 
@@ -1505,7 +1776,9 @@
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
-        if (!els.settingsOverlay.classList.contains("hidden")) closeSettings();
+        if (!els.nameDialog?.classList.contains("hidden")) closeNameDialog(null);
+        else if (!els.settingsOverlay.classList.contains("hidden")) closeSettings();
+        else closeProjectMenu();
       }
     });
 
@@ -1530,7 +1803,7 @@
     bindEvents();
     renderWelcome();
     updateMixPanelUi();
-    updateNavCounts();
+    loadHistorySidebar();
     autosizeComposer();
     els.composerInput.focus();
 
@@ -1543,6 +1816,7 @@
 
     const projectId = new URLSearchParams(window.location.search).get("project");
     if (projectId) openProject(projectId);
+    else if (hash === "history") focusHistorySidebar();
   }
 
   if (document.readyState === "loading") {

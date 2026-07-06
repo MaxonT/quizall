@@ -8,7 +8,6 @@
 
   const state = {
     folders: [],
-    projects: [],
     activeFolderId: null,
   };
 
@@ -28,19 +27,15 @@
     avatarEmail: document.getElementById("avatarEmail"),
     avatarMenu: document.getElementById("avatarMenu"),
     folderGrid: document.getElementById("folderGrid"),
-    sessionList: document.getElementById("sessionList"),
-    sessionsSection: document.getElementById("sessionsSection"),
     newFolderBtn: document.getElementById("newFolderBtn"),
-    clearFolderFilter: document.getElementById("clearFolderFilter"),
-    projectItemMenu: document.getElementById("projectItemMenu"),
-    projectMenuRename: document.getElementById("projectMenuRename"),
-    projectMenuDelete: document.getElementById("projectMenuDelete"),
-    projectMenuMove: document.getElementById("projectMenuMove"),
-    folderMoveSubmenu: document.getElementById("folderMoveSubmenu"),
+    folderDialog: document.getElementById("folderDialog"),
+    folderDialogInput: document.getElementById("folderDialogInput"),
+    folderDialogCancel: document.getElementById("folderDialogCancel"),
+    folderDialogConfirm: document.getElementById("folderDialogConfirm"),
+    folderDialogClose: document.getElementById("folderDialogClose"),
   };
 
-  let projectMenuTargetId = null;
-  let projectMenuAnchor = null;
+  let folderDialogResolver = null;
 
   function isMobileSidebar() {
     return window.innerWidth < SIDEBAR_BP_MOBILE;
@@ -143,48 +138,26 @@
     return data;
   }
 
-  function projectMeta(p) {
-    const bits = [];
-    if (p.quizCount > 0) bits.push(`${p.quizCount} ${p.quizCount === 1 ? "round" : "rounds"}`);
-    else if (p.fileCount > 0) bits.push(`${p.fileCount} ${p.fileCount === 1 ? "file" : "files"}`);
-    if (p.latestAccuracy != null && p.quizCount > 0) bits.push(`${p.latestAccuracy}%`);
-    return bits.length ? bits.join(" · ") : "Draft session";
-  }
-
-  function projectIconId(p) {
-    if (p.quizCount > 0) return "i-target";
-    if (p.fileCount > 0) return "i-file";
-    return "i-notebook";
-  }
-
-  function formatDate(dateStr) {
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  }
-
-  function updateNavCounts() {
-    if (els.navHistoryCount) {
-      els.navHistoryCount.textContent = state.projects.length ? String(state.projects.length) : "";
-    }
+  function updateNavCounts(folders, sessionCount) {
     if (els.navProjectsCount) {
-      els.navProjectsCount.textContent = state.folders.length ? String(state.folders.length) : "";
+      els.navProjectsCount.textContent = folders.length ? String(folders.length) : "";
+    }
+    if (els.navHistoryCount) {
+      els.navHistoryCount.textContent = sessionCount ? String(sessionCount) : "";
     }
   }
 
   function setActiveFolder(folderId) {
     state.activeFolderId = folderId;
-    els.clearFolderFilter?.classList.toggle("hidden", !folderId);
     renderFolders();
-    renderSessions();
   }
 
   function renderFolders() {
     if (!els.folderGrid) return;
 
     const cards = state.folders.map((folder) => {
-      const count = state.projects.filter((p) => p.folderId === folder.id).length;
       const active = state.activeFolderId === folder.id;
+      const count = folder.sessionCount ?? folder.projectCount ?? 0;
       return (
         `<button type="button" class="project-folder-card${active ? " is-active" : ""}" data-folder-id="${escapeHtml(folder.id)}">` +
         `<span class="project-folder-icon">${icon("i-folder")}</span>` +
@@ -216,65 +189,7 @@
         setActiveFolder(state.activeFolderId === id ? null : id);
       });
     });
-    document.getElementById("newFolderCard")?.addEventListener("click", createFolder);
-  }
-
-  function renderSessions() {
-    if (!els.sessionList) return;
-
-    let list = state.projects.slice();
-    if (state.activeFolderId) {
-      list = list.filter((p) => p.folderId === state.activeFolderId);
-    }
-
-    if (!list.length) {
-      const msg = state.activeFolderId
-        ? "No sessions in this project yet."
-        : "No study sessions yet. Start one from Home.";
-      els.sessionList.innerHTML = `<div class="projects-session-empty">${msg}</div>`;
-      return;
-    }
-
-    els.sessionList.innerHTML = list
-      .map((p) => {
-        const folder = state.folders.find((f) => f.id === p.folderId);
-        const folderLabel = folder && !state.activeFolderId
-          ? `<span class="session-folder-tag">${escapeHtml(folder.name)}</span>`
-          : "";
-        return (
-          `<div class="projects-session-row">` +
-          `<button type="button" class="projects-session-card" data-id="${escapeHtml(p.id)}">` +
-          `<span class="session-icon">${icon(projectIconId(p))}</span>` +
-          `<span class="session-copy">` +
-          `<span class="session-name">${escapeHtml(p.name)}</span>` +
-          `<span class="session-meta">${escapeHtml(projectMeta(p))}${folderLabel ? " · " : ""}${folderLabel}</span>` +
-          `</span>` +
-          `<span class="session-date">${escapeHtml(formatDate(p.updatedAt || p.createdAt))}</span>` +
-          `</button>` +
-          `<button type="button" class="session-more" data-id="${escapeHtml(p.id)}" aria-label="Session options">` +
-          `${icon("i-more-horizontal")}` +
-          `</button>` +
-          `</div>`
-        );
-      })
-      .join("");
-
-    els.sessionList.querySelectorAll(".projects-session-card").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        window.location.href = `create.html?project=${encodeURIComponent(btn.getAttribute("data-id"))}`;
-      });
-    });
-    els.sessionList.querySelectorAll(".session-more").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const projectId = btn.getAttribute("data-id");
-        if (els.projectItemMenu?.classList.contains("hidden") || projectMenuTargetId !== projectId) {
-          openProjectMenu(projectId, btn);
-        } else {
-          closeProjectMenu();
-        }
-      });
-    });
+    document.getElementById("newFolderCard")?.addEventListener("click", openFolderDialog);
   }
 
   async function loadData() {
@@ -282,15 +197,45 @@
       api("/api/quiz/folders").catch(() => ({ folders: [] })),
       api("/api/quiz/projects?limit=50"),
     ]);
-    state.folders = foldersData.folders || [];
-    state.projects = projectsData.projects || [];
-    updateNavCounts();
+    const projects = projectsData.projects || [];
+    const folders = foldersData.folders || [];
+
+    const folderCounts = {};
+    projects.forEach((p) => {
+      if (p.folderId) folderCounts[p.folderId] = (folderCounts[p.folderId] || 0) + 1;
+    });
+    state.folders = folders.map((f) => ({ ...f, sessionCount: folderCounts[f.id] || 0 }));
+
+    updateNavCounts(state.folders, projects.length);
     renderFolders();
-    renderSessions();
+  }
+
+  function closeFolderDialog(value) {
+    els.folderDialog?.classList.add("hidden");
+    els.folderDialog?.setAttribute("aria-hidden", "true");
+    if (folderDialogResolver) {
+      const resolve = folderDialogResolver;
+      folderDialogResolver = null;
+      resolve(value);
+    }
+  }
+
+  function openFolderDialog() {
+    return new Promise((resolve) => {
+      if (!els.folderDialog || !els.folderDialogInput) {
+        resolve(null);
+        return;
+      }
+      folderDialogResolver = resolve;
+      els.folderDialogInput.value = "";
+      els.folderDialog.classList.remove("hidden");
+      els.folderDialog.setAttribute("aria-hidden", "false");
+      requestAnimationFrame(() => els.folderDialogInput.focus());
+    });
   }
 
   async function createFolder() {
-    const name = window.prompt("New project name");
+    const name = await openFolderDialog();
     if (name == null) return;
     const trimmed = name.trim();
     if (trimmed.length < 2) return;
@@ -300,82 +245,6 @@
       body: JSON.stringify({ name: trimmed }),
     });
     await loadData();
-  }
-
-  function closeProjectMenu() {
-    if (!els.projectItemMenu) return;
-    els.projectItemMenu.classList.add("hidden");
-    els.projectItemMenu.style.top = "";
-    els.projectItemMenu.style.left = "";
-    projectMenuTargetId = null;
-    projectMenuAnchor = null;
-    els.folderMoveSubmenu?.classList.add("hidden");
-    projectMenuAnchor?.classList.remove("is-open");
-  }
-
-  function openProjectMenu(projectId, anchorBtn) {
-    if (!els.projectItemMenu || !anchorBtn) return;
-    closeProjectMenu();
-    projectMenuTargetId = projectId;
-    projectMenuAnchor = anchorBtn;
-    anchorBtn.classList.add("is-open");
-    const rect = anchorBtn.getBoundingClientRect();
-    els.projectItemMenu.style.top = `${Math.round(rect.bottom + 6)}px`;
-    els.projectItemMenu.style.left = `${Math.max(8, Math.round(rect.right - 168))}px`;
-    els.projectItemMenu.classList.remove("hidden");
-  }
-
-  async function renameProject(projectId) {
-    const project = state.projects.find((p) => p.id === projectId);
-    const currentName = project?.name || "";
-    const nextName = window.prompt("Rename session", currentName);
-    if (nextName == null) return;
-    const name = nextName.trim();
-    if (!name || name.length < 2) return;
-    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    await loadData();
-  }
-
-  async function deleteProject(projectId) {
-    const project = state.projects.find((p) => p.id === projectId);
-    const label = project?.name || "this session";
-    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
-    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, { method: "DELETE" });
-    await loadData();
-  }
-
-  function renderFolderMoveSubmenu(projectId) {
-    if (!els.folderMoveSubmenu) return;
-    const items = [
-      `<button type="button" class="folder-move-item" data-folder="">Unfiled</button>`,
-      ...state.folders.map(
-        (f) =>
-          `<button type="button" class="folder-move-item" data-folder="${escapeHtml(f.id)}">${escapeHtml(f.name)}</button>`
-      ),
-    ];
-    els.folderMoveSubmenu.innerHTML = items.join("");
-    els.folderMoveSubmenu.classList.remove("hidden");
-    els.folderMoveSubmenu.querySelectorAll(".folder-move-item").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const folderId = btn.getAttribute("data-folder") || null;
-        try {
-          await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ folderId }),
-          });
-          closeProjectMenu();
-          await loadData();
-        } catch (err) {
-          window.alert(err.message || "Could not move session");
-        }
-      });
-    });
   }
 
   function bindEvents() {
@@ -389,52 +258,33 @@
       window.location.href = "create.html";
     });
     els.navHistory?.addEventListener("click", () => {
-      els.sessionsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-      window.location.hash = "sessions";
+      window.location.href = "create.html#history";
     });
     els.newFolderBtn?.addEventListener("click", createFolder);
-    els.clearFolderFilter?.addEventListener("click", () => setActiveFolder(null));
 
-    els.projectMenuRename?.addEventListener("click", async () => {
-      const id = projectMenuTargetId;
-      closeProjectMenu();
-      if (!id) return;
-      try {
-        await renameProject(id);
-      } catch (err) {
-        window.alert(err.message || "Could not rename session");
+    const submitFolderDialog = async () => {
+      const value = els.folderDialogInput?.value ?? "";
+      closeFolderDialog(value);
+    };
+    els.folderDialogConfirm?.addEventListener("click", submitFolderDialog);
+    els.folderDialogCancel?.addEventListener("click", () => closeFolderDialog(null));
+    els.folderDialogClose?.addEventListener("click", () => closeFolderDialog(null));
+    els.folderDialog?.addEventListener("click", (e) => {
+      if (e.target === els.folderDialog) closeFolderDialog(null);
+    });
+    els.folderDialogInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitFolderDialog();
       }
     });
-    els.projectMenuDelete?.addEventListener("click", async () => {
-      const id = projectMenuTargetId;
-      closeProjectMenu();
-      if (!id) return;
-      try {
-        await deleteProject(id);
-      } catch (err) {
-        window.alert(err.message || "Could not delete session");
-      }
-    });
-    els.projectMenuMove?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const id = projectMenuTargetId;
-      if (!id) return;
-      if (els.folderMoveSubmenu?.classList.contains("hidden")) {
-        renderFolderMoveSubmenu(id);
-      } else {
-        els.folderMoveSubmenu.classList.add("hidden");
-      }
-    });
-    els.projectItemMenu?.addEventListener("click", (e) => e.stopPropagation());
 
     els.avatarBtn?.addEventListener("click", (e) => {
       e.stopPropagation();
-      closeProjectMenu();
       els.avatarMenu.classList.toggle("hidden");
     });
     document.addEventListener("click", () => {
       els.avatarMenu?.classList.add("hidden");
-      closeProjectMenu();
     });
     els.avatarMenu?.addEventListener("click", (e) => e.stopPropagation());
 
@@ -453,7 +303,9 @@
     });
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeProjectMenu();
+      if (e.key === "Escape" && !els.folderDialog?.classList.contains("hidden")) {
+        closeFolderDialog(null);
+      }
     });
   }
 
@@ -476,12 +328,6 @@
       if (els.folderGrid) {
         els.folderGrid.innerHTML = `<div class="projects-session-empty">Could not load projects: ${escapeHtml(err.message)}</div>`;
       }
-    }
-
-    if (window.location.hash === "#sessions") {
-      requestAnimationFrame(() => {
-        els.sessionsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
     }
   }
 

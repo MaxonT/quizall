@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="theme.css" />
-  <link rel="stylesheet" href="create.css?v=5" />
+  <link rel="stylesheet" href="create.css?v=7" />
   <script src="config.js"></script>
   <script src="lib/authGuard.js"></script>
 </head>
@@ -108,24 +108,24 @@
             <h2 class="projects-section-title" id="foldersTitle">Your projects</h2>
             <div class="projects-folder-grid" id="folderGrid"></div>
           </section>
-
-          <section class="projects-section" id="sessionsSection" aria-labelledby="sessionsTitle">
-            <div class="projects-section-head">
-              <h2 class="projects-section-title" id="sessionsTitle">Study sessions</h2>
-              <button type="button" class="projects-filter-clear hidden" id="clearFolderFilter">Show all</button>
-            </div>
-            <div class="projects-session-list" id="sessionList"></div>
-          </section>
         </div>
       </div>
     </main>
   </div>
 
-  <div class="popup-menu project-item-menu hidden" id="projectItemMenu">
-    <button type="button" id="projectMenuRename"><svg class="icon"><use href="#i-pencil"></use></svg> Rename</button>
-    <button type="button" id="projectMenuMove"><svg class="icon"><use href="#i-folder"></use></svg> Move to project…</button>
-    <div class="folder-move-submenu hidden" id="folderMoveSubmenu"></div>
-    <button type="button" class="danger" id="projectMenuDelete"><svg class="icon"><use href="#i-trash"></use></svg> Delete</button>
+  <div class="qa-dialog-overlay hidden" id="folderDialog" aria-hidden="true">
+    <div class="qa-dialog" role="dialog" aria-labelledby="folderDialogTitle">
+      <button type="button" class="qa-dialog-close" id="folderDialogClose" aria-label="Close">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+      <h2 class="qa-dialog-title" id="folderDialogTitle">New project</h2>
+      <p class="qa-dialog-sub">Group study sessions by course or topic.</p>
+      <input type="text" class="qa-dialog-input" id="folderDialogInput" placeholder="e.g. CS2201" maxlength="80" autocomplete="off" />
+      <div class="qa-dialog-actions">
+        <button type="button" class="qa-dialog-btn" id="folderDialogCancel">Cancel</button>
+        <button type="button" class="qa-dialog-btn primary" id="folderDialogConfirm">Create</button>
+      </div>
+    </div>
   </div>
 
   <div class="popup-menu hidden" id="avatarMenu">
@@ -137,6 +137,6 @@
     <button type="button" class="danger" id="menuLogout"><svg class="icon"><use href="#i-logout"></use></svg> Log out</button>
   </div>
 
-  <script src="projects.js?v=1"></script>
+  <script src="projects.js?v=2"></script>
 </body>
 </html>

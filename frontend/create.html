@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="theme.css" />
-  <link rel="stylesheet" href="create.css?v=5" />
+  <link rel="stylesheet" href="create.css?v=7" />
   <script src="config.js"></script>
   <script src="lib/authGuard.js"></script>
 </head>
@@ -82,6 +82,10 @@
           <span class="nav-count" id="navHistoryCount"></span>
         </button>
       </nav>
+
+      <div class="sidebar-scroll" id="sidebarScroll">
+        <nav class="side-nav side-nav--history" id="historyList" aria-label="History"></nav>
+      </div>
 
       <div class="sidebar-footer">
         <button type="button" class="avatar-btn" id="avatarBtn">
@@ -171,6 +175,28 @@
     </main>
   </div>
 
+  <div class="popup-menu project-item-menu hidden" id="projectItemMenu">
+    <button type="button" id="projectMenuRename"><svg class="icon"><use href="#i-pencil"></use></svg> Rename</button>
+    <button type="button" id="projectMenuMove"><svg class="icon"><use href="#i-folder"></use></svg> Move to project…</button>
+    <div class="folder-move-submenu hidden" id="folderMoveSubmenu"></div>
+    <button type="button" class="danger" id="projectMenuDelete"><svg class="icon"><use href="#i-trash"></use></svg> Delete</button>
+  </div>
+
+  <div class="qa-dialog-overlay hidden" id="nameDialog" aria-hidden="true">
+    <div class="qa-dialog" role="dialog" aria-labelledby="nameDialogTitle">
+      <button type="button" class="qa-dialog-close" id="nameDialogClose" aria-label="Close">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+      <h2 class="qa-dialog-title" id="nameDialogTitle">Rename session</h2>
+      <p class="qa-dialog-sub" id="nameDialogSub"></p>
+      <input type="text" class="qa-dialog-input" id="nameDialogInput" maxlength="80" autocomplete="off" />
+      <div class="qa-dialog-actions">
+        <button type="button" class="qa-dialog-btn" id="nameDialogCancel">Cancel</button>
+        <button type="button" class="qa-dialog-btn primary" id="nameDialogConfirm">Save</button>
+      </div>
+    </div>
+  </div>
+
   <div class="popup-menu hidden" id="avatarMenu">
     <button type="button" id="menuSettings"><svg class="icon"><use href="#i-settings"></use></svg> Settings</button>
     <button type="button" id="menuUsage"><svg class="icon"><use href="#i-activity"></use></svg> Usage</button>
@@ -209,6 +235,6 @@
     </div>
   </div>
 
-  <script src="create.js?v=6"></script>
+  <script src="create.js?v=7"></script>
 </body>
 </html>
