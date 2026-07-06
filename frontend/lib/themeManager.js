@@ -1,61 +1,68 @@
 /**
  * 全局主题管理器 (Global Theme Manager)
  * ================================================
- * 
- * 用途：
- * - 在页面加载时立即应用保存的主题设置
- * - 跨页面同步主题
- * - 避免主题闪烁问题
- * 
- * 使用方法：
- * 在 HTML <head> 中添加：
- * <script src="lib/themeManager.js"></script>
+ *
+ * - 页面加载时立即应用保存的主题（支持 System / auto）
+ * - 跨页面同步主题偏好
+ * - 避免主题闪烁
  */
 
-(function() {
-  // 主题存储键 - 与其他页面保持一致
-  const THEME_STORAGE_KEY = 'theme';
-  
-  /**
-   * 初始化主题 - 在 DOM 完全加载前调用
-   */
-  function initTheme() {
-    // 1. 获取保存的主题或使用默认值 'dark'
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
-    
-    // 2. 立即应用到 HTML 元素（避免闪烁）
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  }
-  
-  /**
-   * 切换主题（供其他脚本调用）
-   * @param {string} theme - 'dark' 或 'light'，不指定则自动切换
-   */
-  function setTheme(theme) {
-    if (!theme) {
-      // 自动切换
-      const current = document.documentElement.getAttribute('data-theme') || 'dark';
-      theme = current === 'dark' ? 'light' : 'dark';
+(function () {
+  const THEME_STORAGE_KEY = "theme";
+  const prefersDark = window.matchMedia
+    ? window.matchMedia("(prefers-color-scheme: dark)")
+    : null;
+
+  function resolveTheme(preference) {
+    const pref = preference || "auto";
+    if (pref === "auto") {
+      return prefersDark && prefersDark.matches ? "dark" : "light";
     }
-    
-    // 应用主题
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-    
-    // 触发自定义事件，其他页面可以监听
-    const event = new CustomEvent('themechange', {
-      detail: { theme }
-    });
-    document.dispatchEvent(event);
-    
-    return theme;
+    return pref === "light" ? "light" : "dark";
   }
-  
+
+  function getPreference() {
+    return localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+  }
+
+  function applyPreference(preference) {
+    const resolved = resolveTheme(preference);
+    document.documentElement.setAttribute("data-theme", resolved);
+    return resolved;
+  }
+
+  function initTheme() {
+    applyPreference(getPreference());
+  }
+
   /**
-   * 获取当前主题
+   * @param {string} [preference] - 'auto' | 'light' | 'dark'；不传则切换 light/dark
    */
+  function setTheme(preference) {
+    let nextPreference = preference;
+    if (!nextPreference) {
+      const current = getPreference();
+      if (current === "auto") {
+        nextPreference = resolveTheme("auto") === "dark" ? "light" : "dark";
+      } else {
+        nextPreference = current === "dark" ? "light" : "dark";
+      }
+    }
+
+    localStorage.setItem(THEME_STORAGE_KEY, nextPreference);
+    const resolved = applyPreference(nextPreference);
+
+    document.dispatchEvent(
+      new CustomEvent("themechange", {
+        detail: { theme: resolved, preference: nextPreference },
+      })
+    );
+
+    return resolved;
+  }
+
   function getTheme() {
-    return document.documentElement.getAttribute('data-theme') || 'dark';
+    return resolveTheme(getPreference());
   }
 
   function initCursorFxGlobal() {
@@ -83,14 +90,19 @@
     }
 
     function isSelectTarget(target) {
-      return target instanceof Element && !!target.closest(
-        "input:not([type='checkbox']):not([type='radio']):not([type='button']):not([type='submit']), textarea, [contenteditable='true'], [contenteditable=''], [data-cursor='select']"
+      return (
+        target instanceof Element &&
+        !!target.closest(
+          "input:not([type='checkbox']):not([type='radio']):not([type='button']):not([type='submit']), textarea, [contenteditable='true'], [contenteditable=''], [data-cursor='select']"
+        )
       );
     }
 
     function isClickableTarget(target) {
       if (!(target instanceof Element)) return false;
-      const clickable = target.closest("[data-cursor='click'],a[href],button,summary,label[for],select,[role='button'],[tabindex]:not([tabindex='-1'])");
+      const clickable = target.closest(
+        "[data-cursor='click'],a[href],button,summary,label[for],select,[role='button'],[tabindex]:not([tabindex='-1'])"
+      );
       return !!(clickable && !clickable.matches("[disabled],[aria-disabled='true']"));
     }
 
@@ -105,10 +117,14 @@
       body.classList.remove("qa-cursor-active", "qa-cursor-pressing");
     }
 
-    window.addEventListener("pointermove", (event) => {
-      if (event.pointerType && event.pointerType !== "mouse") return;
-      updateMode(event.target);
-    }, { passive: true });
+    window.addEventListener(
+      "pointermove",
+      (event) => {
+        if (event.pointerType && event.pointerType !== "mouse") return;
+        updateMode(event.target);
+      },
+      { passive: true }
+    );
     window.addEventListener("pointerdown", (event) => {
       if (event.pointerType && event.pointerType !== "mouse") return;
       setMode("click");
@@ -139,22 +155,27 @@
 
     updateMode(document.activeElement || body);
   }
-  
-  // 页面加载时立即初始化主题（在解析 <head> 时执行）
+
+  if (prefersDark && prefersDark.addEventListener) {
+    prefersDark.addEventListener("change", () => {
+      if (getPreference() === "auto") applyPreference("auto");
+    });
+  }
+
   initTheme();
 
-  // 全站统一 cursor 模式初始化（在 body 就绪后执行）
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initCursorFxGlobal, { once: true });
   } else {
     initCursorFxGlobal();
   }
-  
-  // 向全局暴露接口
+
   window.themeManager = {
     init: initTheme,
     set: setTheme,
     get: getTheme,
-    STORAGE_KEY: THEME_STORAGE_KEY
+    getPreference,
+    resolve: resolveTheme,
+    STORAGE_KEY: THEME_STORAGE_KEY,
   };
 })();

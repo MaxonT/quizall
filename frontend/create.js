@@ -959,6 +959,27 @@
     els.composerInput.style.height = Math.min(els.composerInput.scrollHeight, 200) + "px";
   }
 
+  function respondNeedMoreMaterial(userPreview) {
+    setConversationActive(true);
+    setActiveNav("navHome");
+    appendMessage("user", `<p>${escapeHtml(userPreview)}</p>`);
+    els.composerInput.value = "";
+    autosizeComposer();
+    state.pendingFiles = [];
+    renderAttachmentsBar();
+    appendMessage(
+      "ai",
+      "<p>Paste your notes or attach a file — I need enough study material to build your plan and quiz.</p>" +
+        '<p class="meta-line">PDF, DOCX, TXT, and pasted text all work. <button type="button" class="hint-link sample-inline">Try a sample</button></p>'
+    );
+    const sampleBtn = els.chatInner.querySelector(".sample-inline:last-of-type");
+    sampleBtn?.addEventListener("click", () => {
+      els.composerInput.value = SAMPLE_TEXT;
+      autosizeComposer();
+      els.composerInput.focus();
+    });
+  }
+
   async function handleSend() {
     if (state.isProcessing || state.viewOnly) return;
 
@@ -970,7 +991,10 @@
     const filesToCheck = state.pendingFiles.slice();
     const contentOk = await validateComposerContent(text, filesToCheck);
     if (!contentOk) {
-      showComposerError(`Please add at least ${CONTENT_MIN_LENGTH} characters of study material before sending.`);
+      const userPreview = hasFiles
+        ? `Uploaded ${filesToCheck.length} file(s)${text ? " + pasted text" : ""}`
+        : text;
+      respondNeedMoreMaterial(userPreview);
       return;
     }
 
@@ -1209,7 +1233,7 @@
   }
 
   function renderAppearanceTab() {
-    const current = localStorage.getItem("theme") || "dark";
+    const current = window.themeManager?.getPreference?.() || localStorage.getItem("theme") || "auto";
     els.settingsBody.innerHTML =
       `<div class="theme-options">` +
       ["dark", "light", "auto"]
@@ -1228,12 +1252,17 @@
     els.settingsBody.querySelectorAll(".theme-option").forEach((btn) => {
       btn.addEventListener("click", () => {
         const mode = btn.getAttribute("data-mode");
-        const applied = mode === "auto"
-          ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
-          : mode;
-        if (window.themeManager?.set) window.themeManager.set(applied);
-        else document.documentElement.setAttribute("data-theme", applied);
-        localStorage.setItem("theme", mode === "auto" ? "auto" : applied);
+        if (window.themeManager?.set) window.themeManager.set(mode);
+        else {
+          localStorage.setItem("theme", mode);
+          const resolved =
+            mode === "auto"
+              ? window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark"
+              : mode;
+          document.documentElement.setAttribute("data-theme", resolved);
+        }
         els.settingsBody.querySelectorAll(".theme-option").forEach((b) => b.classList.toggle("is-active", b === btn));
       });
     });
