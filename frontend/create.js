@@ -32,37 +32,6 @@
     training: null,
   };
 
-  const DEBUG_SESSION = "633d72";
-  function composerStateSnapshot() {
-    return {
-      isProcessing: state.isProcessing,
-      resumedSession: state.resumedSession,
-      projectId: state.projectId,
-      inputDisabled: !!els.composerInput?.disabled,
-      inputReadOnly: !!els.composerInput?.readOnly,
-      sendDisabled: !!els.sendBtn?.disabled,
-      bannerHidden: els.viewOnlyBanner?.classList.contains("hidden"),
-      hasMessages: els.chatMain?.classList.contains("has-messages"),
-    };
-  }
-  function debugLog(hypothesisId, location, message, data = {}, runId = "pre-fix") {
-    // #region agent log
-    fetch("http://127.0.0.1:7469/ingest/8b92dfdd-aa06-48a1-8be6-8b5e1a242c72", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": DEBUG_SESSION },
-      body: JSON.stringify({
-        sessionId: DEBUG_SESSION,
-        runId,
-        hypothesisId,
-        location,
-        message,
-        data,
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }
-
   const els = {
     sidebar: document.getElementById("sidebar"),
     sidebarBackdrop: document.getElementById("sidebarBackdrop"),
@@ -498,7 +467,8 @@
     els.attachBtn.disabled = disabled;
     els.composerInput.disabled = disabled;
     els.composerInput.readOnly = disabled;
-    if (els.mixBtn) els.mixBtn.disabled = disabled;
+    // Mix panel stays usable while a run is in flight (settings are pre-send choices).
+    if (els.mixBtn) els.mixBtn.disabled = false;
   }
 
   function ensureComposerReady() {
@@ -508,7 +478,6 @@
     els.attachBtn.disabled = false;
     els.sendBtn.disabled = false;
     if (els.mixBtn) els.mixBtn.disabled = false;
-    debugLog("H3", "create.js:ensureComposerReady", "composer unlocked", composerStateSnapshot());
   }
 
   function updateComposerPlaceholder() {
@@ -519,14 +488,8 @@
   }
 
   function setProcessing(on) {
-    const prev = state.isProcessing;
     state.isProcessing = !!on;
     refreshComposerDisabled();
-    debugLog("H1", "create.js:setProcessing", "processing changed", {
-      prev,
-      next: state.isProcessing,
-      ...composerStateSnapshot(),
-    });
     if (on) closeMixPanel();
   }
 
@@ -540,7 +503,6 @@
     if (on) ensureComposerReady();
     updateComposerPlaceholder();
     refreshComposerDisabled();
-    debugLog("H4", "create.js:setResumedSession", "resumed flag changed", { on, ...composerStateSnapshot() });
   }
 
   function appendMessage(role, html) {
@@ -1316,7 +1278,8 @@
     });
   }
 
-  async function runStudyPlan(projectId, contentHint) {
+  async function runStudyPlan(projectId, contentHint, options = {}) {
+    const skipQuiz = !!options.skipQuiz;
     const typing = appendTyping("Building your study plan…");
     try {
       const data = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/study-plan`, {
@@ -1333,6 +1296,14 @@
       }
       appendMessage("ai", formatStudyPlanHtml(data.studyPlan));
       await loadHistorySidebar();
+      if (skipQuiz) {
+        appendMessage(
+          "ai",
+          `<p class="meta-line">Material updated. Keep chatting below, or tap <strong>Quiz me again</strong> when you want another round.</p>`
+        );
+        setProcessing(false);
+        return;
+      }
       await startQuizFlow();
     } catch (err) {
       removeTyping(typing);
@@ -1516,6 +1487,7 @@
       card?.closest(".msg")?.remove();
       if (!question) throw new Error("No question generated");
       renderTrainingArtifact(question);
+      setProcessing(false);
     } catch (err) {
       card?.closest(".msg")?.remove();
       appendErrorWithRetry(`Training paused: ${err.message}`, "retry-quiz");
@@ -1533,6 +1505,7 @@
       removeTyping(typing);
       if (!question) throw new Error("No question generated");
       renderTrainingArtifact(question);
+      setProcessing(false);
     } catch (err) {
       removeTyping(typing);
       appendErrorWithRetry(`Sorry, training failed: ${err.message}`, "retry-quiz");
@@ -1661,6 +1634,7 @@
           await finishAllRounds();
         });
       });
+      setProcessing(false);
     } catch (err) {
       removeTyping(typing);
       appendErrorWithRetry(`Sorry, the quiz failed: ${err.message}`, "retry-quiz");
@@ -1719,17 +1693,11 @@
   }
 
   async function handleSend() {
-    if (state.isProcessing) {
-      debugLog("H1", "create.js:handleSend", "blocked: isProcessing", composerStateSnapshot());
-      return;
-    }
+    if (state.isProcessing) return;
 
     const text = els.composerInput.value.trim();
     const hasFiles = state.pendingFiles.length > 0;
-    if (!text && !hasFiles) {
-      debugLog("H5", "create.js:handleSend", "blocked: empty input", composerStateSnapshot());
-      return;
-    }
+    if (!text && !hasFiles) return;
 
     clearComposerError();
     closeMixPanel();
@@ -1783,7 +1751,9 @@
         removeTyping(typing);
       }
 
-      await runStudyPlan(state.projectId, combinedContent || state.materialPreview || undefined);
+      await runStudyPlan(state.projectId, combinedContent || state.materialPreview || undefined, {
+        skipQuiz: continuing && !!state.studyPlan,
+      });
     } catch (err) {
       appendMessage("ai", `<p>Something went wrong: ${escapeHtml(err.message)}</p>`);
       setProcessing(false);
@@ -1792,7 +1762,6 @@
 
   async function openProject(projectId) {
     if (!projectId) return;
-    debugLog("H4", "create.js:openProject", "start", { projectId, ...composerStateSnapshot() });
     setProcessing(false);
     state.training = null;
     state.projectId = projectId;
@@ -1938,12 +1907,10 @@
       ensureComposerReady();
       updateComposerPlaceholder();
       els.composerInput.focus();
-      debugLog("H4", "create.js:openProject", "complete", { projectId, planLoaded, noteLoaded, ...composerStateSnapshot() });
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Could not load session: ${escapeHtml(err.message)}</p>`);
       ensureComposerReady();
-      debugLog("H4", "create.js:openProject", "error", { projectId, error: err.message, ...composerStateSnapshot() });
     }
   }
 
@@ -1974,7 +1941,6 @@
   }
 
   function resetNewChat() {
-    debugLog("H2", "create.js:resetNewChat", "start", composerStateSnapshot());
     // "Start new session" must always let the user escape a stuck run.
     setProcessing(false);
     state.projectId = null;
@@ -1995,7 +1961,6 @@
     renderWelcome();
     loadHistorySidebar();
     els.composerInput.focus();
-    debugLog("H2", "create.js:resetNewChat", "complete", composerStateSnapshot());
   }
 
   // ── Native settings modal ──────────────────────────────────────────
@@ -2218,18 +2183,11 @@
   }
 
   function bindEvents() {
-    debugLog("H2", "create.js:bindEvents", "binding", {
-      hasNewChatBtn: !!els.newChatBtn,
-      hasViewOnlyNewSession: !!els.viewOnlyNewSession,
-      hasComposerInput: !!els.composerInput,
-    });
     els.newChatBtn.addEventListener("click", () => {
-      debugLog("H2", "create.js:bindEvents", "newChatBtn click", composerStateSnapshot());
       resetNewChat();
     });
     if (els.viewOnlyNewSession) {
       els.viewOnlyNewSession.addEventListener("click", () => {
-        debugLog("H2", "create.js:bindEvents", "viewOnlyNewSession click", composerStateSnapshot());
         resetNewChat();
       });
     }
@@ -2368,11 +2326,6 @@
         handleSend();
       }
     });
-    els.composerInput.addEventListener("focus", () => {
-      if (els.composerInput.disabled || els.composerInput.readOnly || state.isProcessing) {
-        debugLog("H3", "create.js:composer:focus", "focus while locked", composerStateSnapshot());
-      }
-    });
 
     const fileInput = ensureFileInput();
     els.attachBtn.addEventListener("click", () => fileInput.click());
@@ -2448,7 +2401,6 @@
     loadHistorySidebar();
     autosizeComposer();
     els.composerInput.focus();
-    debugLog("H2", "create.js:init", "ready", composerStateSnapshot());
 
     // Deep link: #settings or #settings/usage etc.
     const hash = (window.location.hash || "").replace(/^#/, "");
