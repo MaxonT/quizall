@@ -345,37 +345,100 @@ a.sidebar-home-link:hover .brand-home-hint {
   min-height: 0;
 }
 
-.project-list {
-  padding: 4px 10px 6px;
+.side-nav--projects {
+  border-bottom: none;
+  margin-bottom: 0;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--c-border);
+  flex: 1;
+  min-height: 0;
+}
+
+.nav-section-label,
+.nav-item--section {
+  pointer-events: none;
+  cursor: default;
+}
+
+.nav-item--section:hover {
+  background: transparent;
+  color: var(--c-text-dim);
+}
+
+.nav-item--section .nav-inline-action {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.nav-section-label {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px 9px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--c-text-dim);
+  user-select: none;
+}
+
+.nav-section-label .icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--c-text-faint);
+}
+
+.nav-inline-action {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: var(--g3);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.nav-inline-action:hover {
+  background: var(--c-panel-hover);
+  color: var(--c-text);
+}
+
+.side-nav--projects .nav-item {
+  width: 100%;
+}
+
+.side-nav--projects .nav-count.project-meta {
+  font-size: 0.68rem;
+  font-weight: 500;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-sessions .nav-item.project-session {
+  padding-left: 28px;
 }
 
 .project-row {
   display: flex;
   align-items: center;
-  gap: 0;
   margin-bottom: 2px;
 }
 
-.project-row .nav-item {
+.project-row .nav-item.project-session {
   flex: 1;
   min-width: 0;
-  padding-right: 4px;
 }
 
 .project-row .nav-item > span:not(.nav-count) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.project-row .nav-count.project-meta {
-  flex-shrink: 0;
-  max-width: 46%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.68rem;
-  font-weight: 500;
 }
 
 .project-row .project-more {
@@ -410,26 +473,10 @@ a.sidebar-home-link:hover .brand-home-hint {
   height: 16px;
 }
 
-.project-group-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--c-text-faint);
-  padding: 12px 8px 6px;
-}
-
-.project-group-label:first-child {
-  padding-top: 4px;
-}
-
-.project-list-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--c-text-faint);
-  padding: 6px 8px 8px;
+.project-group-label,
+.project-list-label,
+.sidebar-section-head {
+  display: none !important;
 }
 
 .project-row:hover .project-more,
@@ -443,7 +490,7 @@ a.sidebar-home-link:hover .brand-home-hint {
 }
 
 .project-empty {
-  padding: 14px 10px;
+  padding: 8px 14px 12px;
   font-size: 0.8rem;
   color: var(--c-text-faint);
   line-height: 1.5;
@@ -614,10 +661,11 @@ a.sidebar-home-link:hover .brand-home-hint {
 .chat-main:not(.has-messages) .hero {
   display: block;
   text-align: center;
-  max-width: 640px;
-  margin: 0 auto 36px;
+  max-width: 720px;
+  margin: 0 auto 40px;
   padding: 0 24px;
   animation: heroIn 0.65s var(--ease);
+  flex-shrink: 0;
 }
 
 .hero-ambient {
@@ -661,11 +709,11 @@ a.sidebar-home-link:hover .brand-home-hint {
 }
 
 .hero h1 {
-  margin: 0 0 14px;
-  font-size: clamp(2rem, 5vw, 2.75rem);
-  font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: -0.04em;
+  margin: 0 0 20px;
+  font-size: clamp(3rem, 8vw, 4.5rem) !important;
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.045em;
   color: var(--c-text);
 }
 
@@ -1419,7 +1467,7 @@ html[data-theme="light"] .composer {
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0.55;
+  opacity: 0.72;
   transition: opacity 0.3s var(--ease);
   pointer-events: none;
 }
@@ -1719,26 +1767,7 @@ html[data-theme="light"] .composer {
 }
 
 .sidebar-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px 4px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
-}
-
-.sidebar-section-head .btn-text {
-  font-size: 0.72rem;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--g3);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
+  display: none !important;
 }
 
 .folder-group {
@@ -2311,7 +2340,7 @@ html[data-theme="light"] .composer {
   }
 
   .hero h1 {
-    font-size: clamp(1.75rem, 7vw, 2.75rem);
+    font-size: clamp(2.35rem, 9vw, 4.5rem) !important;
   }
 
   .sidebar-toggle-btn .icon-panel {

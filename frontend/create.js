@@ -880,6 +880,16 @@
     });
   }
 
+  function renderProjectsHeader() {
+    return (
+      `<div class="nav-item nav-item--section" role="presentation">` +
+      `${icon("i-folder")}` +
+      `<span>Projects</span>` +
+      `<button type="button" class="nav-inline-action" id="newFolderBtn">+ New project</button>` +
+      `</div>`
+    );
+  }
+
   async function loadProjects() {
     try {
       await loadFolders();
@@ -890,8 +900,7 @@
 
       if (!projects.length) {
         els.projectList.innerHTML =
-          '<div class="sidebar-section-head"><span>Projects</span><button type="button" class="btn-text" id="newFolderBtn">+ New project</button></div>' +
-          '<div class="project-list-label">Recent sessions</div>' +
+          renderProjectsHeader() +
           '<div class="project-empty">No sessions yet.<br>Start one from the box on the right.</div>';
         document.getElementById("newFolderBtn")?.addEventListener("click", createFolder);
         return;
@@ -907,8 +916,7 @@
         else unfiled.push(p);
       });
 
-      let html =
-        '<div class="sidebar-section-head"><span>Projects</span><button type="button" class="btn-text" id="newFolderBtn">+ New project</button></div>';
+      let html = renderProjectsHeader();
 
       state.folders.forEach((folder) => {
         const group = folderMap[folder.id];
@@ -923,9 +931,7 @@
         html += `</div></div>`;
       });
 
-      html += `<div class="project-group-label">Unfiled</div>`;
-      if (!unfiled.length) html += '<div class="folder-empty">All sessions are in projects</div>';
-      else html += unfiled.map(renderProjectRow).join("");
+      if (unfiled.length) html += unfiled.map(renderProjectRow).join("");
 
       els.projectList.innerHTML = html;
       document.getElementById("newFolderBtn")?.addEventListener("click", createFolder);
