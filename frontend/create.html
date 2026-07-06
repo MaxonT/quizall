@@ -84,6 +84,14 @@
       </nav>
 
       <div class="sidebar-scroll" id="sidebarScroll">
+        <div class="sidebar-streak hidden" id="sidebarStreak" aria-label="Study streak"></div>
+        <div class="sidebar-wrongbook hidden" id="sidebarWrongbook">
+          <div class="wrongbook-head">
+            <span>Wrong answers</span>
+            <button type="button" class="btn-text wrongbook-refresh" id="wrongbookRefresh" title="Refresh">↻</button>
+          </div>
+          <div class="wrongbook-list" id="wrongbookList"></div>
+        </div>
         <nav class="side-nav side-nav--history" id="historyList" aria-label="History"></nav>
       </div>
 
@@ -245,6 +253,9 @@
     </div>
   </div>
 
-  <script src="create.js?v=17"></script>
+  <script src="create/errors.js?v=1"></script>
+  <script src="create/api.js?v=1"></script>
+  <script src="create/mindmap.js?v=1"></script>
+  <script src="create.js?v=18"></script>
 </body>
 </html>

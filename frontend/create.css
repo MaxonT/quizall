@@ -3251,3 +3251,130 @@ a.projects-session-row:hover {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.sidebar-streak-card {
+  margin: 0 10px 12px;
+  padding: 10px 12px;
+}
+
+.sidebar-wrongbook {
+  margin: 0 10px 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--c-panel);
+  border: 1px solid var(--c-border);
+}
+
+.wrongbook-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-text-dim);
+  margin-bottom: 8px;
+}
+
+.wrongbook-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--c-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.wrongbook-item:hover {
+  background: var(--c-panel-hover);
+}
+
+.wrongbook-q {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mindmap-artifact {
+  margin-top: 8px;
+}
+
+.mindmap-tree {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--c-panel);
+  border: 1px solid var(--c-border);
+}
+
+.mind-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mind-topic-btn {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mind-status-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-text-dim);
+}
+
+.mind-node.status-green .mind-status-dot { background: #22c55e; }
+.mind-node.status-yellow .mind-status-dot { background: #eab308; }
+.mind-node.status-red .mind-status-dot { background: #ef4444; }
+
+.mind-label {
+  flex: 1;
+  font-size: 0.9rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  outline: none;
+}
+
+.mind-label:focus {
+  background: var(--c-panel-hover);
+}
+
+.mind-node-btn {
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-text-dim);
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.mindmap-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.material-summary {
+  opacity: 0.9;
+}
+
+.usage-warn a {
+  color: var(--g1, #8b5cf6);
+}

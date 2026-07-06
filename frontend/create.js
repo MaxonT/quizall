@@ -30,6 +30,11 @@
     folders: [],
     hasUploadedMaterial: false,
     training: null,
+    mindmap: null,
+    activeTopicHint: "",
+    outlineCandidates: [],
+    selectedOutlineFileId: null,
+    appSettings: { subscriptionsEnabled: true },
   };
 
   const els = {
@@ -84,6 +89,10 @@
     nameDialogConfirm: document.getElementById("nameDialogConfirm"),
     nameDialogClose: document.getElementById("nameDialogClose"),
     sampleLink: document.getElementById("sampleLink"),
+    sidebarStreak: document.getElementById("sidebarStreak"),
+    sidebarWrongbook: document.getElementById("sidebarWrongbook"),
+    wrongbookList: document.getElementById("wrongbookList"),
+    wrongbookRefresh: document.getElementById("wrongbookRefresh"),
     settingsOverlay: document.getElementById("settingsOverlay"),
     settingsBody: document.getElementById("settingsBody"),
     settingsTabTitle: document.getElementById("settingsTabTitle"),
@@ -189,6 +198,13 @@
     return part.slice(0, 2).toUpperCase();
   }
 
+  function formatUserError(err) {
+    if (window.QuizAllCreateErrors?.formatApiError) {
+      return window.QuizAllCreateErrors.formatApiError(err, API_BASE);
+    }
+    return err?.message || "Something went wrong.";
+  }
+
   async function api(path, options) {
     try {
       const res = await window.authGuard.fetchWithAuth(`${API_BASE}${path}`, options || {});
@@ -196,6 +212,7 @@
       if (!res.ok) {
         const err = new Error(data.error || `Request failed (${res.status})`);
         if (res.status === 503) err.code = "SERVICE_UNAVAILABLE";
+        if (res.status === 402 || data.code === "TOKEN_EXHAUSTED") err.code = "TOKEN_EXHAUSTED";
         throw err;
       }
       return data;
@@ -537,8 +554,9 @@
   }
 
   function appendErrorWithRetry(message, retryAction) {
+    const display = String(message || "").startsWith("Sorry,") ? message : `Sorry, ${formatUserError({ message })}`;
     const html =
-      `<p>${escapeHtml(message)}</p>` +
+      `<p>${escapeHtml(display)}</p>` +
       `<button type="button" class="btn-round retry-btn" data-retry="${escapeHtml(retryAction)}">Try again</button>`;
     const msg = appendMessage("ai", html);
     const btn = msg.querySelector(".retry-btn");
@@ -688,6 +706,7 @@
       `<div class="note-section-label">What you know</div><ul class="note-list">${list(note.what_you_know)}</ul>` +
       `<div class="note-section-label">What to review</div><ul class="note-list">${list(note.what_to_review)}</ul>` +
       `<div class="note-section-label">Key takeaways</div><ul class="note-list">${list(note.key_takeaways)}</ul>` +
+      `<p class="meta-line"><button type="button" class="btn-text share-session-btn">Share results</button></p>` +
       `<p class="science-link-wrap">Curious why this method works? <a href="science/index.html" target="_blank" rel="noopener noreferrer" class="science-link">See the science →</a></p>`
     );
   }
@@ -1249,7 +1268,7 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ files: payload }),
     });
-    return data.files || [];
+    return { files: data.files || [], skipped };
   }
 
   function renderAttachmentsBar() {
@@ -1298,6 +1317,9 @@
       }
       appendMessage("ai", formatStudyPlanHtml(data.studyPlan));
       await loadHistorySidebar();
+      if (state.hasUploadedMaterial && !skipQuiz) {
+        await tryBuildExamMap(projectId);
+      }
       if (skipQuiz) {
         appendMessage(
           "ai",
@@ -1306,11 +1328,219 @@
         setProcessing(false);
         return;
       }
-      await startQuizFlow();
+      if (!skipQuiz) {
+        const allowed = await checkUsageGate();
+        if (!allowed) {
+          setProcessing(false);
+          return;
+        }
+        await startQuizFlow();
+      }
     } catch (err) {
       removeTyping(typing);
-      appendErrorWithRetry(`Sorry, I couldn't make a study plan: ${err.message}`, "retry-plan");
+      appendErrorWithRetry(`Sorry, I couldn't make a study plan: ${formatUserError(err)}`, "retry-plan");
       setProcessing(false);
+    }
+  }
+
+  function getTrainingTopicHint() {
+    if (state.activeTopicHint) return state.activeTopicHint;
+    if (state.mindmap && window.QuizAllMindmap?.pickWeakTopic) {
+      const fromMap = window.QuizAllMindmap.pickWeakTopic(state.mindmap);
+      if (fromMap) return fromMap;
+    }
+    return (
+      state.studyPlan?.progress?.current_lecture?.title ||
+      state.studyPlan?.topics?.[state.training?.total % (state.studyPlan?.topics?.length || 1)] ||
+      state.studyPlan?.topics?.[0] ||
+      ""
+    );
+  }
+
+  async function saveMindmapToServer(mindmap) {
+    if (!state.projectId || !mindmap) return;
+    await api(`/api/quiz/projects/${encodeURIComponent(state.projectId)}/mindmap`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mindmap, examTopics: mindmap.title || "Updated topics" }),
+    });
+    state.mindmap = mindmap;
+  }
+
+  function appendMindmapMessage(mindmap) {
+    if (!mindmap || !window.QuizAllMindmap?.createMindmapArtifact) return;
+    const wrap = document.createElement("div");
+    wrap.className = "msg ai";
+    wrap.innerHTML = `<div class="msg-avatar">${icon("i-sparkles")}</div><div class="msg-bubble"></div>`;
+    const bubble = wrap.querySelector(".msg-bubble");
+    const handlers = {
+      escapeHtml,
+      icon,
+      onSave: (map) => saveMindmapToServer(map),
+      onStartQuiz: async () => {
+        if (state.isProcessing) return;
+        setProcessing(true);
+        await startQuizFlow();
+      },
+      onTopicSelect: (topic) => {
+        state.activeTopicHint = topic;
+      },
+    };
+    const { element } = window.QuizAllMindmap.createMindmapArtifact(mindmap, handlers);
+    bubble.appendChild(element);
+    els.chatInner.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  async function generateExamPrep(projectId, { selectedFileId, topicsInput, sourceMode } = {}) {
+    const data = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/exam-prep`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        selectedFileId: selectedFileId || null,
+        topicsInput: topicsInput || "",
+        sourceMode: sourceMode || (selectedFileId ? "file" : "typed"),
+      }),
+    });
+    state.mindmap = data.mindmap;
+    return data;
+  }
+
+  async function tryBuildExamMap(projectId) {
+    if (state.mindmap) {
+      appendMindmapMessage(state.mindmap);
+      return true;
+    }
+    try {
+      const outline = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/outline-candidates`);
+      const candidates = outline.candidates || [];
+      state.outlineCandidates = candidates;
+      state.selectedOutlineFileId = outline.recommendedFileId || candidates[0]?.id || null;
+
+      const typing = appendTyping("Building your exam map…");
+      const prep = await generateExamPrep(projectId, {
+        selectedFileId: state.selectedOutlineFileId,
+        sourceMode: state.selectedOutlineFileId ? "auto" : "typed",
+        topicsInput: state.materialPreview?.slice(0, 2000) || "",
+      });
+      removeTyping(typing);
+      if (prep.mindmap) {
+        appendMindmapMessage(prep.mindmap);
+        return true;
+      }
+    } catch (err) {
+      console.warn("exam prep skipped:", err.message);
+    }
+    return false;
+  }
+
+  async function checkUsageGate({ allowSoft = true } = {}) {
+    if (!window.QuizAllCreateApi?.checkQuizUsage) return true;
+    const result = await window.QuizAllCreateApi.checkQuizUsage(api, {
+      subscriptionsEnabled: state.appSettings.subscriptionsEnabled,
+    });
+    if (result.ok) return true;
+    if (result.soft && allowSoft) {
+      appendMessage("ai", `<p class="meta-line usage-warn">${escapeHtml(result.message)} <a href="subscription.html">View plans</a></p>`);
+      return true;
+    }
+    if (els.composerHint) {
+      els.composerHint.classList.add("is-error");
+      els.composerHint.innerHTML =
+        window.QuizAllCreateErrors?.composerErrorHtml(result.message, "View plans") ||
+        escapeHtml(result.message);
+      const link = els.composerHint.querySelector(".composer-retry-link");
+      link?.addEventListener("click", () => {
+        window.location.href = "subscription.html";
+      });
+    }
+    appendMessage("ai", `<p>${escapeHtml(result.message)} <a href="subscription.html">View plans</a></p>`);
+    return false;
+  }
+
+  async function createShareLink() {
+    if (!state.projectId) return;
+    const data = await api("/api/quiz/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: state.projectId }),
+    });
+    if (data.url && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(data.url);
+      appendMessage("ai", `<p class="meta-line">Share link copied to clipboard.</p>`);
+    } else if (data.url) {
+      appendMessage("ai", `<p class="meta-line">Share link: <a href="${escapeHtml(data.url)}" target="_blank" rel="noopener">${escapeHtml(data.url)}</a></p>`);
+    }
+  }
+
+  async function loadSidebarStreak() {
+    if (!els.sidebarStreak) return;
+    try {
+      const data = await api("/api/quiz/study-streak?days=7");
+      const streak = data.currentStreak || 0;
+      const heatmap = (data.heatmap || []).slice(-7);
+      const dots = heatmap
+        .map((d) => `<span class="streak-dot lvl-${Math.max(0, Math.min(3, d.intensity || 0))}"></span>`)
+        .join("");
+      els.sidebarStreak.innerHTML =
+        `<div class="streak-card sidebar-streak-card">` +
+        `<div class="streak-head">${icon("i-flame")} ${streak > 0 ? `${streak}-day streak` : "Study streak"}` +
+        `<span class="streak-sub">7 days</span></div>` +
+        `<div class="streak-dots">${dots}</div></div>`;
+      els.sidebarStreak.classList.remove("hidden");
+    } catch {
+      els.sidebarStreak.classList.add("hidden");
+    }
+  }
+
+  async function loadWrongbook() {
+    if (!els.wrongbookList || !els.sidebarWrongbook) return;
+    try {
+      const data = await api("/api/quiz/wrong-answers?limit=8");
+      const items = data.items || [];
+      if (!items.length) {
+        els.sidebarWrongbook.classList.add("hidden");
+        return;
+      }
+      els.wrongbookList.innerHTML = items
+        .map(
+          (item) =>
+            `<button type="button" class="wrongbook-item" data-topic="${escapeHtml(item.subject || "")}" title="${escapeHtml(item.question)}">` +
+            `<span class="wrongbook-q">${escapeHtml(item.question.slice(0, 60))}${item.question.length > 60 ? "…" : ""}</span>` +
+            `</button>`
+        )
+        .join("");
+      els.sidebarWrongbook.classList.remove("hidden");
+      els.wrongbookList.querySelectorAll(".wrongbook-item").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const topic = btn.getAttribute("data-topic") || "";
+          if (topic) state.activeTopicHint = topic;
+          if (state.studyPlan && state.projectId && !state.isProcessing) {
+            setProcessing(true);
+            setQuizMode("training");
+            requizProject();
+          } else {
+            appendMessage("ai", `<p class="meta-line">Open a session with a study plan to practice wrong answers.</p>`);
+          }
+        });
+      });
+    } catch {
+      els.sidebarWrongbook.classList.add("hidden");
+    }
+  }
+
+  function renderMaterialSummary(files, skipped) {
+    if (!files?.length && !skipped?.length) return;
+    const parts = [];
+    if (files?.length) {
+      const chars = files.reduce((s, f) => s + (f.content_length || f.text?.length || 0), 0);
+      parts.push(`Read ${files.length} file(s)${chars ? ` · ~${chars.toLocaleString()} characters` : ""}`);
+    }
+    if (skipped?.length) {
+      parts.push(`Could not read: ${skipped.join(", ")}`);
+    }
+    if (parts.length) {
+      appendMessage("ai", `<p class="meta-line material-summary">${escapeHtml(parts.join(" · "))}</p>`);
     }
   }
 
@@ -1479,10 +1709,7 @@
 
   async function loadNextTrainingQuestion() {
     const exclude = (state.training?.history || []).map((h) => h.question?.question).filter(Boolean);
-    const topicHint =
-      state.studyPlan?.progress?.current_lecture?.title ||
-      state.studyPlan?.topics?.[state.training?.total % (state.studyPlan?.topics?.length || 1)] ||
-      "";
+    const topicHint = getTrainingTopicHint();
     const { card } = renderTrainingArtifact({}, { loading: true });
     try {
       const question = await generateTrainingQuestion(exclude, topicHint);
@@ -1502,7 +1729,7 @@
     state.roundIndex = 0;
     const typing = appendTyping("Preparing training question…");
     try {
-      const topicHint = state.studyPlan?.progress?.current_lecture?.title || state.studyPlan?.topics?.[0] || "";
+      const topicHint = getTrainingTopicHint();
       const question = await generateTrainingQuestion([], topicHint);
       removeTyping(typing);
       if (!question) throw new Error("No question generated");
@@ -1657,10 +1884,19 @@
         }),
       });
       removeTyping(typing);
-      appendMessage("ai", formatNoteHtml(data.note));
+      const noteMsg = appendMessage("ai", formatNoteHtml(data.note));
+      noteMsg.querySelector(".share-session-btn")?.addEventListener("click", async (e) => {
+        e.currentTarget.disabled = true;
+        try {
+          await createShareLink();
+        } catch (err) {
+          appendMessage("ai", `<p>Could not create share link: ${escapeHtml(formatUserError(err))}</p>`);
+        }
+      });
       appendMessage("ai", `<p class="meta-line">Session complete. Start a new study session anytime from the left.</p>`);
       setProcessing(false);
       await loadHistorySidebar();
+      await loadWrongbook();
     } catch (err) {
       removeTyping(typing);
       appendErrorWithRetry(`Sorry, I couldn't write the note: ${err.message}`, "retry-note");
@@ -1772,6 +2008,13 @@
     setConversationActive(true);
     setActiveNav("navHome");
     setProcessing(true);
+
+    const usageOk = await checkUsageGate();
+    if (!usageOk) {
+      setProcessing(false);
+      return;
+    }
+
     if (!continuing) {
       state.roundIndex = -1;
       state.roundResults = [];
@@ -1803,15 +2046,16 @@
       if (filesToUpload.length) {
         state.hasUploadedMaterial = true;
         const typing = appendTyping("Reading your files…");
-        await uploadFilesToProject(state.projectId, filesToUpload);
+        const uploadResult = await uploadFilesToProject(state.projectId, filesToUpload);
         removeTyping(typing);
+        renderMaterialSummary(uploadResult.files, uploadResult.skipped);
       }
 
       await runStudyPlan(state.projectId, combinedContent || state.materialPreview || undefined, {
         skipQuiz: continuing && !!state.studyPlan,
       });
     } catch (err) {
-      appendMessage("ai", `<p>Something went wrong: ${escapeHtml(err.message)}</p>`);
+      appendMessage("ai", `<p>Something went wrong: ${escapeHtml(formatUserError(err))}</p>`);
       setProcessing(false);
     }
   }
@@ -1836,6 +2080,9 @@
       const detail = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`);
       state.projectName = detail.project?.name || "Study session";
       state.hasUploadedMaterial = !!(detail.files?.length);
+      if (detail.examPrep?.mindmap) {
+        state.mindmap = detail.examPrep.mindmap;
+      }
       removeTyping(typing);
       appendMessage("user", `<p>Reopened: <strong>${escapeHtml(state.projectName)}</strong></p>`);
 
@@ -1855,6 +2102,10 @@
         }
       } catch {
         /* no plan yet */
+      }
+
+      if (state.mindmap) {
+        appendMindmapMessage(state.mindmap);
       }
 
       if (!planLoaded && detail.files?.length) {
@@ -1979,6 +2230,8 @@
 
   async function requizProject() {
     if (!state.projectId || !state.studyPlan || state.isProcessing) return;
+    const allowed = await checkUsageGate({ allowSoft: true });
+    if (!allowed) return;
     setResumedSession(true);
     setProcessing(true);
     state.roundIndex = -1;
@@ -2008,6 +2261,8 @@
     state.roundIndex = -1;
     state.roundResults = [];
     state.training = null;
+    state.mindmap = null;
+    state.activeTopicHint = "";
     setResumedSession(false);
     setActiveNav("navHome");
     updateComposerPlaceholder();
@@ -2188,8 +2443,8 @@
       if (statusData) {
         const usage = statusData.usage || {};
         const limits = statusData.limits || {};
-        html += usageMeter("Prompt optimizations today", usage.promptOptimization ?? 0, limits.promptOptimization?.daily ?? 0);
-        html += usageMeter("Question-wizard sessions today", usage.questionWizard ?? 0, limits.questionWizard?.daily ?? 0);
+        html += usageMeter("Quiz generations today", usage.promptOptimization ?? 0, limits.promptOptimization?.daily ?? 0);
+        html += usageMeter("Study sessions today", usage.questionWizard ?? 0, limits.questionWizard?.daily ?? 0);
         html += `<p class="set-note">Limits reset daily at midnight in your timezone.</p>`;
       }
 
@@ -2455,6 +2710,16 @@
     updateMixPanelUi();
     updateComposerPlaceholder();
     loadHistorySidebar();
+    loadSidebarStreak();
+    loadWrongbook();
+    els.wrongbookRefresh?.addEventListener("click", () => loadWrongbook());
+    api("/api/settings")
+      .then((data) => {
+        if (data?.settings?.features) {
+          state.appSettings = { ...state.appSettings, ...data.settings.features };
+        }
+      })
+      .catch(() => {});
     autosizeComposer();
     els.composerInput.focus();
 

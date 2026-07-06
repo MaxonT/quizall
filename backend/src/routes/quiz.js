@@ -102,6 +102,19 @@ CREATE TABLE IF NOT EXISTS project_exam_prep (
   CONSTRAINT fk_exam_prep_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 CREATE INDEX IF NOT EXISTS idx_exam_prep_project ON project_exam_prep(project_id);
+
+CREATE TABLE IF NOT EXISTS quiz_shares (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  project_id TEXT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  expires_at TEXT,
+  CONSTRAINT fk_quiz_shares_user FOREIGN KEY (user_id) REFERENCES users(id),
+  CONSTRAINT fk_quiz_shares_project FOREIGN KEY (project_id) REFERENCES study_projects(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_quiz_shares_token ON quiz_shares(token);
 `;
 
 const QUIZ_SCHEMA_SQL = `
@@ -2718,5 +2731,148 @@ quizRouter.delete("/history", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[quizall] history clear error:", err);
     return res.status(500).json({ ok: false, error: "Failed to clear quiz history" });
+  }
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Wrong answers (review queue)
+// ────────────────────────────────────────────────────────────────────────────────
+
+quizRouter.get("/wrong-answers", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit, 10) || 20));
+
+    const rows = await dbAll(
+      `SELECT qq.id, qq.question, qq.type, qq.options, qq.correct_answer, qq.user_answer, qq.is_correct,
+              qq.explanation, qr.subject, qr.round_label, qr.created_at, qr.project_id, sp.name AS project_name
+       FROM quiz_questions qq
+       JOIN quiz_results qr ON qr.id = qq.result_id
+       LEFT JOIN study_projects sp ON sp.id = qr.project_id
+       WHERE qr.user_id = ? AND qq.is_correct = 0
+       ORDER BY qr.created_at DESC
+       LIMIT ?`,
+      [userId, limit]
+    );
+
+    const items = rows.map((row) => ({
+      id: row.id,
+      question: row.question,
+      type: row.type,
+      options: safeJsonParse(row.options, null),
+      correctAnswer: row.correct_answer,
+      userAnswer: row.user_answer,
+      explanation: row.explanation,
+      subject: row.subject,
+      roundLabel: row.round_label,
+      projectId: row.project_id,
+      projectName: row.project_name,
+      createdAt: row.created_at,
+    }));
+
+    return res.json({ ok: true, items, total: items.length });
+  } catch (err) {
+    console.error("[quizall] wrong-answers error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load wrong answers" });
+  }
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Share quiz results / notes (read-only link)
+// ────────────────────────────────────────────────────────────────────────────────
+
+quizRouter.post("/share", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = normalizeWhitespace(req.body?.projectId || "");
+    if (!projectId) {
+      return res.status(400).json({ ok: false, error: "projectId is required" });
+    }
+
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: "Project not found" });
+    }
+
+    const plan = await getLatestStudyPlan(projectId, userId);
+    let note = null;
+    try {
+      const noteRow = await dbGet(
+        `SELECT content_json FROM study_notes WHERE project_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1`,
+        [projectId, userId]
+      );
+      if (noteRow?.content_json) note = safeJsonParse(noteRow.content_json, null);
+    } catch {
+      /* no note */
+    }
+
+    const rounds = await dbAll(
+      `SELECT id, subject, score, total, round_label, created_at
+       FROM quiz_results WHERE user_id = ? AND project_id = ?
+       ORDER BY created_at ASC`,
+      [userId, projectId]
+    );
+
+    const payload = {
+      projectName: project.name,
+      subject: plan?.subject || project.name,
+      note,
+      rounds: rounds.map((r) => ({
+        roundLabel: r.round_label,
+        score: r.score,
+        total: r.total,
+        accuracy: computeAccuracyPercent(r.score, r.total),
+        createdAt: r.created_at,
+      })),
+      sharedAt: new Date().toISOString(),
+    };
+
+    const id = nanoid(12);
+    const token = nanoid(24);
+    const now = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    await dbRun(
+      `INSERT INTO quiz_shares (id, user_id, project_id, token, payload_json, created_at, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, userId, projectId, token, JSON.stringify(payload), now, expiresAt]
+    );
+
+    const base = (process.env.FRONTEND_URL || "http://localhost:4173").replace(/\/$/, "");
+    const url = `${base}/share.html?token=${token}`;
+
+    return res.json({ ok: true, url, token, expiresAt });
+  } catch (err) {
+    console.error("[quizall] share create error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to create share link" });
+  }
+});
+
+quizRouter.get("/share/:token", async (req, res) => {
+  try {
+    const token = normalizeWhitespace(req.params.token || "");
+    if (!token) {
+      return res.status(400).json({ ok: false, error: "Invalid token" });
+    }
+
+    const row = await dbGet(`SELECT payload_json, expires_at, created_at FROM quiz_shares WHERE token = ?`, [token]);
+    if (!row) {
+      return res.status(404).json({ ok: false, error: "Share link not found or expired" });
+    }
+
+    if (row.expires_at && new Date(row.expires_at) < new Date()) {
+      return res.status(410).json({ ok: false, error: "This share link has expired" });
+    }
+
+    const payload = safeJsonParse(row.payload_json, {});
+    return res.json({
+      ok: true,
+      ...payload,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+    });
+  } catch (err) {
+    console.error("[quizall] share resolve error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load share" });
   }
 });

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuizAll — Shared Study Session</title>
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="create.css" />
+  <script src="config.js"></script>
+  <style>
+    .share-page { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
+    .share-page h1 { font-size: 1.5rem; margin-bottom: 8px; }
+    .share-meta { color: var(--text-muted, #888); font-size: 0.9rem; margin-bottom: 24px; }
+    .share-round { padding: 12px 0; border-bottom: 1px solid var(--border, #333); }
+    .share-note { margin-top: 28px; }
+    .share-note h2 { font-size: 1.1rem; margin-bottom: 12px; }
+    .share-loading, .share-error { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+    .share-brand { display: flex; align-items: center; gap: 8px; margin-bottom: 32px; text-decoration: none; color: inherit; }
+    .share-brand img { width: 28px; height: 28px; }
+  </style>
+</head>
+<body>
+  <main class="share-page" id="sharePage">
+    <div class="share-loading" id="shareLoading">Loading shared session…</div>
+  </main>
+  <script>
+    (function () {
+      const API_BASE = window.QUIZALL_API_BASE || window.location.origin || "http://localhost:8080";
+      const token = new URLSearchParams(window.location.search).get("token");
+      const page = document.getElementById("sharePage");
+
+      function escapeHtml(text) {
+        const d = document.createElement("div");
+        d.textContent = String(text ?? "");
+        return d.innerHTML;
+      }
+
+      if (!token) {
+        page.innerHTML = '<div class="share-error">Missing share token.</div>';
+        return;
+      }
+
+      fetch(`${API_BASE}/api/quiz/share/${encodeURIComponent(token)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (!data.ok) throw new Error(data.error || "Not found");
+          const rounds = (data.rounds || [])
+            .map(
+              (r) =>
+                `<div class="share-round">` +
+                `<strong>${escapeHtml(r.roundLabel || "Quiz")}</strong> — ` +
+                `${r.score}/${r.total} correct (${r.accuracy ?? Math.round((r.score / r.total) * 100)}%)` +
+                `</div>`
+            )
+            .join("");
+          const note = data.note;
+          const noteHtml = note
+            ? `<div class="share-note">` +
+              `<h2>Study note</h2>` +
+              `<p>${escapeHtml(note.summary || "")}</p>` +
+              (note.key_takeaways?.length
+                ? `<ul>${note.key_takeaways.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>`
+                : "") +
+              `</div>`
+            : "";
+          page.innerHTML =
+            `<a href="index.html" class="share-brand">` +
+            `<img src="assets/quizall-icon.svg" alt="" />` +
+            `<span>QuizAll</span></a>` +
+            `<h1>${escapeHtml(data.projectName || data.subject || "Study session")}</h1>` +
+            `<p class="share-meta">Shared study results · read only</p>` +
+            (rounds ? `<section>${rounds}</section>` : "") +
+            noteHtml +
+            `<p class="share-meta" style="margin-top:32px;">` +
+            `<a href="index.html">Create your own quiz →</a></p>`;
+        })
+        .catch((err) => {
+          page.innerHTML = `<div class="share-error">${escapeHtml(err.message)}</div>`;
+        });
+    })();
+  </script>
+</body>
+</html>

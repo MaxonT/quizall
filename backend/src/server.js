@@ -149,8 +149,10 @@ app.get("/api/settings", (req, res) => {
         quizGeneration: true,
         fileUpload: true,
         history: true,
-      }
-    }
+        subscriptionsEnabled: FEATURES.subscriptionsEnabled,
+        enforceTokenLimits: FEATURES.enforceTokenLimits,
+      },
+    },
   });
 });
 

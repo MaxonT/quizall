@@ -32,13 +32,36 @@ const SAMPLE_NOTE = {
   key_takeaways: ["Sunlight matters for this subject.", "Chlorophyll matters for this subject."],
 };
 
+const SAMPLE_MINDMAP = {
+  id: "mm-1",
+  title: "Photosynthesis ExamTopics",
+  generatedAt: new Date().toISOString(),
+  message: "This mindmap was made specifically for your exam.",
+  nodes: [
+    {
+      id: "t1",
+      text: "Sunlight",
+      status: "yellow",
+      children: [{ id: "t1a", text: "Light energy capture", status: "gray", children: [] }],
+    },
+    {
+      id: "t2",
+      text: "Chlorophyll",
+      status: "green",
+      children: [],
+    },
+  ],
+};
+
 /** @param {import('@playwright/test').Page} page */
 export async function installMockApi(page) {
-  /** @type {{ id: string; name: string; rounds: Array<{ roundLabel: string; score: number; total: number; questions: MockQuestion[] }> }} */
+  /** @type {{ id: string; name: string; rounds: Array<{ roundLabel: string; score: number; total: number; questions: MockQuestion[] }>; mindmap: object | null; files: Array<{ id: string; name: string }> }} */
   const session = {
     id: "mock-project-1",
     name: "Study · Mock",
     rounds: [],
+    mindmap: null,
+    files: [],
   };
 
   function mixedQuestions(typeMix, numQuestions) {
@@ -94,6 +117,12 @@ export async function installMockApi(page) {
     if (path === "/api/auth/me" && method === "GET") {
       return json({ ok: true, user: { email: "e2e@example.com", timezone: "UTC", subscription: { tier: "free" } } });
     }
+    if (path === "/api/settings" && method === "GET") {
+      return json({
+        ok: true,
+        settings: { features: { subscriptionsEnabled: false, enforceTokenLimits: false } },
+      });
+    }
     if (path === "/api/billing/status" && method === "GET") {
       return json({
         ok: true,
@@ -142,7 +171,12 @@ export async function installMockApi(page) {
     }
     if (path.match(/\/api\/quiz\/projects\/[^/]+\/study-plan$/) && method === "POST") {
       session.name = SAMPLE_PLAN.session_name;
-      return json({ ok: true, studyPlan: SAMPLE_PLAN, analysis: SAMPLE_PLAN, hasUploadedMaterial: false });
+      return json({
+        ok: true,
+        studyPlan: SAMPLE_PLAN,
+        analysis: SAMPLE_PLAN,
+        hasUploadedMaterial: session.files.length > 0,
+      });
     }
     if (path.match(/\/api\/quiz\/projects\/[^/]+\/study-plan$/) && method === "GET") {
       return json({ ok: true, studyPlan: SAMPLE_PLAN });
@@ -155,8 +189,82 @@ export async function installMockApi(page) {
         ? json({ ok: true, note: SAMPLE_NOTE })
         : json({ ok: false, error: "No note" }, 404);
     }
+    if (path.match(/\/api\/quiz\/projects\/[^/]+\/outline-candidates$/) && method === "GET") {
+      const candidates = session.files.length
+        ? session.files.map((f, i) => ({
+            id: f.id,
+            fileName: f.name,
+            score: 5 - i,
+            preview: "Chapter 1 Photosynthesis overview",
+          }))
+        : [];
+      return json({ ok: true, candidates, recommendedFileId: candidates[0]?.id || null, keywordSet: [] });
+    }
+    if (path.match(/\/api\/quiz\/projects\/[^/]+\/exam-prep$/) && method === "POST") {
+      session.mindmap = SAMPLE_MINDMAP;
+      return json({
+        ok: true,
+        projectId: session.id,
+        mindmap: SAMPLE_MINDMAP,
+        topics: ["Sunlight", "Chlorophyll"],
+      });
+    }
+    if (path.match(/\/api\/quiz\/projects\/[^/]+\/mindmap$/) && method === "PUT") {
+      return json({ ok: true, updatedAt: new Date().toISOString() });
+    }
+    if (path.match(/\/api\/quiz\/projects\/[^/]+\/files$/) && method === "POST") {
+      const body = route.request().postDataJSON();
+      const uploaded = (body?.files || []).map((f, i) => ({
+        id: `file-${session.files.length + i + 1}`,
+        name: f.name,
+        content_length: (f.text || "").length,
+      }));
+      session.files.push(...uploaded.map((u) => ({ id: u.id, name: u.name })));
+      return json({ ok: true, files: uploaded });
+    }
+    if (path === "/api/quiz/wrong-answers" && method === "GET") {
+      const items = session.rounds.flatMap((round) =>
+        (round.questions || [])
+          .filter((q) => q.isCorrect === false)
+          .map((q, i) => ({
+            id: `wrong-${i}`,
+            question: q.question,
+            subject: "Photosynthesis",
+            createdAt: new Date().toISOString(),
+          }))
+      );
+      return json({ ok: true, items: items.slice(0, 8), total: items.length });
+    }
+    if (path === "/api/quiz/share" && method === "POST") {
+      return json({
+        ok: true,
+        url: "http://127.0.0.1:4173/share.html?token=mock-share-token",
+        token: "mock-share-token",
+      });
+    }
+    if (path.match(/^\/api\/quiz\/share\/[^/]+$/) && method === "GET") {
+      return json({
+        ok: true,
+        projectName: session.name,
+        subject: "Photosynthesis",
+        note: SAMPLE_NOTE,
+        rounds: session.rounds.map((r) => ({
+          roundLabel: r.roundLabel,
+          score: r.score,
+          total: r.total,
+          accuracy: Math.round((r.score / r.total) * 100),
+        })),
+      });
+    }
     if (path.match(/\/api\/quiz\/projects\/[^/]+$/) && method === "GET") {
-      return json({ ok: true, project: { id: session.id, name: session.name }, files: [] });
+      return json({
+        ok: true,
+        project: { id: session.id, name: session.name },
+        files: session.files,
+        examPrep: session.mindmap
+          ? { mindmap: session.mindmap, examTopics: "Sunlight, Chlorophyll", generatedAt: new Date().toISOString() }
+          : null,
+      });
     }
     if (path === "/api/quiz/generate" && method === "POST") {
       const body = route.request().postDataJSON();
