@@ -32,6 +32,37 @@
     training: null,
   };
 
+  const DEBUG_SESSION = "633d72";
+  function composerStateSnapshot() {
+    return {
+      isProcessing: state.isProcessing,
+      resumedSession: state.resumedSession,
+      projectId: state.projectId,
+      inputDisabled: !!els.composerInput?.disabled,
+      inputReadOnly: !!els.composerInput?.readOnly,
+      sendDisabled: !!els.sendBtn?.disabled,
+      bannerHidden: els.viewOnlyBanner?.classList.contains("hidden"),
+      hasMessages: els.chatMain?.classList.contains("has-messages"),
+    };
+  }
+  function debugLog(hypothesisId, location, message, data = {}, runId = "pre-fix") {
+    // #region agent log
+    fetch("http://127.0.0.1:7469/ingest/8b92dfdd-aa06-48a1-8be6-8b5e1a242c72", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": DEBUG_SESSION },
+      body: JSON.stringify({
+        sessionId: DEBUG_SESSION,
+        runId,
+        hypothesisId,
+        location,
+        message,
+        data,
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }
+
   const els = {
     sidebar: document.getElementById("sidebar"),
     sidebarBackdrop: document.getElementById("sidebarBackdrop"),
@@ -477,6 +508,7 @@
     els.attachBtn.disabled = false;
     els.sendBtn.disabled = false;
     if (els.mixBtn) els.mixBtn.disabled = false;
+    debugLog("H3", "create.js:ensureComposerReady", "composer unlocked", composerStateSnapshot());
   }
 
   function updateComposerPlaceholder() {
@@ -487,8 +519,14 @@
   }
 
   function setProcessing(on) {
+    const prev = state.isProcessing;
     state.isProcessing = !!on;
     refreshComposerDisabled();
+    debugLog("H1", "create.js:setProcessing", "processing changed", {
+      prev,
+      next: state.isProcessing,
+      ...composerStateSnapshot(),
+    });
     if (on) closeMixPanel();
   }
 
@@ -502,6 +540,7 @@
     if (on) ensureComposerReady();
     updateComposerPlaceholder();
     refreshComposerDisabled();
+    debugLog("H4", "create.js:setResumedSession", "resumed flag changed", { on, ...composerStateSnapshot() });
   }
 
   function appendMessage(role, html) {
@@ -1680,11 +1719,17 @@
   }
 
   async function handleSend() {
-    if (state.isProcessing) return;
+    if (state.isProcessing) {
+      debugLog("H1", "create.js:handleSend", "blocked: isProcessing", composerStateSnapshot());
+      return;
+    }
 
     const text = els.composerInput.value.trim();
     const hasFiles = state.pendingFiles.length > 0;
-    if (!text && !hasFiles) return;
+    if (!text && !hasFiles) {
+      debugLog("H5", "create.js:handleSend", "blocked: empty input", composerStateSnapshot());
+      return;
+    }
 
     clearComposerError();
     closeMixPanel();
@@ -1747,6 +1792,7 @@
 
   async function openProject(projectId) {
     if (!projectId) return;
+    debugLog("H4", "create.js:openProject", "start", { projectId, ...composerStateSnapshot() });
     setProcessing(false);
     state.training = null;
     state.projectId = projectId;
@@ -1892,10 +1938,12 @@
       ensureComposerReady();
       updateComposerPlaceholder();
       els.composerInput.focus();
+      debugLog("H4", "create.js:openProject", "complete", { projectId, planLoaded, noteLoaded, ...composerStateSnapshot() });
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Could not load session: ${escapeHtml(err.message)}</p>`);
       ensureComposerReady();
+      debugLog("H4", "create.js:openProject", "error", { projectId, error: err.message, ...composerStateSnapshot() });
     }
   }
 
@@ -1926,6 +1974,7 @@
   }
 
   function resetNewChat() {
+    debugLog("H2", "create.js:resetNewChat", "start", composerStateSnapshot());
     // "Start new session" must always let the user escape a stuck run.
     setProcessing(false);
     state.projectId = null;
@@ -1946,6 +1995,7 @@
     renderWelcome();
     loadHistorySidebar();
     els.composerInput.focus();
+    debugLog("H2", "create.js:resetNewChat", "complete", composerStateSnapshot());
   }
 
   // ── Native settings modal ──────────────────────────────────────────
@@ -2168,9 +2218,20 @@
   }
 
   function bindEvents() {
-    els.newChatBtn.addEventListener("click", resetNewChat);
+    debugLog("H2", "create.js:bindEvents", "binding", {
+      hasNewChatBtn: !!els.newChatBtn,
+      hasViewOnlyNewSession: !!els.viewOnlyNewSession,
+      hasComposerInput: !!els.composerInput,
+    });
+    els.newChatBtn.addEventListener("click", () => {
+      debugLog("H2", "create.js:bindEvents", "newChatBtn click", composerStateSnapshot());
+      resetNewChat();
+    });
     if (els.viewOnlyNewSession) {
-      els.viewOnlyNewSession.addEventListener("click", resetNewChat);
+      els.viewOnlyNewSession.addEventListener("click", () => {
+        debugLog("H2", "create.js:bindEvents", "viewOnlyNewSession click", composerStateSnapshot());
+        resetNewChat();
+      });
     }
     els.sendBtn.addEventListener("click", handleSend);
 
@@ -2307,6 +2368,11 @@
         handleSend();
       }
     });
+    els.composerInput.addEventListener("focus", () => {
+      if (els.composerInput.disabled || els.composerInput.readOnly || state.isProcessing) {
+        debugLog("H3", "create.js:composer:focus", "focus while locked", composerStateSnapshot());
+      }
+    });
 
     const fileInput = ensureFileInput();
     els.attachBtn.addEventListener("click", () => fileInput.click());
@@ -2382,6 +2448,7 @@
     loadHistorySidebar();
     autosizeComposer();
     els.composerInput.focus();
+    debugLog("H2", "create.js:init", "ready", composerStateSnapshot());
 
     // Deep link: #settings or #settings/usage etc.
     const hash = (window.location.hash || "").replace(/^#/, "");
