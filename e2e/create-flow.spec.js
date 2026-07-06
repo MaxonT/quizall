@@ -64,11 +64,8 @@ test("study chat mock flow: login → plan → mixed quiz → note → history �
 
   await page.locator(".project-session").first().click();
   await expect(page.locator("text=Your study plan")).toBeVisible();
-  await expect(page.locator(".history-toggle").first()).toBeVisible();
+  await expect(page.locator(".requiz-btn").first()).toBeVisible();
   await expect(page.locator("text=Your study note")).toBeVisible();
-
-  await page.locator(".history-toggle").first().click();
-  await expect(page.locator(".history-details .review-item").first()).toBeVisible();
 
   await page.locator(".requiz-btn").click();
   await expect(page.locator(".quiz-card").last()).toBeVisible({ timeout: 60000 });

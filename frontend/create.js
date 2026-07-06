@@ -593,11 +593,99 @@
       role === "ai"
         ? `<div class="msg-avatar">${icon("i-sparkles")}</div>`
         : `<div class="msg-avatar">You</div>`;
-    wrap.innerHTML = `${avatar}<div class="msg-bubble">${html}</div>`;
+
+    if (role === "user") {
+      // Extract plain text for later editing
+      const tmp = document.createElement("div");
+      tmp.innerHTML = html;
+      const rawText = tmp.textContent || tmp.innerText || "";
+      wrap.dataset.rawText = rawText;
+
+      const editBtn =
+        `<button type="button" class="msg-edit-btn" aria-label="Edit message">` +
+        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
+        `<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L8.5 11.5 7 16l4.5-1.5z"/><path d="m15 5 4 4"/>` +
+        `</svg>Edit</button>`;
+      wrap.innerHTML = `${avatar}<div class="msg-bubble">${html}</div>${editBtn}`;
+
+      wrap.querySelector(".msg-edit-btn").addEventListener("click", () => activateMessageEdit(wrap));
+    } else {
+      wrap.innerHTML = `${avatar}<div class="msg-bubble">${html}</div>`;
+    }
+
     els.chatInner.appendChild(wrap);
     scrollToBottom();
     scheduleChatSave();
     return wrap;
+  }
+
+  function activateMessageEdit(wrapEl) {
+    if (state.isProcessing) return;
+    const bubble = wrapEl.querySelector(".msg-bubble");
+    if (!bubble) return;
+
+    const originalHtml = bubble.innerHTML;
+    const rawText = wrapEl.dataset.rawText || bubble.textContent.trim();
+
+    bubble.innerHTML =
+      `<div class="msg-edit-area">` +
+      `<textarea class="msg-edit-textarea" rows="3" maxlength="8000">${escapeHtml(rawText)}</textarea>` +
+      `<div class="msg-edit-actions">` +
+      `<button class="msg-edit-cancel" type="button">Cancel</button>` +
+      `<button class="msg-edit-save" type="button">Send</button>` +
+      `</div></div>`;
+
+    const textarea = bubble.querySelector(".msg-edit-textarea");
+    // Auto-grow
+    textarea.addEventListener("input", () => {
+      textarea.style.height = "auto";
+      textarea.style.height = Math.min(textarea.scrollHeight, 220) + "px";
+    });
+    // Set initial height
+    textarea.style.height = Math.min(textarea.scrollHeight, 220) + "px";
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    bubble.querySelector(".msg-edit-cancel").addEventListener("click", () => {
+      bubble.innerHTML = originalHtml;
+    });
+
+    const doSave = () => {
+      const newText = textarea.value.trim();
+      if (!newText) return;
+
+      // Remove this message and everything after it from the DOM
+      const allMsgs = [...els.chatInner.querySelectorAll(".msg")];
+      const idx = allMsgs.indexOf(wrapEl);
+      if (idx >= 0) allMsgs.slice(idx).forEach((m) => m.remove());
+
+      // Reset flow state but keep project & uploaded files
+      state.studyPlan = null;
+      state.analysis = null;
+      state.roundIndex = -1;
+      state.roundResults = [];
+      state.training = null;
+      state.activeTopicHint = "";
+
+      // If we already have a project, mark as resumed so handleSend reuses it
+      if (state.projectId) setResumedSession(true);
+
+      // Inject the edited text into the composer and submit
+      els.composerInput.value = newText;
+      autosizeComposer();
+      handleSend();
+    };
+
+    bubble.querySelector(".msg-edit-save").addEventListener("click", doSave);
+    textarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        doSave();
+      }
+      if (e.key === "Escape") {
+        bubble.innerHTML = originalHtml;
+      }
+    });
   }
 
   function appendTyping(label) {
@@ -2348,6 +2436,17 @@
           }
         }
         rebindTranscriptInteractive();
+        if (state.studyPlan) {
+          const againMsg = appendMessage(
+            "ai",
+            `<p class="meta-line">Want another pass at this material?</p>` +
+              `<button type="button" class="btn-round requiz-btn">Quiz me again ${icon("i-arrow-right")}</button>`
+          );
+          againMsg.querySelector(".requiz-btn").addEventListener("click", (e) => {
+            e.currentTarget.disabled = true;
+            requizProject();
+          });
+        }
         ensureComposerReady();
         updateComposerPlaceholder();
         await loadHistorySidebar();

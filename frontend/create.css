@@ -970,6 +970,82 @@ body.sidebar-collapsed .sidebar-toggle-btn .icon-panel {
   margin-bottom: 0;
 }
 
+/* ── Edit button on user messages ── */
+.msg.user {
+  position: relative;
+}
+.msg-edit-btn {
+  display: none;
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  background: var(--c-panel);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  color: var(--c-text-dim);
+  cursor: pointer;
+  gap: 4px;
+  align-items: center;
+  transition: color 0.12s, border-color 0.12s;
+  line-height: 1;
+  white-space: nowrap;
+  z-index: 2;
+}
+.msg-edit-btn svg { width: 11px; height: 11px; flex-shrink: 0; }
+.msg.user:hover .msg-edit-btn { display: inline-flex; }
+.msg-edit-btn:hover { color: var(--c-text); border-color: var(--c-text-dim); }
+
+/* ── Inline edit area ── */
+.msg-edit-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.msg-edit-textarea {
+  width: 100%;
+  min-height: 60px;
+  max-height: 220px;
+  resize: vertical;
+  background: var(--c-input-bg, rgba(0,0,0,0.25));
+  border: 1px solid var(--accent-border, rgba(139,92,246,0.4));
+  border-radius: 10px;
+  color: var(--c-text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  line-height: 1.55;
+  padding: 10px 12px;
+  outline: none;
+  box-sizing: border-box;
+}
+.msg-edit-textarea:focus { border-color: rgba(139,92,246,0.7); }
+.msg-edit-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.msg-edit-save {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent, #7c6af0);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.msg-edit-save:hover { opacity: 0.85; }
+.msg-edit-cancel {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+.msg-edit-cancel:hover { color: var(--c-text); }
+
 .msg-bubble strong {
   font-weight: 600;
 }
