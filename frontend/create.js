@@ -4,7 +4,16 @@
   const API_BASE = window.authGuard?.API_BASE || window.QUIZALL_API_BASE || "http://localhost:8080";
   const CONTENT_MIN_LENGTH = 30;
   const TYPE_MIX_KEY = "quizall.typeMix";
-  const DEFAULT_TYPE_MIX = { mcq: 54, fib: 31, frq: 15, totalQuestions: 13 };
+  const SIDEBAR_PREF_KEY = "quizall.sidebar.open";
+  const SIDEBAR_BP_MOBILE = 768;
+  const SIDEBAR_BP_TABLET = 1024;
+  const DEFAULT_TYPE_MIX = { mcq: 54, fib: 31, frq: 15, totalQuestions: 13, preset: "balanced" };
+  const MIX_PRESETS = {
+    balanced: { mcq: 54, fib: 31, frq: 15, label: "Balanced" },
+    quiz: { mcq: 65, fib: 25, frq: 10, label: "MCQ+" },
+    recall: { mcq: 35, fib: 45, frq: 20, label: "Fill+" },
+    essay: { mcq: 30, fib: 20, frq: 50, label: "FRQ+" },
+  };
 
   const state = {
     projectId: null,
@@ -23,7 +32,8 @@
 
   const els = {
     sidebar: document.getElementById("sidebar"),
-    mobileMenuBtn: document.getElementById("mobileMenuBtn"),
+    sidebarBackdrop: document.getElementById("sidebarBackdrop"),
+    sidebarToggleBtn: document.getElementById("sidebarToggleBtn"),
     newChatBtn: document.getElementById("newChatBtn"),
     navHome: document.getElementById("navHome"),
     navUpload: document.getElementById("navUpload"),
@@ -39,14 +49,13 @@
     composerInput: document.getElementById("composerInput"),
     mixBtn: document.getElementById("mixBtn"),
     mixPanel: document.getElementById("mixPanel"),
+    mixSummaryBtn: document.getElementById("mixSummaryBtn"),
+    mixDetails: document.getElementById("mixDetails"),
+    mixPresets: document.getElementById("mixPresets"),
     mixPreview: document.getElementById("mixPreview"),
-    mixMcq: document.getElementById("mixMcq"),
-    mixFib: document.getElementById("mixFib"),
-    mixFrq: document.getElementById("mixFrq"),
-    mixMcqPct: document.getElementById("mixMcqPct"),
-    mixFibPct: document.getElementById("mixFibPct"),
-    mixFrqPct: document.getElementById("mixFrqPct"),
-    mixTotal: document.getElementById("mixTotal"),
+    mixTotalDisplay: document.getElementById("mixTotalDisplay"),
+    mixTotalDown: document.getElementById("mixTotalDown"),
+    mixTotalUp: document.getElementById("mixTotalUp"),
     composerHint: document.getElementById("composerHint"),
     attachBtn: document.getElementById("attachBtn"),
     sendBtn: document.getElementById("sendBtn"),
@@ -64,6 +73,81 @@
     settingsTabTitle: document.getElementById("settingsTabTitle"),
     settingsClose: document.getElementById("settingsClose"),
   };
+
+  function isMobileSidebar() {
+    return window.innerWidth < SIDEBAR_BP_MOBILE;
+  }
+
+  function defaultSidebarOpen() {
+    if (isMobileSidebar()) return false;
+    return window.innerWidth > SIDEBAR_BP_TABLET;
+  }
+
+  function readSidebarPreference() {
+    try {
+      const stored = localStorage.getItem(SIDEBAR_PREF_KEY);
+      if (stored === "open") return true;
+      if (stored === "closed") return false;
+    } catch {
+      /* ignore */
+    }
+    return defaultSidebarOpen();
+  }
+
+  function isSidebarOpen() {
+    if (isMobileSidebar()) return els.sidebar.classList.contains("open");
+    return !document.body.classList.contains("sidebar-collapsed");
+  }
+
+  function setSidebarOpen(open, { persist = false } = {}) {
+    if (isMobileSidebar()) {
+      els.sidebar.classList.toggle("open", open);
+      els.sidebarBackdrop?.classList.toggle("is-visible", open);
+      document.body.classList.remove("sidebar-collapsed");
+    } else {
+      els.sidebar.classList.remove("open");
+      els.sidebarBackdrop?.classList.remove("is-visible");
+      document.body.classList.toggle("sidebar-collapsed", !open);
+    }
+    els.sidebarToggleBtn?.setAttribute("aria-expanded", open ? "true" : "false");
+    if (persist && !isMobileSidebar()) {
+      try {
+        localStorage.setItem(SIDEBAR_PREF_KEY, open ? "open" : "closed");
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  function toggleSidebar() {
+    const next = !isSidebarOpen();
+    setSidebarOpen(next, { persist: !isMobileSidebar() });
+  }
+
+  function closeSidebarIfMobile() {
+    if (isMobileSidebar()) setSidebarOpen(false);
+  }
+
+  function initSidebar() {
+    setSidebarOpen(readSidebarPreference());
+    els.sidebarBackdrop?.addEventListener("click", () => setSidebarOpen(false));
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (isMobileSidebar()) {
+          document.body.classList.remove("sidebar-collapsed");
+          if (!els.sidebar.classList.contains("open")) {
+            els.sidebarBackdrop?.classList.remove("is-visible");
+          }
+        } else {
+          els.sidebar.classList.remove("open");
+          els.sidebarBackdrop?.classList.remove("is-visible");
+          setSidebarOpen(readSidebarPreference());
+        }
+      }, 120);
+    });
+  }
 
   function icon(id, extraClass) {
     return `<svg class="icon${extraClass ? " " + extraClass : ""}"><use href="#${id}"></use></svg>`;
@@ -112,12 +196,14 @@
     try {
       const raw = JSON.parse(localStorage.getItem(TYPE_MIX_KEY) || "null");
       if (raw && typeof raw === "object") {
-        return {
+        const mix = {
           mcq: Number(raw.mcq) || DEFAULT_TYPE_MIX.mcq,
           fib: Number(raw.fib) || DEFAULT_TYPE_MIX.fib,
           frq: Number(raw.frq) || DEFAULT_TYPE_MIX.frq,
           totalQuestions: Math.min(20, Math.max(5, Number(raw.totalQuestions) || DEFAULT_TYPE_MIX.totalQuestions)),
+          preset: raw.preset || inferPresetId(raw),
         };
+        return mix;
       }
     } catch {
       /* ignore */
@@ -125,26 +211,43 @@
     return { ...DEFAULT_TYPE_MIX };
   }
 
-  function saveTypeMix(mix) {
-    localStorage.setItem(TYPE_MIX_KEY, JSON.stringify(mix));
+  function inferPresetId(mix) {
+    let best = "balanced";
+    let bestDist = Infinity;
+    for (const [id, preset] of Object.entries(MIX_PRESETS)) {
+      const d = Math.abs(preset.mcq - mix.mcq) + Math.abs(preset.fib - mix.fib) + Math.abs(preset.frq - mix.frq);
+      if (d < bestDist) {
+        bestDist = d;
+        best = id;
+      }
+    }
+    return best;
   }
 
-  function normalizeMixWeights(changedKey, mcq, fib, frq) {
-    const keys = ["mcq", "fib", "frq"];
-    const vals = { mcq, fib, frq };
-    const otherKeys = keys.filter((k) => k !== changedKey);
-    const changed = Math.min(80, Math.max(10, Number(vals[changedKey]) || 10));
-    const remaining = 100 - changed;
-    const otherSum = otherKeys.reduce((sum, k) => sum + (Number(vals[k]) || 10), 0) || 1;
-    const next = { [changedKey]: changed };
-    otherKeys.forEach((k, i) => {
-      next[k] = i === otherKeys.length - 1
-        ? remaining - otherKeys.slice(0, -1).reduce((s, kk) => s + next[kk], 0)
-        : Math.max(10, Math.round((Number(vals[k]) / otherSum) * remaining));
+  function applyMixPreset(presetId) {
+    const preset = MIX_PRESETS[presetId];
+    if (!preset) return;
+    const mix = loadTypeMix();
+    saveTypeMix({
+      ...mix,
+      mcq: preset.mcq,
+      fib: preset.fib,
+      frq: preset.frq,
+      preset: presetId,
     });
-    const total = next.mcq + next.fib + next.frq;
-    if (total !== 100) next.frq += 100 - total;
-    return next;
+    updateMixPanelUi();
+  }
+
+  function adjustMixTotal(delta) {
+    const mix = loadTypeMix();
+    const next = Math.min(20, Math.max(5, mix.totalQuestions + delta));
+    if (next === mix.totalQuestions) return;
+    saveTypeMix({ ...mix, totalQuestions: next });
+    updateMixPanelUi();
+  }
+
+  function saveTypeMix(mix) {
+    localStorage.setItem(TYPE_MIX_KEY, JSON.stringify(mix));
   }
 
   function allocateQuestionCounts(total, mix) {
@@ -201,26 +304,31 @@
     };
   }
 
-  function updateMixPanelUi() {
-    const mix = loadTypeMix();
-    if (els.mixMcq) els.mixMcq.value = String(mix.mcq);
-    if (els.mixFib) els.mixFib.value = String(mix.fib);
-    if (els.mixFrq) els.mixFrq.value = String(mix.frq);
-    if (els.mixTotal) els.mixTotal.value = String(mix.totalQuestions);
-    if (els.mixMcqPct) els.mixMcqPct.textContent = `${mix.mcq}%`;
-    if (els.mixFibPct) els.mixFibPct.textContent = `${mix.fib}%`;
-    if (els.mixFrqPct) els.mixFrqPct.textContent = `${mix.frq}%`;
-    if (els.mixPreview) els.mixPreview.textContent = getMixedRoundConfig().preview;
+  function setMixPanelExpanded(expanded) {
+    els.mixPanel?.classList.toggle("is-expanded", expanded);
+    els.mixSummaryBtn?.setAttribute("aria-expanded", expanded ? "true" : "false");
   }
 
-  function onMixSliderChange(changedKey) {
-    const mcq = Number(els.mixMcq?.value || DEFAULT_TYPE_MIX.mcq);
-    const fib = Number(els.mixFib?.value || DEFAULT_TYPE_MIX.fib);
-    const frq = Number(els.mixFrq?.value || DEFAULT_TYPE_MIX.frq);
-    const normalized = normalizeMixWeights(changedKey, mcq, fib, frq);
-    const totalQuestions = Math.min(20, Math.max(5, Number(els.mixTotal?.value) || DEFAULT_TYPE_MIX.totalQuestions));
-    saveTypeMix({ ...normalized, totalQuestions });
-    updateMixPanelUi();
+  function closeMixPanel() {
+    els.mixPanel?.classList.add("hidden");
+    els.mixPanel?.classList.remove("is-expanded");
+    els.mixBtn?.classList.remove("is-active");
+    els.mixBtn?.setAttribute("aria-expanded", "false");
+    els.mixSummaryBtn?.setAttribute("aria-expanded", "false");
+  }
+
+  function updateMixPanelUi() {
+    const mix = loadTypeMix();
+    const presetId = mix.preset || inferPresetId(mix);
+    const presetLabel = MIX_PRESETS[presetId]?.label || "Balanced";
+    els.mixPresets?.querySelectorAll(".mix-preset").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-preset") === presetId);
+    });
+    if (els.mixTotalDisplay) els.mixTotalDisplay.textContent = String(mix.totalQuestions);
+    const counts = getMixedRoundConfig();
+    const preview = `${presetLabel} · ${counts.preview}`;
+    if (els.mixPreview) els.mixPreview.textContent = preview;
+    if (els.mixBtn) els.mixBtn.title = `Quiz shape: ${counts.preview}`;
   }
 
   function showComposerError(message) {
@@ -617,6 +725,12 @@
     return bits.length ? bits.join(" · ") : "Draft session";
   }
 
+  function projectIconId(p) {
+    if (p.quizCount > 0) return "i-target";
+    if (p.fileCount > 0) return "i-file";
+    return "i-notebook";
+  }
+
   let projectMenuTargetId = null;
   let projectMenuAnchor = null;
 
@@ -698,8 +812,11 @@
     return (
       `<div class="project-row${p.id === state.projectId ? " is-active" : ""}">` +
       `<button type="button" class="project-item" data-id="${escapeHtml(p.id)}">` +
+      `<span class="pi-icon">${icon(projectIconId(p))}</span>` +
+      `<span class="pi-body">` +
       `<span class="pi-name">${escapeHtml(p.name)}</span>` +
       `<span class="pi-meta">${escapeHtml(projectMeta(p))}</span>` +
+      `</span>` +
       `</button>` +
       `<button type="button" class="project-more" data-id="${escapeHtml(p.id)}" aria-label="Session options" title="Session options">` +
       `<svg class="icon"><use href="#i-more-horizontal"></use></svg>` +
@@ -1133,7 +1250,7 @@
     setViewOnly(true);
     setActiveNav("navHistory");
     setConversationActive(true);
-    if (window.innerWidth <= 820) els.sidebar.classList.remove("open");
+    if (window.innerWidth < SIDEBAR_BP_MOBILE) closeSidebarIfMobile();
 
     els.chatInner.innerHTML = "";
     const typing = appendTyping();
@@ -1486,7 +1603,7 @@
         setActiveNav("navHistory");
         const first = els.projectList.querySelector(".project-item");
         if (first) first.click();
-        if (window.innerWidth <= 820) els.sidebar.classList.add("open");
+        if (window.innerWidth < SIDEBAR_BP_MOBILE) setSidebarOpen(true);
       });
     }
 
@@ -1542,30 +1659,36 @@
     if (els.mixBtn && els.mixPanel) {
       els.mixBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const open = els.mixPanel.classList.toggle("hidden");
-        const isOpen = !open;
-        els.mixBtn.classList.toggle("is-active", isOpen);
-        els.mixBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        const wasHidden = els.mixPanel.classList.contains("hidden");
+        if (wasHidden) {
+          els.mixPanel.classList.remove("hidden");
+          setMixPanelExpanded(false);
+          els.mixBtn.classList.add("is-active");
+          els.mixBtn.setAttribute("aria-expanded", "true");
+        } else {
+          closeMixPanel();
+        }
       });
-      document.addEventListener("click", () => {
-        els.mixPanel.classList.add("hidden");
-        els.mixBtn.classList.remove("is-active");
-        els.mixBtn.setAttribute("aria-expanded", "false");
+      els.mixSummaryBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setMixPanelExpanded(!els.mixPanel.classList.contains("is-expanded"));
       });
+      document.addEventListener("click", () => closeMixPanel());
       els.mixPanel.addEventListener("click", (e) => e.stopPropagation());
-      [["mixMcq", "mcq"], ["mixFib", "fib"], ["mixFrq", "frq"]].forEach(([elKey, mixKey]) => {
-        const el = els[elKey];
-        if (!el) return;
-        el.addEventListener("input", () => onMixSliderChange(mixKey));
-      });
-      if (els.mixTotal) {
-        els.mixTotal.addEventListener("change", () => {
-          const mix = loadTypeMix();
-          mix.totalQuestions = Math.min(20, Math.max(5, Number(els.mixTotal.value) || DEFAULT_TYPE_MIX.totalQuestions));
-          saveTypeMix(mix);
-          updateMixPanelUi();
+      els.mixPresets?.querySelectorAll(".mix-preset").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          applyMixPreset(btn.getAttribute("data-preset"));
+          setMixPanelExpanded(false);
         });
-      }
+      });
+      els.mixTotalDown?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        adjustMixTotal(-1);
+      });
+      els.mixTotalUp?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        adjustMixTotal(1);
+      });
     }
 
     els.composerInput.addEventListener("input", () => {
@@ -1626,12 +1749,10 @@
       }
     });
 
-    if (els.mobileMenuBtn) {
-      els.mobileMenuBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        els.sidebar.classList.toggle("open");
-      });
-    }
+    els.sidebarToggleBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleSidebar();
+    });
   }
 
   function initAuth() {
@@ -1645,6 +1766,7 @@
 
   function init() {
     if (!initAuth()) return;
+    initSidebar();
     bindEvents();
     renderWelcome();
     updateMixPanelUi();

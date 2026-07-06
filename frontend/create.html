@@ -43,10 +43,14 @@
       <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L8.5 11.5 7 16l4.5-1.5z"/><path d="m15 5 4 4"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
       <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+      <symbol id="i-panel-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></symbol>
+      <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
     </defs>
   </svg>
 
-  <div class="app-shell">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <div class="app-shell" id="appShell">
     <aside class="sidebar" id="sidebar">
       <a href="index.html" class="sidebar-brand sidebar-home-link" title="Back to home">
         <img src="assets/quizall-icon.svg" alt="QuizAll" />
@@ -90,8 +94,9 @@
     </aside>
 
     <main class="chat-main" id="chatMain">
-      <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
-        <svg class="icon"><use href="#i-menu"></use></svg>
+      <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle sidebar" aria-expanded="true">
+        <svg class="icon icon-menu"><use href="#i-menu"></use></svg>
+        <svg class="icon icon-panel"><use href="#i-panel-left"></use></svg>
       </button>
 
       <div class="chat-scroll" id="chatMessages">
@@ -101,19 +106,8 @@
       <div class="composer-region">
         <div class="hero" id="hero">
           <div class="hero-ambient" aria-hidden="true"></div>
-          <span class="hero-badge">
-            <svg class="icon"><use href="#i-sparkles"></use></svg>
-            AI quiz coach
-          </span>
-          <h1>What do you want to <span class="accent">master</span> today?</h1>
-          <p class="hero-sub">Paste notes or attach files — get a plan, a mixed quiz, and a recap in one flow.</p>
-          <div class="hero-flow" aria-hidden="true">
-            <span class="hero-step"><svg class="icon"><use href="#i-notebook"></use></svg> Study plan</span>
-            <span class="hero-step-divider"></span>
-            <span class="hero-step"><svg class="icon"><use href="#i-target"></use></svg> Mixed quiz</span>
-            <span class="hero-step-divider"></span>
-            <span class="hero-step"><svg class="icon"><use href="#i-clipboard"></use></svg> Study note</span>
-          </div>
+          <h1 class="hero-title">What do you want to <span class="accent">master</span> today?</h1>
+          <p class="hero-sub"><span class="hero-sub-icon" aria-hidden="true">✨</span> Paste notes or files → <span class="hero-sub-steps">plan · quiz · recap</span></p>
         </div>
 
         <div class="composer-dock">
@@ -134,14 +128,29 @@
             </div>
           </div>
           <div class="mix-panel hidden" id="mixPanel">
-            <div class="mix-panel-head">
-              <span>Question mix</span>
-              <span class="mix-preview" id="mixPreview">7 MCQ · 4 Fill · 2 FRQ</span>
+            <button type="button" class="mix-summary" id="mixSummaryBtn" aria-expanded="false">
+              <span class="mix-summary-text">
+                <span class="mix-summary-label">Quiz shape</span>
+                <span class="mix-preview" id="mixPreview">Balanced · 7 MCQ · 4 Fill · 2 FRQ</span>
+              </span>
+              <svg class="icon mix-chevron" aria-hidden="true"><use href="#i-chevron-down"></use></svg>
+            </button>
+            <div class="mix-details" id="mixDetails">
+              <div class="mix-presets" id="mixPresets" role="radiogroup" aria-label="Question mix">
+                <button type="button" class="mix-preset is-active" data-preset="balanced">Balanced</button>
+                <button type="button" class="mix-preset" data-preset="quiz">MCQ+</button>
+                <button type="button" class="mix-preset" data-preset="recall">Fill+</button>
+                <button type="button" class="mix-preset" data-preset="essay">FRQ+</button>
+              </div>
+              <div class="mix-total">
+                <span class="mix-total-label">Questions</span>
+                <div class="mix-stepper">
+                  <button type="button" class="mix-step" id="mixTotalDown" aria-label="Fewer questions">−</button>
+                  <span class="mix-total-val" id="mixTotalDisplay">13</span>
+                  <button type="button" class="mix-step" id="mixTotalUp" aria-label="More questions">+</button>
+                </div>
+              </div>
             </div>
-            <label class="mix-row"><span>Multiple choice</span><input type="range" id="mixMcq" min="10" max="80" value="54" /><span class="mix-pct" id="mixMcqPct">54%</span></label>
-            <label class="mix-row"><span>Fill in the blank</span><input type="range" id="mixFib" min="10" max="80" value="31" /><span class="mix-pct" id="mixFibPct">31%</span></label>
-            <label class="mix-row"><span>Short answer</span><input type="range" id="mixFrq" min="10" max="80" value="15" /><span class="mix-pct" id="mixFrqPct">15%</span></label>
-            <label class="mix-row mix-total-row"><span>Total questions</span><input type="number" id="mixTotal" min="5" max="20" value="13" /></label>
           </div>
           <p class="composer-hint" id="composerHint">QuizAll builds a plan, quizzes you in one mixed round, then writes your note. <button type="button" class="hint-link" id="sampleLink">Try a sample</button></p>
         </div>
