@@ -693,19 +693,64 @@ function buildAnalysisPrompt(content, examTopicHint = "") {
   };
 }
 
-function buildStudyPlanPrompt(content, examTopicHint = "") {
+function sanitizeSessionName(name) {
+  return String(name || "")
+    .replace(/\.\.\./g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
+function importanceLabel(importance) {
+  const raw = String(importance || "").toLowerCase();
+  if (raw === "secondary" || raw === "minor") return "【次要】";
+  if (raw === "peripheral" || raw === "edge") return "【边角】";
+  return "【核心】";
+}
+
+function buildStudyPlanPrompt(content, examTopicHint = "", options = {}) {
+  const { hasUploadedMaterial = false, fileNames = [] } = options;
+  const fileHint = fileNames.length ? `Uploaded files: ${fileNames.join(", ")}` : "";
+
+  const progressBlock = hasUploadedMaterial
+    ? [
+        '  "progress": {',
+        '    "overall_percent": number (0-100, estimate based on material coverage),',
+        '    "current_lecture": { "title": "string", "section": "string", "pages": "string", "citation": "filename p.X-Y" },',
+        '    "completed_lectures": [{ "title": "string", "citation": "filename p.X-Y" }],',
+        '    "phases": [{ "phase": "Phase 1|2|3", "title": "string", "goal": "string", "status": "done|active|upcoming" }]',
+        "  },",
+      ].join("\n")
+    : "";
+
+  const conceptFields = hasUploadedMaterial
+    ? '  "key_concepts": [{ "concept": "string", "detail": "string", "difficulty": "easy|medium|hard", "importance": "core|secondary|peripheral", "scenario1": "real-world use", "scenario2": "another real-world use" }],'
+    : '  "key_concepts": [{ "concept": "string", "detail": "string", "difficulty": "easy|medium|hard" }],';
+
+  const comparisonBlock = hasUploadedMaterial
+    ? '  "comparisons": [{ "a": "string", "b": "string", "rows": [["Aspect", "A", "B"], ["...", "...", "..."]] }],'
+    : "";
+
   return {
     system: [
       "You are a friendly study coach. Read the material and create a simple study plan.",
       SIMPLE_LANGUAGE_RULE,
       examTopicHint ? `Focus on: ${examTopicHint}` : "",
+      fileHint,
+      hasUploadedMaterial
+        ? "The learner uploaded study files (PPT/PDF/DOCX). Enable progress tracking: tag concepts with importance (core|secondary|peripheral), include PPT/page citations, and add comparison tables for any A vs B topics."
+        : "",
+      "session_name must be a short descriptive title (max 60 chars). Never use ellipsis (...).",
       "Return a JSON object with this exact structure:",
       "{",
+      '  "session_name": "descriptive title without ellipsis",',
       '  "subject": "string",',
       '  "topics": ["topic strings"],',
-      '  "key_concepts": [{ "concept": "string", "detail": "string", "difficulty": "easy|medium|hard" }],',
-      '  "plan": [{ "title": "string", "why": "string", "estimated_minutes": number }],',
-      '  "summary": "one plain sentence about what this material covers"',
+      conceptFields,
+      comparisonBlock,
+      '  "plan": [{ "title": "string", "why": "string", "estimated_minutes": number, "importance": "core|secondary|peripheral" }],',
+      progressBlock,
+      '  "summary": "one plain sentence; if progress enabled, start with current topic + overall_percent%"',
       "}",
     ]
       .filter(Boolean)
@@ -747,18 +792,44 @@ function buildNotePrompt(content, studyPlan, rounds = []) {
   };
 }
 
-function buildMockStudyPlan(content, projectName = "") {
+function buildMockStudyPlan(content, projectName = "", options = {}) {
+  const { hasUploadedMaterial = false, fileNames = [] } = options;
   const analysis = buildMockAnalysis(content, "", projectName);
   const topics = analysis.topics || ["Core ideas"];
-  return {
+  const subject = analysis.subject || "your topic";
+  const firstFile = fileNames[0] || "materials";
+  const plan = {
     ...analysis,
+    session_name: sanitizeSessionName(`${subject} review`),
     plan: topics.slice(0, 4).map((topic, index) => ({
       title: `Learn ${topic}`,
       why: `This shows up in your materials. Spend a few minutes on it.`,
       estimated_minutes: 5 + index * 3,
+      importance: index === 0 ? "core" : index < 3 ? "secondary" : "peripheral",
     })),
-    summary: `This material is mainly about ${analysis.subject || "your topic"}. We'll quiz you in three short rounds.`,
+    summary: hasUploadedMaterial
+      ? `Currently learning ${topics[0]} — overall progress about 5%. This material covers ${subject}.`
+      : `This material is mainly about ${subject}. We'll quiz you in one mixed round.`,
+    key_concepts: (analysis.key_concepts || []).map((k, i) => ({
+      ...k,
+      importance: i === 0 ? "core" : "secondary",
+      scenario1: `Apply ${k.concept} in a homework problem`,
+      scenario2: `Use ${k.concept} on an exam`,
+    })),
   };
+  if (hasUploadedMaterial) {
+    plan.progress = {
+      overall_percent: 5,
+      current_lecture: { title: topics[0], section: "Introduction", pages: "p.1-5", citation: `${firstFile} p.1-5` },
+      completed_lectures: [],
+      phases: [
+        { phase: "Phase 1", title: topics[0], goal: "Understand basics", status: "active" },
+        { phase: "Phase 2", title: topics[1] || "Practice", goal: "Apply concepts", status: "upcoming" },
+      ],
+    };
+    plan.comparisons = [];
+  }
+  return plan;
 }
 
 function buildMockNote(studyPlan, rounds = []) {
@@ -951,7 +1022,52 @@ function buildMockQuiz(analysis, allowedTypes, numQuestions, ragSnippets, fallba
   });
 }
 
-function buildQuizPrompt(content, analysis, types, numQuestions, sourcePack, typeMix) {
+function buildQuizPrompt(content, analysis, types, numQuestions, sourcePack, typeMix, options = {}) {
+  const { trainingMode = false, topicHint = "", excludeQuestions = [] } = options;
+
+  if (trainingMode) {
+    const excludeHint = excludeQuestions.length
+      ? `Do NOT repeat these questions: ${excludeQuestions.slice(-8).join(" | ")}`
+      : "";
+    return {
+      system: [
+        "You are an expert quiz coach running TRAINING MODE — one MCQ at a time.",
+        SIMPLE_LANGUAGE_RULE,
+        "Generate exactly 1 multiple_choice question.",
+        excludeHint,
+        topicHint ? `Focus on topic: ${topicHint}` : "",
+        "Return a JSON array with one element:",
+        "{",
+        '  "type": "multiple_choice",',
+        '  "question": "string",',
+        '  "options": ["A", "B", "C", "D"],',
+        '  "correct_answer": 0,',
+        '  "explanation": "brief explanation",',
+        '  "importance": "core" | "secondary" | "peripheral",',
+        '  "topic_focus": "current knowledge point being tested",',
+        '  "source_citation": "filename p.X-Y or material section",',
+        '  "scenario1": "real-world landing scenario",',
+        '  "scenario2": "another real-world landing scenario"',
+        "}",
+        "Tag importance: core=【核心】, secondary=【次要】, peripheral=【边角】.",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      user: [
+        "=== CONTENT ANALYSIS ===",
+        JSON.stringify(analysis, null, 2),
+        "",
+        sourcePack ? "=== SOURCE PACK (RAG) ===" : "",
+        sourcePack || "",
+        sourcePack ? "" : "",
+        "=== STUDY MATERIAL ===",
+        content,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    };
+  }
+
   const typeList = types.join(", ");
   const mixHint =
     typeMix && typeof typeMix === "object"
@@ -1918,6 +2034,9 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
     const typedContent = String(req.body?.content || "").trim();
     const projectContent = await getProjectCombinedContent(projectId, userId);
     let content = typedContent || projectContent;
+    const projectFiles = await getProjectFiles(projectId, userId);
+    const hasUploadedMaterial = projectFiles.length > 0;
+    const fileNames = projectFiles.map((f) => f.file_name).filter(Boolean);
 
     if (!content || content.length < CONTENT_MIN_LENGTH) {
       return res.status(400).json({
@@ -1929,9 +2048,19 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
     const examTopicHint = normalizeWhitespace(req.body?.examTopics || "");
 
     if (allowMockAi()) {
-      const mockPlan = buildMockStudyPlan(content, project.name);
+      const mockPlan = buildMockStudyPlan(content, project.name, { hasUploadedMaterial, fileNames });
       await saveStudyPlanRecord({ projectId, userId, payload: mockPlan });
-      await touchProject(projectId);
+      const sessionName = sanitizeSessionName(mockPlan.session_name);
+      if (sessionName.length >= 2) {
+        await dbRun(`UPDATE study_projects SET name = ?, updated_at = ? WHERE id = ? AND user_id = ?`, [
+          sessionName,
+          new Date().toISOString(),
+          projectId,
+          userId,
+        ]);
+      } else {
+        await touchProject(projectId);
+      }
       return res.json({
         ok: true,
         studyPlan: mockPlan,
@@ -1940,12 +2069,13 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
           topics: mockPlan.topics,
           key_concepts: mockPlan.key_concepts || [],
         },
+        hasUploadedMaterial,
         meta: { mock: true, reason: "Anthropic API key missing in development mode" },
       });
     }
 
     const start = Date.now();
-    const prompt = buildStudyPlanPrompt(content, examTopicHint);
+    const prompt = buildStudyPlanPrompt(content, examTopicHint, { hasUploadedMaterial, fileNames });
     const result = await chatJsonAnthropic({
       system: prompt.system,
       user: prompt.user,
@@ -1963,7 +2093,17 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
     }
 
     await saveStudyPlanRecord({ projectId, userId, payload: plan });
-    await touchProject(projectId);
+    const sessionName = sanitizeSessionName(plan.session_name);
+    if (sessionName.length >= 2) {
+      await dbRun(`UPDATE study_projects SET name = ?, updated_at = ? WHERE id = ? AND user_id = ?`, [
+        sessionName,
+        new Date().toISOString(),
+        projectId,
+        userId,
+      ]);
+    } else {
+      await touchProject(projectId);
+    }
 
     return res.json({
       ok: true,
@@ -1973,6 +2113,7 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
         topics: plan.topics,
         key_concepts: Array.isArray(plan.key_concepts) ? plan.key_concepts : [],
       },
+      hasUploadedMaterial,
     });
   } catch (err) {
     console.error("[quizall] study-plan POST error:", err);
@@ -2067,8 +2208,14 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
   try {
     const userId = req.user.sub;
     const body = req.body || {};
+    const quizMode = String(body.mode || "testing").toLowerCase();
+    const trainingMode = quizMode === "training";
 
-    const requestedTypes = Array.isArray(body.types) ? body.types : [];
+    const requestedTypes = trainingMode
+      ? ["multiple_choice"]
+      : Array.isArray(body.types)
+        ? body.types
+        : [];
     if (!requestedTypes.length) {
       return res.status(400).json({ ok: false, error: "At least one question type is required" });
     }
@@ -2082,8 +2229,13 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
       });
     }
 
-    const numQuestions = Number.parseInt(body.numQuestions, 10);
-    if (!Number.isInteger(numQuestions) || numQuestions < NUM_QUESTIONS_MIN || numQuestions > NUM_QUESTIONS_MAX) {
+    const numQuestions = trainingMode
+      ? 1
+      : Number.parseInt(body.numQuestions, 10);
+    if (
+      !trainingMode &&
+      (!Number.isInteger(numQuestions) || numQuestions < NUM_QUESTIONS_MIN || numQuestions > NUM_QUESTIONS_MAX)
+    ) {
       return res.status(400).json({
         ok: false,
         error: `numQuestions must be an integer between ${NUM_QUESTIONS_MIN} and ${NUM_QUESTIONS_MAX}`,
@@ -2091,7 +2243,7 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
     }
 
     let typeMix = null;
-    if (body.typeMix && typeof body.typeMix === "object") {
+    if (!trainingMode && body.typeMix && typeof body.typeMix === "object") {
       typeMix = {};
       for (const [key, val] of Object.entries(body.typeMix)) {
         const normalized = normalizeType(key);
@@ -2207,7 +2359,15 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
     }
 
     const quizStart = Date.now();
-    const quizPrompt = buildQuizPrompt(content, analysis, normalizedTypes, numQuestions, sourcePackString, typeMix);
+    const excludeQuestions = Array.isArray(body.excludeQuestions)
+      ? body.excludeQuestions.map((q) => String(q || "").slice(0, 120)).filter(Boolean)
+      : [];
+    const topicHint = String(body.topicHint || body.currentTopic || "").trim();
+    const quizPrompt = buildQuizPrompt(content, analysis, normalizedTypes, numQuestions, sourcePackString, typeMix, {
+      trainingMode,
+      topicHint,
+      excludeQuestions,
+    });
     const quizResult = await chatJsonAnthropic({
       system: quizPrompt.system,
       user: quizPrompt.user,
@@ -2256,6 +2416,8 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
       meta: {
         requestedTypes: normalizedTypes,
         numQuestions,
+        mode: trainingMode ? "training" : "testing",
+        hasUploadedMaterial: projectFiles.length > 0,
       },
     });
   } catch (err) {

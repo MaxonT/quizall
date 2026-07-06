@@ -4,6 +4,7 @@
   const API_BASE = window.authGuard?.API_BASE || window.QUIZALL_API_BASE || "http://localhost:8080";
   const CONTENT_MIN_LENGTH = 30;
   const TYPE_MIX_KEY = "quizall.typeMix";
+  const QUIZ_MODE_KEY = "quizall.quizMode";
   const SIDEBAR_PREF_KEY = "quizall.sidebar.open";
   const SIDEBAR_BP_MOBILE = 768;
   const SIDEBAR_BP_TABLET = 1024;
@@ -27,6 +28,8 @@
     resumedSession: false,
     materialPreview: "",
     folders: [],
+    hasUploadedMaterial: false,
+    training: null,
   };
 
   const els = {
@@ -60,6 +63,8 @@
     mixTotalDisplay: document.getElementById("mixTotalDisplay"),
     mixTotalDown: document.getElementById("mixTotalDown"),
     mixTotalUp: document.getElementById("mixTotalUp"),
+    mixMode: document.getElementById("mixMode"),
+    mixModeHint: document.getElementById("mixModeHint"),
     composerHint: document.getElementById("composerHint"),
     attachBtn: document.getElementById("attachBtn"),
     sendBtn: document.getElementById("sendBtn"),
@@ -261,6 +266,64 @@
     localStorage.setItem(TYPE_MIX_KEY, JSON.stringify(mix));
   }
 
+  function loadQuizMode() {
+    try {
+      const mode = localStorage.getItem(QUIZ_MODE_KEY);
+      return mode === "training" ? "training" : "testing";
+    } catch {
+      return "testing";
+    }
+  }
+
+  function saveQuizMode(mode) {
+    try {
+      localStorage.setItem(QUIZ_MODE_KEY, mode === "testing" ? "testing" : "training");
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function setQuizMode(mode) {
+    const next = mode === "testing" ? "testing" : "training";
+    saveQuizMode(next);
+    els.mixMode?.querySelectorAll(".mix-mode-btn").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-mode") === next);
+    });
+    if (els.mixDetails) {
+      els.mixDetails.classList.toggle("mix-details--testing-only", next === "testing");
+    }
+    if (els.mixModeHint) {
+      els.mixModeHint.textContent =
+        next === "training"
+          ? "Training: one MCQ at a time with live accuracy."
+          : "Testing: full mixed quiz round, then submit.";
+    }
+    updateMixPanelUi();
+  }
+
+  function importanceTag(importance) {
+    const raw = String(importance || "").toLowerCase();
+    if (raw === "secondary" || raw === "minor") return "【次要】";
+    if (raw === "peripheral" || raw === "edge") return "【边角】";
+    return "【核心】";
+  }
+
+  function sanitizeSessionName(name) {
+    return String(name || "")
+      .replace(/\.\.\./g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function formatSessionDate(iso) {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    } catch {
+      return "";
+    }
+  }
+
   function allocateQuestionCounts(total, mix) {
     const weights = [
       { type: "multiple_choice", w: mix.mcq },
@@ -330,16 +393,25 @@
 
   function updateMixPanelUi() {
     const mix = loadTypeMix();
+    const quizMode = loadQuizMode();
     const presetId = mix.preset || inferPresetId(mix);
     const presetLabel = MIX_PRESETS[presetId]?.label || "Balanced";
     els.mixPresets?.querySelectorAll(".mix-preset").forEach((btn) => {
       btn.classList.toggle("is-active", btn.getAttribute("data-preset") === presetId);
     });
+    els.mixMode?.querySelectorAll(".mix-mode-btn").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-mode") === quizMode);
+    });
+    if (els.mixDetails) {
+      els.mixDetails.classList.toggle("mix-details--testing-only", quizMode === "testing");
+    }
     if (els.mixTotalDisplay) els.mixTotalDisplay.textContent = String(mix.totalQuestions);
     const counts = getMixedRoundConfig();
-    const preview = `${presetLabel} · ${counts.preview}`;
+    const modeLabel = quizMode === "training" ? "Training" : "Testing";
+    const preview =
+      quizMode === "training" ? `${modeLabel} · MCQ loop` : `${modeLabel} · ${presetLabel} · ${counts.preview}`;
     if (els.mixPreview) els.mixPreview.textContent = preview;
-    if (els.mixBtn) els.mixBtn.title = `Quiz shape: ${counts.preview}`;
+    if (els.mixBtn) els.mixBtn.title = `Mode: ${preview}`;
   }
 
   function clearComposerError() {
@@ -470,7 +542,7 @@
     if (action === "retry-quiz") {
       if (!state.projectId || !state.studyPlan) return;
       setProcessing(true);
-      await startMixedQuiz();
+      await startQuizFlow();
       return;
     }
     if (action === "retry-note") {
@@ -485,14 +557,85 @@
     setConversationActive(false);
   }
 
+  function formatSessionFooter(plan) {
+    if (!state.hasUploadedMaterial || !plan?.progress) return "";
+    const p = plan.progress;
+    const completed = (p.completed_lectures || [])
+      .map((lec) => `<li>✅ ${escapeHtml(lec.title)} <span class="citation">${escapeHtml(lec.citation || "")}</span></li>`)
+      .join("");
+    const current = p.current_lecture
+      ? `<p>🔄 <strong>${escapeHtml(p.current_lecture.title)}</strong>` +
+        (p.current_lecture.section ? ` · ${escapeHtml(p.current_lecture.section)}` : "") +
+        (p.current_lecture.pages ? ` · ${escapeHtml(p.current_lecture.pages)}` : "") +
+        (p.current_lecture.citation ? ` <span class="citation">(${escapeHtml(p.current_lecture.citation)})</span>` : "") +
+        `</p>`
+      : "";
+    const percent = p.overall_percent != null ? `<p>📈 Overall progress: <strong>${Math.round(p.overall_percent)}%</strong></p>` : "";
+    const phases = (p.phases || [])
+      .map(
+        (ph) =>
+          `<tr class="phase-${escapeHtml(ph.status || "upcoming")}">` +
+          `<td>${escapeHtml(ph.phase || "")}</td>` +
+          `<td>${escapeHtml(ph.title || "")}</td>` +
+          `<td>${escapeHtml(ph.goal || "")}</td>` +
+          `<td>${ph.status === "active" ? "We are currently working on" : escapeHtml(ph.status || "")}</td>` +
+          `</tr>`
+      )
+      .join("");
+    const phaseTable = phases
+      ? `<table class="plan-phase-table"><thead><tr><th>Phase</th><th>Topic</th><th>Goal</th><th>Status</th></tr></thead><tbody>${phases}</tbody></table>`
+      : "";
+    return (
+      `<div class="session-footer">` +
+      (completed ? `<div class="session-footer-block"><div class="session-footer-label">Completed</div><ul>${completed}</ul></div>` : "") +
+      (current ? `<div class="session-footer-block">${current}</div>` : "") +
+      (percent ? `<div class="session-footer-block">${percent}</div>` : "") +
+      (phaseTable ? `<div class="session-footer-block">${phaseTable}</div>` : "") +
+      `</div>`
+    );
+  }
+
+  function formatComparisonTables(plan) {
+    const rows = plan.comparisons || [];
+    if (!rows.length) return "";
+    return rows
+      .map((cmp) => {
+        const tableRows = (cmp.rows || [])
+          .map(
+            (row, ri) =>
+              `<tr>${(Array.isArray(row) ? row : []).map((cell) => (ri === 0 ? `<th>${escapeHtml(cell)}</th>` : `<td>${escapeHtml(cell)}</td>`)).join("")}</tr>`
+          )
+          .join("");
+        return (
+          `<div class="compare-block">` +
+          `<p class="compare-title">${escapeHtml(cmp.a || "A")} vs ${escapeHtml(cmp.b || "B")}</p>` +
+          `<table class="compare-table">${tableRows}</table>` +
+          `</div>`
+        );
+      })
+      .join("");
+  }
+
   function formatStudyPlanHtml(plan, options) {
     const opts = options || {};
     const steps = (plan.plan || [])
       .map(
         (step, i) =>
-          `<li><span class="step-title">${i + 1}. ${escapeHtml(step.title)}</span>` +
+          `<li>` +
+          `<span class="step-title">${i + 1}. ${importanceTag(step.importance)} ${escapeHtml(step.title)}</span>` +
           `<span class="step-why">${escapeHtml(step.why || "")}</span>` +
           (step.estimated_minutes ? ` <span class="step-min">~${step.estimated_minutes} min</span>` : "") +
+          `</li>`
+      )
+      .join("");
+    const concepts = (plan.key_concepts || [])
+      .slice(0, 6)
+      .map(
+        (k) =>
+          `<li>` +
+          `<strong>${importanceTag(k.importance)} ${escapeHtml(k.concept)}</strong>: ${escapeHtml(k.detail || "")}` +
+          (k.scenario1 ? `<div class="concept-scenario">[落地场景1] ${escapeHtml(k.scenario1)}</div>` : "") +
+          (k.scenario2 ? `<div class="concept-scenario">[落地场景2] ${escapeHtml(k.scenario2)}</div>` : "") +
           `</li>`
       )
       .join("");
@@ -500,13 +643,20 @@
       .slice(0, 8)
       .map((t) => `<span class="topic-tag">${escapeHtml(t)}</span>`)
       .join("");
+    const modeNext =
+      loadQuizMode() === "training"
+        ? `<p class="meta-line" style="margin-top:14px;">Starting <strong>training mode</strong> — one MCQ at a time.</p>`
+        : `<p class="meta-line" style="margin-top:14px;">Starting <strong>testing mode</strong> — mixed quiz round.</p>`;
     return (
       `<h3>Your study plan</h3>` +
       `<p class="meta-line">Subject: <strong>${escapeHtml(plan.subject || "General")}</strong></p>` +
       `<p>${escapeHtml(plan.summary || "Here is a simple plan based on your material.")}</p>` +
       (topics ? `<div class="topic-tags">${topics}</div>` : "") +
+      (concepts ? `<ul class="plan-concepts">${concepts}</ul>` : "") +
+      formatComparisonTables(plan) +
       (steps ? `<ul class="plan-steps">${steps}</ul>` : "") +
-      (opts.includeNextStep === false ? "" : `<p class="meta-line" style="margin-top:14px;">Starting your <strong>mixed quiz</strong>…</p>`)
+      formatSessionFooter(plan) +
+      (opts.includeNextStep === false ? "" : modeNext)
     );
   }
 
@@ -793,10 +943,12 @@
 
   function projectMeta(p) {
     const bits = [];
+    const date = formatSessionDate(p.updatedAt || p.createdAt);
+    if (date) bits.push(date);
     if (p.quizCount > 0) bits.push(`${p.quizCount} ${p.quizCount === 1 ? "round" : "rounds"}`);
     else if (p.fileCount > 0) bits.push(`${p.fileCount} ${p.fileCount === 1 ? "file" : "files"}`);
     if (p.latestAccuracy != null && p.quizCount > 0) bits.push(`${p.latestAccuracy}%`);
-    return bits.length ? bits.join(" · ") : "Draft session";
+    return bits.length ? bits.join(" · ") : "Draft";
   }
 
   function projectIconId(p) {
@@ -924,7 +1076,7 @@
       `<div class="project-row${active ? " is-active" : ""}">` +
       `<button type="button" class="nav-item project-session${active ? " is-active" : ""}" data-id="${escapeHtml(p.id)}">` +
       icon(projectIconId(p)) +
-      `<span>${escapeHtml(p.name)}</span>` +
+      `<span class="session-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>` +
       `<span class="nav-count project-meta">${escapeHtml(projectMeta(p))}</span>` +
       `</button>` +
       `<button type="button" class="project-more" data-id="${escapeHtml(p.id)}" aria-label="Session options" title="Session options">` +
@@ -1117,8 +1269,13 @@
       removeTyping(typing);
       state.studyPlan = data.studyPlan;
       state.analysis = data.analysis;
+      state.hasUploadedMaterial = !!data.hasUploadedMaterial;
+      if (data.studyPlan?.session_name) {
+        state.projectName = sanitizeSessionName(data.studyPlan.session_name);
+      }
       appendMessage("ai", formatStudyPlanHtml(data.studyPlan));
-      await startMixedQuiz();
+      await loadHistorySidebar();
+      await startQuizFlow();
     } catch (err) {
       removeTyping(typing);
       appendErrorWithRetry(`Sorry, I couldn't make a study plan: ${err.message}`, "retry-plan");
@@ -1137,9 +1294,244 @@
         typeMix: roundConfig.typeMix,
         analysis: state.analysis,
         content: state.materialPreview || undefined,
+        mode: "testing",
       }),
     });
     return data.quiz || [];
+  }
+
+  async function generateTrainingQuestion(excludeQuestions, topicHint) {
+    const data = await api("/api/quiz/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId: state.projectId,
+        mode: "training",
+        analysis: state.analysis,
+        content: state.materialPreview || undefined,
+        excludeQuestions,
+        topicHint,
+        currentTopic: topicHint,
+      }),
+    });
+    const quiz = data.quiz || [];
+    return quiz[0] || null;
+  }
+
+  function trainingAccuracy() {
+    if (!state.training || !state.training.total) return 0;
+    return Math.round((state.training.correct / state.training.total) * 100);
+  }
+
+  function buildTrainingSessionFooter(question) {
+    if (!state.hasUploadedMaterial) return "";
+    const plan = state.studyPlan;
+    const progress = plan?.progress;
+    const citation = question?.source_citation || question?.source_reference || progress?.current_lecture?.citation || "";
+    const score = state.training ? `${state.training.correct}/${state.training.total}` : "0/0";
+    const percent = progress?.overall_percent != null ? ` · ${Math.round(progress.overall_percent)}% overall` : "";
+    return (
+      `<div class="training-session-footer">` +
+      `<span>得分 ${score}</span>` +
+      (citation ? `<span class="training-citation">| ${escapeHtml(citation)}</span>` : "") +
+      (percent ? `<span>${escapeHtml(percent)}</span>` : "") +
+      `</div>`
+    );
+  }
+
+  function renderTrainingArtifact(question, { loading = false } = {}) {
+    const nq = normalizeQuestion(question);
+    const imp = importanceTag(question?.importance);
+    const topic = question?.topic_focus || state.studyPlan?.progress?.current_lecture?.title || state.studyPlan?.subject || "Core";
+    const qNum = state.training?.total ? state.training.total + 1 : 1;
+    const acc = trainingAccuracy();
+    const done = state.training?.total || 0;
+    const canPrev = state.training?.history?.length > 0;
+
+    const cardId = `training-${Date.now()}`;
+    const html =
+      `<h3>Training mode</h3>` +
+      `<p class="meta-line">One MCQ at a time — keep going as long as you like.</p>` +
+      `<div class="training-artifact quiz-card" id="${cardId}">` +
+      `<div class="training-head">` +
+      `<span class="training-round">Round 1: MCQ ${imp}</span>` +
+      `<span class="training-topic">${escapeHtml(topic)}</span>` +
+      `</div>` +
+      `<div class="training-stats">` +
+      `<span class="training-accuracy">${acc}% accuracy</span>` +
+      `<button type="button" class="btn-text training-prev" ${canPrev ? "" : "disabled"}>← Previous</button>` +
+      `<span class="training-done">${done} done</span>` +
+      `<span class="training-qnum">Q${qNum}</span>` +
+      `</div>` +
+      (loading
+        ? `<div class="training-loading"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`
+        : `<div class="quiz-question" data-qi="0">` +
+          `<div class="q-label">Q${qNum}</div>` +
+          `<p class="q-text">${escapeHtml(nq.question)}</p>` +
+          `<div class="answers">${buildAnswerHtml(nq, 0)}</div>` +
+          `</div>` +
+          `<div class="training-feedback hidden"></div>`) +
+      buildTrainingSessionFooter(question) +
+      `<button type="button" class="btn-round training-finish">Finish & write note</button>` +
+      `</div>`;
+
+    const msg = appendMessage("ai", html);
+    const card = msg.querySelector(`#${cardId}`);
+    if (!card || loading) return { msg, card };
+
+    const feedback = card.querySelector(".training-feedback");
+    let answered = false;
+
+    card.querySelector(".training-prev")?.addEventListener("click", () => showTrainingPrevious(cardId));
+    card.querySelector(".training-finish")?.addEventListener("click", async (e) => {
+      e.currentTarget.disabled = true;
+      await finishTrainingAndNote();
+    });
+
+    card.querySelectorAll(".option-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (answered) return;
+        answered = true;
+        const selected = Number(btn.getAttribute("data-o"));
+        const isCorrect = selected === Number(nq.correct_answer);
+        card.querySelectorAll(".option-btn").forEach((b) => {
+          b.disabled = true;
+          const o = Number(b.getAttribute("data-o"));
+          if (o === Number(nq.correct_answer)) b.classList.add("correct");
+          else if (o === selected) b.classList.add("wrong");
+        });
+        if (!state.training) state.training = { correct: 0, total: 0, history: [] };
+        state.training.total += 1;
+        if (isCorrect) state.training.correct += 1;
+        state.training.history.push({
+          question: nq,
+          raw: question,
+          userAnswer: selected,
+          isCorrect,
+        });
+        const accEl = card.querySelector(".training-accuracy");
+        const doneEl = card.querySelector(".training-done");
+        if (accEl) accEl.textContent = `${trainingAccuracy()}% accuracy`;
+        if (doneEl) doneEl.textContent = `${state.training.total} done`;
+        const prevBtn = card.querySelector(".training-prev");
+        if (prevBtn) prevBtn.disabled = false;
+        if (feedback) {
+          feedback.classList.remove("hidden");
+          feedback.innerHTML =
+            (isCorrect ? `<p class="training-ok">Correct!</p>` : `<p class="training-miss">Not quite.</p>`) +
+            (nq.explanation ? `<p>${escapeHtml(nq.explanation)}</p>` : "") +
+            (question?.scenario1 ? `<p class="concept-scenario">[落地场景1] ${escapeHtml(question.scenario1)}</p>` : "") +
+            (question?.scenario2 ? `<p class="concept-scenario">[落地场景2] ${escapeHtml(question.scenario2)}</p>` : "");
+        }
+        await new Promise((r) => setTimeout(r, 1200));
+        card.closest(".msg")?.remove();
+        await loadNextTrainingQuestion();
+      });
+    });
+    return { msg, card };
+  }
+
+  function showTrainingPrevious(currentCardId) {
+    if (!state.training?.history?.length) return;
+    const last = state.training.history[state.training.history.length - 1];
+    const nq = last.question;
+    const html =
+      `<h3>Previous question</h3>` +
+      `<div class="training-artifact quiz-card training-review">` +
+      `<div class="q-label">Review</div>` +
+      `<p class="q-text">${escapeHtml(nq.question)}</p>` +
+      `<p class="meta-line">Your answer: ${escapeHtml(displayAnswer(nq, last.userAnswer))}</p>` +
+      `<p class="meta-line">${last.isCorrect ? "Correct" : `Correct: ${escapeHtml(displayAnswer(nq, nq.correct_answer))}`}</p>` +
+      `</div>`;
+    appendMessage("ai", html);
+  }
+
+  async function loadNextTrainingQuestion() {
+    const exclude = (state.training?.history || []).map((h) => h.question?.question).filter(Boolean);
+    const topicHint =
+      state.studyPlan?.progress?.current_lecture?.title ||
+      state.studyPlan?.topics?.[state.training?.total % (state.studyPlan?.topics?.length || 1)] ||
+      "";
+    const { card } = renderTrainingArtifact({}, { loading: true });
+    try {
+      const question = await generateTrainingQuestion(exclude, topicHint);
+      card?.closest(".msg")?.remove();
+      if (!question) throw new Error("No question generated");
+      renderTrainingArtifact(question);
+    } catch (err) {
+      card?.closest(".msg")?.remove();
+      appendErrorWithRetry(`Training paused: ${err.message}`, "retry-quiz");
+      setProcessing(false);
+    }
+  }
+
+  async function startTrainingLoop() {
+    state.training = { correct: 0, total: 0, history: [] };
+    state.roundIndex = 0;
+    const typing = appendTyping("Preparing training question…");
+    try {
+      const topicHint = state.studyPlan?.progress?.current_lecture?.title || state.studyPlan?.topics?.[0] || "";
+      const question = await generateTrainingQuestion([], topicHint);
+      removeTyping(typing);
+      if (!question) throw new Error("No question generated");
+      renderTrainingArtifact(question);
+    } catch (err) {
+      removeTyping(typing);
+      appendErrorWithRetry(`Sorry, training failed: ${err.message}`, "retry-quiz");
+      setProcessing(false);
+    }
+  }
+
+  async function finishTrainingAndNote() {
+    if (state.training?.history?.length) {
+      const results = state.training.history.map((h) => ({
+        type: h.question.type,
+        question: h.question.question,
+        options: h.question.options,
+        correct_answer: h.question.correct_answer,
+        userAnswer: h.userAnswer,
+        isCorrect: h.isCorrect,
+        explanation: h.question.explanation,
+      }));
+      state.roundResults.push({
+        label: "Training",
+        correct: state.training.correct,
+        total: state.training.total,
+        missed: results
+          .filter((r) => !r.isCorrect)
+          .map((r) => ({
+            question: r.question,
+            userAnswer: displayAnswer(r, r.userAnswer),
+            correctAnswer: displayAnswer(r, r.correct_answer),
+          })),
+      });
+      try {
+        await api("/api/quiz/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectId: state.projectId,
+            subject: state.studyPlan?.subject || state.projectName,
+            topics: state.studyPlan?.topics || [],
+            correct: state.training.correct,
+            total: state.training.total,
+            roundLabel: "Training",
+            questions: results,
+          }),
+        });
+      } catch (err) {
+        console.error("save training history failed", err);
+      }
+    }
+    await finishAllRounds();
+  }
+
+  async function startQuizFlow() {
+    if (loadQuizMode() === "training") {
+      await startTrainingLoop();
+      return;
+    }
+    await startMixedQuiz();
   }
 
   async function saveRoundHistory(roundConfig, rawQuestions, answers) {
@@ -1321,6 +1713,7 @@
       }
 
       if (filesToUpload.length) {
+        state.hasUploadedMaterial = true;
         const typing = appendTyping("Reading your files…");
         await uploadFilesToProject(state.projectId, filesToUpload);
         removeTyping(typing);
@@ -1350,6 +1743,7 @@
     try {
       const detail = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`);
       state.projectName = detail.project?.name || "Study session";
+      state.hasUploadedMaterial = !!(detail.files?.length);
       removeTyping(typing);
       appendMessage("user", `<p>Reopened: <strong>${escapeHtml(state.projectName)}</strong></p>`);
 
@@ -1427,7 +1821,7 @@
           msg.querySelector(".continue-quiz-btn")?.addEventListener("click", async (e) => {
             e.currentTarget.disabled = true;
             setProcessing(true);
-            await startMixedQuiz();
+            await startQuizFlow();
           });
         } else if (planLoaded && roundsLoaded && !noteLoaded) {
           const msg = appendMessage(
@@ -1502,9 +1896,9 @@
     state.materialPreview = buildContentFromPlan(state.studyPlan);
     appendMessage(
       "ai",
-      `<p>Let's go again — one fresh mixed quiz on <strong>${escapeHtml(state.studyPlan.subject || state.projectName)}</strong>.</p>`
+      `<p>Let's go again — a fresh ${loadQuizMode() === "training" ? "training loop" : "quiz"} on <strong>${escapeHtml(state.studyPlan.subject || state.projectName)}</strong>.</p>`
     );
-    await startMixedQuiz();
+    await startQuizFlow();
   }
 
   function resetNewChat() {
@@ -1514,8 +1908,10 @@
     state.analysis = null;
     state.studyPlan = null;
     state.pendingFiles = [];
+    state.hasUploadedMaterial = false;
     state.roundIndex = -1;
     state.roundResults = [];
+    state.training = null;
     setResumedSession(false);
     setActiveNav("navHome");
     els.composerInput.value = "";
@@ -1837,7 +2233,7 @@
         const wasHidden = els.mixPanel.classList.contains("hidden");
         if (wasHidden) {
           els.mixPanel.classList.remove("hidden");
-          setMixPanelExpanded(false);
+          setMixPanelExpanded(true);
           els.mixBtn.classList.add("is-active");
           els.mixBtn.setAttribute("aria-expanded", "true");
         } else {
@@ -1848,8 +2244,17 @@
         e.stopPropagation();
         setMixPanelExpanded(!els.mixPanel.classList.contains("is-expanded"));
       });
-      document.addEventListener("click", () => closeMixPanel());
+      document.addEventListener("click", (e) => {
+        if (els.mixPanel?.contains(e.target) || els.mixBtn?.contains(e.target)) return;
+        closeMixPanel();
+      });
       els.mixPanel.addEventListener("click", (e) => e.stopPropagation());
+      els.mixMode?.querySelectorAll(".mix-mode-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          setQuizMode(btn.getAttribute("data-mode"));
+        });
+      });
       els.mixPresets?.querySelectorAll(".mix-preset").forEach((btn) => {
         btn.addEventListener("click", () => {
           applyMixPreset(btn.getAttribute("data-preset"));
@@ -1945,6 +2350,7 @@
     initSidebar();
     bindEvents();
     renderWelcome();
+    setQuizMode(loadQuizMode());
     updateMixPanelUi();
     loadHistorySidebar();
     autosizeComposer();

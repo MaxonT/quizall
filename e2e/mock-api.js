@@ -3,11 +3,26 @@
 /** @typedef {{ type: string; question: string; options?: string[]; correct_answer: string | number; explanation: string }} MockQuestion */
 
 const SAMPLE_PLAN = {
+  session_name: "Photosynthesis basics",
   subject: "Photosynthesis",
-  summary: "This material is mainly about photosynthesis. We'll quiz you in one mixed round.",
+  summary: "Currently learning Sunlight — overall progress about 5%. This material covers photosynthesis.",
   topics: ["Sunlight", "Chlorophyll", "Glucose", "Oxygen"],
-  key_concepts: [{ concept: "Chlorophyll", detail: "Green pigment in leaves." }],
-  plan: [{ title: "Learn Sunlight", why: "Core idea.", estimated_minutes: 5 }],
+  key_concepts: [
+    {
+      concept: "Chlorophyll",
+      detail: "Green pigment in leaves.",
+      importance: "core",
+      scenario1: "Identify leaf color in a lab",
+      scenario2: "Explain why plants are green",
+    },
+  ],
+  plan: [{ title: "Learn Sunlight", why: "Core idea.", estimated_minutes: 5, importance: "core" }],
+  progress: {
+    overall_percent: 5,
+    current_lecture: { title: "Sunlight", section: "Intro", pages: "p.1-3", citation: "notes.pdf p.1-3" },
+    completed_lectures: [],
+    phases: [{ phase: "Phase 1", title: "Sunlight", goal: "Understand basics", status: "active" }],
+  },
 };
 
 const SAMPLE_NOTE = {
@@ -126,7 +141,8 @@ export async function installMockApi(page) {
       return json({ ok: true, project: { id: session.id, name: session.name } }, 201);
     }
     if (path.match(/\/api\/quiz\/projects\/[^/]+\/study-plan$/) && method === "POST") {
-      return json({ ok: true, studyPlan: SAMPLE_PLAN, analysis: SAMPLE_PLAN });
+      session.name = SAMPLE_PLAN.session_name;
+      return json({ ok: true, studyPlan: SAMPLE_PLAN, analysis: SAMPLE_PLAN, hasUploadedMaterial: false });
     }
     if (path.match(/\/api\/quiz\/projects\/[^/]+\/study-plan$/) && method === "GET") {
       return json({ ok: true, studyPlan: SAMPLE_PLAN });
@@ -144,8 +160,28 @@ export async function installMockApi(page) {
     }
     if (path === "/api/quiz/generate" && method === "POST") {
       const body = route.request().postDataJSON();
+      if (body?.mode === "training") {
+        return json({
+          ok: true,
+          quiz: [
+            {
+              type: "multiple_choice",
+              question: "What do plants use to make food?",
+              options: ["Sunlight", "Rocks", "Plastic", "Metal"],
+              correct_answer: 0,
+              explanation: "Plants use sunlight in photosynthesis.",
+              importance: "core",
+              topic_focus: "Sunlight",
+              source_citation: "notes.pdf p.1",
+              scenario1: "Growing plants near a window",
+              scenario2: "Explaining why plants need light",
+            },
+          ],
+          meta: { mock: true, mode: "training" },
+        });
+      }
       const questions = mixedQuestions(body?.typeMix, body?.numQuestions);
-      return json({ ok: true, quiz: questions, meta: { mock: true } });
+      return json({ ok: true, quiz: questions, meta: { mock: true, mode: "testing" } });
     }
     if (path === "/api/quiz/history" && method === "POST") {
       const body = route.request().postDataJSON();
