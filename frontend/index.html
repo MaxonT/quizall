@@ -1259,62 +1259,140 @@
       color: var(--err);
     }
 
-    /* ---------- Science Widget ---------- */
-    .science-widget {
+    /* ---------- Science Nudge (warm rotating tips) ---------- */
+    .science-widget.science-nudge {
+      position: relative;
       margin-top: 1.4rem;
-      border: 1px solid rgba(34, 211, 238, 0.26);
-      border-radius: 22px;
-      padding: 16px 18px;
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid rgba(251, 191, 136, 0.28);
+      border-radius: 24px;
       background:
-        radial-gradient(100% 140% at 0% 0%, rgba(34,211,238,0.14), transparent 60%),
-        radial-gradient(80% 100% at 100% 100%, rgba(139,92,246,0.16), transparent 65%),
-        linear-gradient(160deg, rgba(10,15,34,0.94), rgba(8,12,28,0.94));
-      box-shadow: 0 16px 32px rgba(2, 6, 23, 0.38);
+        radial-gradient(120% 100% at 0% 0%, rgba(251, 191, 136, 0.14), transparent 55%),
+        radial-gradient(90% 90% at 100% 100%, rgba(196, 181, 253, 0.16), transparent 60%),
+        linear-gradient(155deg, rgba(28, 20, 38, 0.96), rgba(18, 14, 28, 0.94));
+      box-shadow:
+        0 18px 40px rgba(8, 6, 16, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
-    .science-widget-head {
+    .science-nudge-glow {
+      position: absolute;
+      inset: -40% -20% auto;
+      height: 120px;
+      background: radial-gradient(ellipse at 30% 50%, rgba(251, 191, 136, 0.22), transparent 70%);
+      pointer-events: none;
+      animation: scienceNudgeGlow 6s ease-in-out infinite alternate;
+    }
+    @keyframes scienceNudgeGlow {
+      0% { opacity: 0.55; transform: translateX(0); }
+      100% { opacity: 1; transform: translateX(12px); }
+    }
+    .science-nudge-inner {
+      position: relative;
+      z-index: 1;
+      padding: 18px 20px 16px;
+    }
+    .science-nudge-meta {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
     }
-    .science-widget-head h2 {
+    .science-nudge-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fde68a;
+      border: 1px solid rgba(251, 191, 136, 0.35);
+      background: rgba(251, 191, 136, 0.1);
+    }
+    .science-nudge-badge-icon {
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+    .science-nudge-dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .science-nudge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      border: none;
+      padding: 0;
+      background: rgba(148, 163, 184, 0.35);
+      cursor: pointer;
+      transition: transform 0.25s ease, background 0.25s ease, width 0.25s ease;
+    }
+    .science-nudge-dot.is-active {
+      width: 18px;
+      background: linear-gradient(90deg, #fbbf24, #c4b5fd);
+    }
+    .science-nudge-dot:hover {
+      transform: scale(1.15);
+    }
+    .science-nudge-quote-wrap {
+      min-height: 4.5rem;
+      display: flex;
+      align-items: center;
+    }
+    .science-nudge-quote {
       margin: 0;
-      font-size: 1.05rem;
-      font-weight: 800;
+      font-size: 1.02rem;
+      line-height: 1.65;
+      font-weight: 500;
+      color: rgba(255, 251, 245, 0.94);
+      letter-spacing: 0.01em;
+      transition: opacity 0.45s ease, transform 0.45s ease;
     }
-    .science-widget-head p {
-      margin: 2px 0 0;
-      font-size: 0.84rem;
-      color: var(--muted);
+    .science-nudge-quote.is-fading {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    .science-nudge-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .science-nudge-step {
+      font-size: 0.78rem;
+      color: rgba(203, 213, 225, 0.82);
+      font-weight: 600;
     }
     .science-widget-link {
       text-decoration: none;
-      border: 1px solid rgba(148, 231, 255, 0.35);
-      color: #c7d2fe;
       border-radius: 12px;
       font-size: 0.84rem;
       padding: 8px 12px;
       font-weight: 700;
-      background: rgba(15, 23, 42, 0.72);
       transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
     }
-    .science-widget-link:hover {
-      border-color: rgba(34,211,238,0.6);
-      color: #a5f3fc;
-      box-shadow: 0 6px 18px rgba(34, 211, 238, 0.18);
+    .science-nudge .science-widget-link {
+      border-color: rgba(251, 191, 136, 0.32);
+      color: #fde68a;
+      background: rgba(30, 22, 40, 0.65);
     }
-    #scienceWidgetGrid .qa-science-step-btn {
-      min-height: 70px;
-      padding: 8px 7px;
+    .science-nudge .science-widget-link:hover {
+      border-color: rgba(251, 191, 136, 0.55);
+      color: #fff7ed;
+      box-shadow: 0 6px 20px rgba(251, 191, 136, 0.18);
     }
-    #scienceWidgetGrid .qa-science-step-btn .txt {
-      font-size: 0.74rem;
-      line-height: 1.25;
-    }
-    #scienceWidgetGrid .qa-science-step-btn .state {
-      font-size: 0.68rem;
+    @media (prefers-reduced-motion: reduce) {
+      .science-nudge-glow { animation: none; }
+      .science-nudge-quote { transition: none; }
     }
 
     /* ---------- Empty State ---------- */
@@ -1426,20 +1504,29 @@
     html[data-theme="light"] .output-quote-icon {
       box-shadow: 0 8px 16px rgba(109,40,217,0.2);
     }
-    html[data-theme="light"] .science-widget {
-      border-color: rgba(148,163,184,0.34);
+    html[data-theme="light"] .science-widget.science-nudge {
+      border-color: rgba(251, 191, 136, 0.45);
       background:
-        radial-gradient(120% 130% at 0% 0%, rgba(56,189,248,0.11), transparent 58%),
-        linear-gradient(155deg, rgba(255,255,255,0.98), rgba(246,249,255,0.95));
-      box-shadow: 0 12px 24px rgba(15,23,42,0.11);
+        radial-gradient(120% 100% at 0% 0%, rgba(254, 243, 199, 0.55), transparent 55%),
+        radial-gradient(90% 90% at 100% 100%, rgba(237, 233, 254, 0.5), transparent 60%),
+        linear-gradient(155deg, rgba(255, 253, 248, 0.98), rgba(250, 245, 255, 0.96));
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
     }
-    html[data-theme="light"] .science-widget-head p {
-      color: #475569;
+    html[data-theme="light"] .science-nudge-badge {
+      color: #b45309;
+      border-color: rgba(251, 191, 136, 0.5);
+      background: rgba(255, 251, 235, 0.9);
     }
-    html[data-theme="light"] .science-widget-link {
-      border-color: rgba(148,163,184,0.45);
-      color: #1e293b;
-      background: rgba(255,255,255,0.9);
+    html[data-theme="light"] .science-nudge-quote {
+      color: #334155;
+    }
+    html[data-theme="light"] .science-nudge-step {
+      color: #64748b;
+    }
+    html[data-theme="light"] .science-nudge .science-widget-link {
+      border-color: rgba(251, 191, 136, 0.45);
+      color: #92400e;
+      background: rgba(255, 255, 255, 0.92);
     }
     html[data-theme="light"] .logo-marquee-wrap {
       border-color: rgba(109,40,217,0.2);
@@ -1822,15 +1909,26 @@
           </div>
         </div>
 
-        <section class="science-widget science-widget-compact" id="scienceWidget">
-          <div class="science-widget-head">
-            <div>
-              <h2>Science tip</h2>
-              <p id="scienceTipText">Active retrieval beats passive review — quiz yourself on what you just read.</p>
+        <section class="science-widget science-nudge" id="scienceWidget" aria-label="Study tips">
+          <div class="science-nudge-glow" aria-hidden="true"></div>
+          <div class="science-nudge-inner">
+            <div class="science-nudge-meta">
+              <span class="science-nudge-badge">
+                <span class="science-nudge-badge-icon" aria-hidden="true">☀️</span>
+                Gentle reminder
+              </span>
+              <div class="science-nudge-dots" id="scienceTipDots" aria-hidden="true"></div>
             </div>
-            <a class="science-widget-link science-step-chip" href="/science/index.html">Explore Science →</a>
+            <div class="science-nudge-quote-wrap">
+              <p class="science-nudge-quote" id="scienceTipText" aria-live="polite">
+                You're here — that's already a win. One honest quiz beats another passive read-through.
+              </p>
+            </div>
+            <div class="science-nudge-foot">
+              <span class="science-nudge-step" id="scienceTipStep">Step 03 · Active retrieval</span>
+              <a class="science-widget-link" id="scienceTipLink" href="/science/index.html#step03">Explore Science →</a>
+            </div>
           </div>
-          <div id="scienceWidgetGrid" class="science-tip-chips"></div>
         </section>
 
         <section class="heatmap-section heatmap-collapsible" id="heatmapSection">
@@ -2002,20 +2100,136 @@
       });
     }
 
-    function renderScienceWidget() {
-      var grid = document.getElementById("scienceWidgetGrid");
-      if (!grid) return;
-      if (!window.quizallScienceData || !window.quizallScienceData.steps) {
-        grid.innerHTML = "";
+    var scienceTipTimer = null;
+    var scienceTipIndex = 0;
+    var scienceTipsCache = null;
+
+    function buildScienceTips() {
+      if (scienceTipsCache) return scienceTipsCache;
+
+      var warmTips = [
+        {
+          text: "You're here — that's already a win. One honest quiz beats another passive read-through.",
+          step: "03",
+          label: "Active retrieval",
+          href: "#step03"
+        },
+        {
+          text: "It's okay if it feels hard. Effort is where memory actually locks in — be kind to yourself, keep going.",
+          step: "04",
+          label: "Desirable difficulty",
+          href: "#step04"
+        },
+        {
+          text: "Stuck? Explain the idea out loud to an imaginary friend. Silly? Yes. Effective? Also yes.",
+          step: "03",
+          label: "Retrieval practice",
+          href: "#step03"
+        },
+        {
+          text: "Five focused minutes today beats a perfect study plan you'll start tomorrow.",
+          step: "06",
+          label: "Spaced repetition",
+          href: "#step06"
+        },
+        {
+          text: "Getting one wrong isn't failure — it's your brain pointing at exactly what to review next.",
+          step: "03",
+          label: "Testing effect",
+          href: "#step03"
+        },
+        {
+          text: "Before diving into details, sketch the big picture. Structure first makes everything else lighter.",
+          step: "01",
+          label: "Schema activation",
+          href: "#step01"
+        }
+      ];
+
+      if (window.quizallScienceData && window.quizallScienceData.steps) {
+        window.quizallScienceData.steps.forEach(function (step) {
+          if (!step.tagline) return;
+          warmTips.push({
+            text: step.tagline.charAt(0).toUpperCase() + step.tagline.slice(1) + ".",
+            step: step.number,
+            label: (step.title || "").split("/")[0].trim(),
+            href: "#" + step.id
+          });
+        });
+      }
+
+      scienceTipsCache = warmTips;
+      return warmTips;
+    }
+
+    function renderScienceTipDots(tips, activeIndex) {
+      var dots = document.getElementById("scienceTipDots");
+      if (!dots) return;
+      dots.innerHTML = tips.map(function (_, i) {
+        return '<button type="button" class="science-nudge-dot' + (i === activeIndex ? " is-active" : "") + '" data-tip-index="' + i + '" aria-label="Tip ' + (i + 1) + '"></button>';
+      }).join("");
+      dots.querySelectorAll(".science-nudge-dot").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var idx = Number(btn.getAttribute("data-tip-index"));
+          if (!Number.isFinite(idx)) return;
+          showScienceTip(idx, true);
+          restartScienceTipRotation();
+        });
+      });
+    }
+
+    function showScienceTip(index, animate) {
+      var tips = buildScienceTips();
+      if (!tips.length) return;
+      scienceTipIndex = ((index % tips.length) + tips.length) % tips.length;
+      var tip = tips[scienceTipIndex];
+      var textEl = document.getElementById("scienceTipText");
+      var stepEl = document.getElementById("scienceTipStep");
+      var linkEl = document.getElementById("scienceTipLink");
+      if (!textEl) return;
+
+      function applyTip() {
+        textEl.textContent = tip.text;
+        if (stepEl) stepEl.textContent = "Step " + tip.step + " · " + tip.label;
+        if (linkEl) linkEl.href = "/science/index.html" + (tip.href || "");
+        renderScienceTipDots(tips, scienceTipIndex);
+      }
+
+      if (!animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        textEl.classList.remove("is-fading");
+        applyTip();
         return;
       }
-      var step = window.quizallScienceData.steps[2] || window.quizallScienceData.steps[0];
-      grid.innerHTML =
-        '<a class="science-step-chip" href="/science/index.html#' + step.id + '">' +
-        'Step ' + step.number + ' · ' + (step.tagline || step.title) +
-        '</a>';
-      var tip = document.getElementById("scienceTipText");
-      if (tip && step.description) tip.textContent = step.description;
+
+      textEl.classList.add("is-fading");
+      window.setTimeout(function () {
+        applyTip();
+        textEl.classList.remove("is-fading");
+      }, 280);
+    }
+
+    function stopScienceTipRotation() {
+      if (scienceTipTimer) {
+        window.clearInterval(scienceTipTimer);
+        scienceTipTimer = null;
+      }
+    }
+
+    function restartScienceTipRotation() {
+      stopScienceTipRotation();
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      scienceTipTimer = window.setInterval(function () {
+        showScienceTip(scienceTipIndex + 1, true);
+      }, 7000);
+    }
+
+    function renderScienceWidget() {
+      var widget = document.getElementById("scienceWidget");
+      if (!widget) return;
+      showScienceTip(0, false);
+      restartScienceTipRotation();
+      widget.addEventListener("mouseenter", stopScienceTipRotation);
+      widget.addEventListener("mouseleave", restartScienceTipRotation);
     }
 
     function renderLandingHeatmapPreview() {
