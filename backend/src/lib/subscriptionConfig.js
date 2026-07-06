@@ -46,8 +46,48 @@ export const YEARLY_PLAN_TOKENS = Number(process.env.YEARLY_PLAN_TOKENS || 12000
 // Daily free tokens for paid users
 export const PAID_DAILY_TOKENS = Number(process.env.PAID_DAILY_TOKENS || 50000);
 
-// Daily free tokens for free users (no subscription)
-export const FREE_USER_DAILY_TOKENS = Number(process.env.FREE_USER_DAILY_TOKENS || 50000);
+// Daily free tokens for free users (no subscription) — 80 credits @ ratio 1000
+export const FREE_USER_DAILY_TOKENS = Number(process.env.FREE_USER_DAILY_TOKENS || 80000);
+
+// =============================================
+// Credits (user-facing billing unit)
+// =============================================
+
+export const CREDIT_RATIO = Number(process.env.CREDIT_RATIO || 1000);
+
+export const CREDIT_ALLOWANCE = {
+  free: Number(process.env.CREDIT_ALLOWANCE_FREE || 80),
+  trial: Number(process.env.CREDIT_ALLOWANCE_TRIAL || 120),
+  paid: Number(process.env.CREDIT_ALLOWANCE_PAID || 150),
+};
+
+export const CREDIT_COSTS = {
+  fileUpload: Number(process.env.CREDIT_COST_FILE_UPLOAD || 3),
+  studyPlan: Number(process.env.CREDIT_COST_STUDY_PLAN || 12),
+  examMap: Number(process.env.CREDIT_COST_EXAM_MAP || 15),
+  quizTesting: Number(process.env.CREDIT_COST_QUIZ_TESTING || 20),
+  trainingBatch: Number(process.env.CREDIT_COST_TRAINING_BATCH || 10),
+  trainingRefill: Number(process.env.CREDIT_COST_TRAINING_REFILL || 8),
+  studyNote: Number(process.env.CREDIT_COST_STUDY_NOTE || 10),
+};
+
+export const CREDIT_ACTION_LABELS = {
+  fileUpload: "File upload",
+  studyPlan: "Study plan",
+  examMap: "Exam map",
+  quizTesting: "Quiz round",
+  trainingBatch: "Training pack",
+  trainingRefill: "Training refill",
+  studyNote: "Study note",
+};
+
+export function tokensToCredits(tokens) {
+  return Math.floor(Math.max(0, Number(tokens) || 0) / CREDIT_RATIO);
+}
+
+export function creditsToTokens(credits) {
+  return Math.ceil(Math.max(0, Number(credits) || 0) * CREDIT_RATIO);
+}
 
 // =============================================
 // Daily Usage Limits (UI + enforcement)
@@ -198,8 +238,8 @@ export const PLANS = {
     },
     features: [
       'Full access to all features',
-      `${DAILY_PROMPT_OPTIMIZATIONS_PER_DAY} prompt optimizations per day`,
-      `${DAILY_QUESTION_WIZARD_SESSIONS_PER_DAY} question-wizard sessions per day`,
+      `${CREDIT_ALLOWANCE.paid} credits per day`,
+      '3000 credit monthly pool',
       'Priority support',
       'Cancel anytime',
     ],
@@ -221,8 +261,8 @@ export const PLANS = {
     savings: (MONTHLY_PRICE_USD * 12) - YEARLY_PRICE_USD,
     features: [
       'Full access to all features',
-      `${DAILY_PROMPT_OPTIMIZATIONS_PER_DAY} prompt optimizations per day`,
-      `${DAILY_QUESTION_WIZARD_SESSIONS_PER_DAY} question-wizard sessions per day`,
+      `${CREDIT_ALLOWANCE.paid} credits per day`,
+      '3000 credit monthly pool',
       'Priority support',
       `Save $${(MONTHLY_PRICE_USD * 12) - YEARLY_PRICE_USD}/year`,
     ],
@@ -242,8 +282,8 @@ export const PLANS = {
     },
     features: [
       `${TRIAL_DAYS} days free`,
-      `${DAILY_PROMPT_OPTIMIZATIONS_PER_DAY} prompt optimizations per day`,
-      `${DAILY_QUESTION_WIZARD_SESSIONS_PER_DAY} question-wizard sessions per day`,
+      `${CREDIT_ALLOWANCE.trial} credits per day`,
+      '500 credit starter pool',
       'No credit card required',
       'Cancel anytime',
     ],

@@ -288,8 +288,8 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
     const periodEnd = document.getElementById("periodEnd");
     const trialEndItem = document.getElementById("trialEndItem");
     const trialEnd = document.getElementById("trialEnd");
-    const promptUsageToday = document.getElementById("promptUsageToday");
-    const wizardUsageToday = document.getElementById("wizardUsageToday");
+    const creditsUsageToday = document.getElementById("creditsUsageToday");
+    const creditsPoolToday = document.getElementById("creditsPoolToday");
 
     try {
       const statusRes = await fetchWithAuth("/api/billing/status");
@@ -297,7 +297,7 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
 
       if (!statusRes.ok || !statusData.ok) throw new Error(statusData.error || "Failed to load status");
 
-      const { subscription, usage, limits } = statusData;
+      const { subscription, usage, limits, credits } = statusData;
       subscriptionStatus && (subscriptionStatus.textContent = getStatusText(subscription.status));
       subscriptionStatus && (subscriptionStatus.className = `status-badge ${subscription.status}`);
       planName && (planName.textContent = subscription.plan ? capitalizeFirst(subscription.plan) : "None");
@@ -313,13 +313,14 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
       } else {
         manageSubscriptionBtn && (manageSubscriptionBtn.style.display = "none");
       }
-      if (promptUsageToday && wizardUsageToday) {
-        const promptUsed = usage?.promptOptimization ?? 0;
-        const promptDaily = limits?.promptOptimization?.daily ?? "--";
-        const wizardUsed = usage?.questionWizard ?? 0;
-        const wizardDaily = limits?.questionWizard?.daily ?? "--";
-        promptUsageToday.textContent = `${promptUsed} / ${promptDaily}`;
-        wizardUsageToday.textContent = `${wizardUsed} / ${wizardDaily}`;
+      if (creditsUsageToday && credits) {
+        creditsUsageToday.textContent = `${credits.balance ?? 0} / ${credits.dailyAllowance ?? 80}`;
+        if (creditsPoolToday) {
+          creditsPoolToday.textContent = credits.poolRemaining != null ? String(credits.poolRemaining) : "—";
+        }
+      } else if (creditsUsageToday) {
+        creditsUsageToday.textContent = "—";
+        if (creditsPoolToday) creditsPoolToday.textContent = "—";
       }
 
       const noteEl = document.getElementById("settingsDailyResetNote");

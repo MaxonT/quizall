@@ -5,9 +5,9 @@
     "terms": "Términos",
     "cookies": "Cookies",
     "account": "Cuenta",
-    "questionWizard": "Asistente de preguntas",
+    "questionWizard": "Sesiones de estudio",
     "system": "Sistema",
-    "tryIt": "Probar asistente",
+    "tryIt": "Empezar a estudiar",
     "create": "Crear proyecto",
     "workspace": "Espacio de preparación",
     "createProject": "Crear proyecto",
@@ -26,9 +26,9 @@
     "dark": "Oscuro"
   },
   "hero": {
-    "title": "QuizAll — Estudio de Optimización de Prompts",
-    "subtitle": "Flujo de trabajo centrado en visualización. Ve cada ganancia, cada costo, cada versión.",
-    "eyebrow": "QuizAll · Modos de Flujo de Trabajo"
+    "title": "QuizAll — Convierte cualquier cosa en un cuestionario",
+    "subtitle": "Sube tus materiales de estudio y obtén cuestionarios con IA y explicaciones.",
+    "eyebrow": "QuizAll · Preparación de exámenes"
   },
   "mode": {
     "header": "¿Cómo te gustaría empezar?",

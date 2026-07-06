@@ -5,9 +5,9 @@
     "terms": "利用規約",
     "cookies": "クッキー",
     "account": "アカウント",
-    "questionWizard": "質問ウィザード",
+    "questionWizard": "学習セッション",
     "system": "システム",
-    "tryIt": "ウィザードを試す",
+    "tryIt": "学習を始める",
     "create": "プロジェクト作成",
     "workspace": "試験ワークスペース",
     "createProject": "プロジェクト作成",
@@ -26,8 +26,9 @@
     "dark": "ダーク"
   },
   "hero": {
-    "title": "QuizAllでLLMプロンプトを最適化",
-    "subtitle": "AI駆動のプロフェッショナルなプロンプトテスト・最適化プラットフォーム",
+    "title": "QuizAll — 何でもクイズに変える",
+    "subtitle": "学習資料をアップロードして、解説付きのAIクイズを取得。",
+    "eyebrow": "QuizAll · 試験対策",
     "description": "自動化されたワークフローとプロフェッショナルなメトリクスでLLMプロンプトをテスト、比較、最適化",
     "cta": "無料で始める",
     "learnMore": "詳細を見る",

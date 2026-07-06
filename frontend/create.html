@@ -83,6 +83,15 @@
         </button>
       </nav>
 
+      <div class="sidebar-credits" id="sidebarCredits" aria-label="Credits balance">
+        <div class="credits-head">
+          <span class="credits-label">Credits</span>
+          <span class="credits-value" id="creditsValue">— / —</span>
+        </div>
+        <div class="credits-bar" aria-hidden="true"><div class="credits-bar-fill" id="creditsBarFill"></div></div>
+        <p class="credits-reset" id="creditsResetNote"></p>
+      </div>
+
       <div class="sidebar-scroll" id="sidebarScroll">
         <div class="sidebar-streak hidden" id="sidebarStreak" aria-label="Study streak"></div>
         <div class="sidebar-wrongbook hidden" id="sidebarWrongbook">
@@ -176,6 +185,11 @@
                 <button type="button" class="mix-preset" data-preset="recall">Fill+</button>
                 <button type="button" class="mix-preset" data-preset="essay">FRQ+</button>
               </div>
+              <div class="mix-exam-presets" id="mixExamPresets" aria-label="Exam scenario">
+                <button type="button" class="mix-exam-preset is-active" data-exam="general">General</button>
+                <button type="button" class="mix-exam-preset" data-exam="finals">Finals week</button>
+                <button type="button" class="mix-exam-preset" data-exam="ap">AP / SAT</button>
+              </div>
               <div class="mix-total">
                 <span class="mix-total-label">Questions</span>
                 <div class="mix-stepper">
@@ -254,8 +268,9 @@
   </div>
 
   <script src="create/errors.js?v=1"></script>
-  <script src="create/api.js?v=1"></script>
+  <script src="create/api.js?v=2"></script>
+  <script src="create/transcript.js?v=1"></script>
   <script src="create/mindmap.js?v=1"></script>
-  <script src="create.js?v=18"></script>
+  <script src="create.js?v=19"></script>
 </body>
 </html>

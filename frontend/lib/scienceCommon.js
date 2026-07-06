@@ -681,6 +681,36 @@
     return pending;
   }
 
+  function renderSciencePrescription({ weakTopics, dueReviews, lastSession } = {}) {
+    const due = Number(dueReviews) || 0;
+    if (due > 0) {
+      return {
+        step: 6,
+        text: `You have ${due} topics due for spaced review. Open your wrong-answer queue before they decay.`,
+        href: toScienceUrl("step06"),
+      };
+    }
+    if (weakTopics?.length) {
+      return {
+        step: 4,
+        text: `Weak on ${weakTopics.slice(0, 2).join(", ")} — use Training mode for variable practice (Step 04).`,
+        href: toScienceUrl("step04"),
+      };
+    }
+    if (lastSession === "quiz") {
+      return {
+        step: 3,
+        text: "Great retrieval session. Schedule a follow-up quiz within 48 hours (Step 03).",
+        href: toScienceUrl("step03"),
+      };
+    }
+    return {
+      step: 1,
+      text: "Start with structure: upload materials and build a study plan (Step 01).",
+      href: toScienceUrl("step01"),
+    };
+  }
+
   window.quizallScience = {
     BADGES: BADGES,
     toScienceUrl: toScienceUrl,
@@ -695,6 +725,7 @@
     getProjectFlags: getProjectFlags,
     deriveProjectActivations: deriveProjectActivations,
     queuePendingBadge: queuePendingBadge,
-    consumePendingBadge: consumePendingBadge
+    consumePendingBadge: consumePendingBadge,
+    renderSciencePrescription: renderSciencePrescription,
   };
 })();

@@ -596,7 +596,10 @@ import { track, EVENTS } from './lib/analytics.js';
       statusValue.className = `status-value ${subscription.status}`;
     }
     
-    if (usageLimitsValue && limits?.promptOptimization?.daily && limits?.questionWizard?.daily) {
+    if (usageLimitsValue && billingStatus?.credits) {
+      const c = billingStatus.credits;
+      usageLimitsValue.textContent = `${c.balance ?? 0} credits remaining · ${c.dailyAllowance ?? 80}/day`;
+    } else if (usageLimitsValue && limits?.promptOptimization?.daily && limits?.questionWizard?.daily) {
       const promptDaily = limits.promptOptimization.daily;
       const wizardDaily = limits.questionWizard.daily;
       const translated = window.i18n

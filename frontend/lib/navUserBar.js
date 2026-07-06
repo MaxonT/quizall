@@ -309,6 +309,11 @@
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (!finePointer.matches || reducedMotion.matches) return;
 
+    const path = window.location.pathname || "";
+    const onIndex = /index\.html$/.test(path) || path.endsWith("/") || path === "";
+    const landingOnly = onIndex && !document.body.classList.contains("logged-in-home");
+    if (!landingOnly) return;
+
     window.__quizallCursorFxInitialized = true;
     const body = document.body;
     document.querySelectorAll(".qa-cursor-glow,.qa-cursor-ring,.qa-cursor-tail").forEach((node) => node.remove());

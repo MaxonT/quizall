@@ -74,6 +74,9 @@
             `<p class="share-meta">Shared study results · read only</p>` +
             (rounds ? `<section>${rounds}</section>` : "") +
             noteHtml +
+            `<p style="margin-top:24px;">` +
+            `<a class="btn-round" href="create.html?challenge=${encodeURIComponent(token)}">Challenge — take this quiz</a>` +
+            `</p>` +
             `<p class="share-meta" style="margin-top:32px;">` +
             `<a href="index.html">Create your own quiz →</a></p>`;
         })

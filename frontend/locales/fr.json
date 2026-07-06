@@ -5,9 +5,9 @@
     "terms": "Conditions",
     "cookies": "Cookies",
     "account": "Compte",
-    "questionWizard": "Assistant de questions",
+    "questionWizard": "Sessions d'étude",
     "system": "Système",
-    "tryIt": "Essayer l'assistant",
+    "tryIt": "Commencer à étudier",
     "create": "Créer un projet",
     "workspace": "Espace de préparation",
     "createProject": "Créer un projet",
@@ -26,8 +26,9 @@
     "dark": "Sombre"
   },
   "hero": {
-    "title": "Optimisez vos Prompts LLM avec QuizAll",
-    "subtitle": "Plateforme professionnelle de test et d'optimisation de prompts alimentée par l'IA",
+    "title": "QuizAll — Transformez tout en quiz",
+    "subtitle": "Téléchargez vos supports de révision et obtenez des quiz avec explications générés par l'IA.",
+    "eyebrow": "QuizAll · Préparation aux examens",
     "description": "Testez, comparez et optimisez vos prompts LLM avec des flux de travail automatisés et des métriques professionnelles",
     "cta": "Commencer Gratuitement",
     "learnMore": "En Savoir Plus",

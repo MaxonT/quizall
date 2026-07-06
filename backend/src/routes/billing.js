@@ -29,9 +29,12 @@ import {
   FEATURES,
   isStripeConfigured,
   formatTokens,
+  CREDIT_ALLOWANCE,
+  CREDIT_COSTS,
   DAILY_PROMPT_OPTIMIZATIONS_PER_DAY,
   DAILY_QUESTION_WIZARD_SESSIONS_PER_DAY,
 } from "../lib/subscriptionConfig.js";
+import { getCreditsStatus, getCreditHistory } from "../lib/creditsService.js";
 
 export const billingRouter = Router();
 export const stripeWebhookRouter = Router();
@@ -134,6 +137,17 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
 
   const tz = normalizeTimeZone(user?.timezone);
 
+  const subPlan = subscription.plan || plan || "free";
+  const subStatus = subscription.status || "none";
+  let credits = null;
+  try {
+    credits = await getCreditsStatus(userId, { plan: subPlan, subscriptionStatus: subStatus });
+    credits.dailyUsed = Math.max(0, credits.dailyAllowance - credits.dailyRemaining);
+    credits.nextResetAt = getNextLocalMidnightIso(tz);
+  } catch (err) {
+    console.error("[billing] credits status failed:", err);
+  }
+
   res.json({
     ok: true,
     stripeConfigured,
@@ -141,8 +155,8 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
     timezone: tz,
     nextResetAt: getNextLocalMidnightIso(tz),
     subscription: {
-      status: subscription.status || "none",
-      plan: subscription.plan || plan || "free",
+      status: subStatus,
+      plan: subPlan,
       periodEnd: subscription.periodEnd || null,
       trialEnd: subscription.trialEnd || null,
       trialDaysRemaining,
@@ -153,15 +167,27 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
     limits: {
       promptOptimization: {
         daily: plan === "free" ? 8 : DAILY_PROMPT_OPTIMIZATIONS_PER_DAY,
+        deprecated: true,
       },
       questionWizard: {
         daily: plan === "free" ? 5 : DAILY_QUESTION_WIZARD_SESSIONS_PER_DAY,
+        deprecated: true,
       },
     },
     usage: {
       promptOptimization: promptUsage,
       questionWizard: wizardUsage,
+      deprecated: true,
     },
+    credits: credits || {
+      balance: 0,
+      dailyAllowance: CREDIT_ALLOWANCE.free,
+      dailyRemaining: 0,
+      dailyUsed: 0,
+      poolRemaining: 0,
+      creditCosts: CREDIT_COSTS,
+    },
+    creditCosts: CREDIT_COSTS,
     tokens: {
       total: balances.total || 0,
       totalFormatted: formatTokens(balances.total || 0),
@@ -174,6 +200,22 @@ billingRouter.get("/status", requireAuth, async (req, res) => {
       createdAt: user?.created_at || null,
     },
   });
+});
+
+/**
+ * GET /api/billing/credit-history
+ * Recent credit spend events for the usage settings panel.
+ */
+billingRouter.get("/credit-history", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit, 10) || 20));
+    const items = await getCreditHistory(userId, limit);
+    return res.json({ ok: true, items });
+  } catch (err) {
+    console.error("[billing] credit-history error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load credit history" });
+  }
 });
 
 // =============================================

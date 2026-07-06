@@ -5,9 +5,9 @@
     "terms": "약관",
     "cookies": "쿠키",
     "account": "계정",
-    "questionWizard": "질문 위자드",
+    "questionWizard": "학습 세션",
     "system": "시스템",
-    "tryIt": "위자드 시도",
+    "tryIt": "학습 시작",
     "create": "프로젝트 만들기",
     "workspace": "시험 워크스페이스",
     "createProject": "프로젝트 만들기",
@@ -26,8 +26,9 @@
     "dark": "다크"
   },
   "hero": {
-    "title": "QuizAll로 LLM 프롬프트 최적화",
-    "subtitle": "AI 기반 전문 프롬프트 테스트 및 최적화 플랫폼",
+    "title": "QuizAll — 무엇이든 퀴즈로 바꾸세요",
+    "subtitle": "학습 자료를 업로드하고 AI 기반 해설 퀴즈를 받아보세요.",
+    "eyebrow": "QuizAll · 시험 준비",
     "description": "자동화된 워크플로우와 전문 메트릭으로 LLM 프롬프트를 테스트, 비교, 최적화하세요",
     "cta": "무료로 시작하기",
     "learnMore": "자세히 알아보기",

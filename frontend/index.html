@@ -93,7 +93,53 @@
       flex-wrap: wrap;
       position: relative;
       width: 100%;
+      margin-bottom: 1rem;
     }
+    .landing-composer {
+      max-width: 640px;
+      margin: 0 auto 0.25rem;
+      width: 100%;
+      position: relative;
+    }
+    .landing-composer-inner {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: var(--shadow-sm);
+    }
+    .landing-composer-inner textarea {
+      flex: 1;
+      border: none !important;
+      background: transparent !important;
+      resize: none;
+      font: inherit;
+      color: var(--text);
+      min-height: 44px;
+    }
+    .landing-composer-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .landing-composer-hint {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin: 8px 0 0;
+    }
+    .auth-section--hero { padding-top: 0.5rem; }
     .btn-hero {
       display: inline-flex;
       align-items: center;
@@ -1382,6 +1428,60 @@
           <a href="#authSection" class="btn-hero btn-hero-primary">Get Started Free</a>
           <a href="#howItWorks" class="btn-hero btn-hero-secondary">Learn More ↓</a>
         </div>
+        <div class="landing-composer" id="landingComposer">
+          <div class="landing-composer-inner">
+            <textarea id="landingComposerInput" rows="2" placeholder="Paste study notes or describe what you're preparing for…"></textarea>
+            <button type="button" class="landing-composer-btn" id="landingComposerGo" aria-label="Start studying">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+            </button>
+          </div>
+          <p class="landing-composer-hint">Free · 80 credits daily</p>
+        </div>
+      </section>
+
+      <!-- Auth Forms (above fold) -->
+      <section class="auth-section auth-section--hero" id="authSection">
+        <div class="auth-card">
+          <div id="authMessage" class="auth-message"></div>
+
+          <div class="oauth-buttons-idx">
+            <button type="button" class="btn-oauth-idx" id="googleLoginBtn">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.20454Z" fill="#4285F4"/>
+                <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
+                <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40681 3.78409 7.83 3.96409 7.29V4.95818H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
+                <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95818L3.96409 7.29C4.67182 5.16273 6.65454 3.57955 9 3.57955Z" fill="#EA4335"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+            <button type="button" class="btn-oauth-idx" id="githubLoginBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              <span>Continue with GitHub</span>
+            </button>
+          </div>
+
+          <div class="oauth-divider-idx"><span>or</span></div>
+
+          <form id="loginForm" class="auth-form">
+            <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Sign in</h3>
+            <label>Email <input type="email" name="loginEmail" autocomplete="email" required /></label>
+            <label>Password <input type="password" name="loginPassword" autocomplete="current-password" required minlength="8" /></label>
+            <button type="submit" class="btn-submit">Login</button>
+          </form>
+
+          <form id="registerForm" class="auth-form idx-hidden">
+            <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Create account</h3>
+            <label>Email <input type="email" name="registerEmail" autocomplete="email" required /></label>
+            <label>Password <input type="password" name="registerPassword" autocomplete="new-password" required minlength="8" /></label>
+            <button type="submit" class="btn-submit">Register</button>
+          </form>
+
+          <div class="auth-toggle" id="authToggle">
+            Don't have an account? <a id="toggleToRegister">Sign up</a>
+          </div>
+        </div>
       </section>
 
       <!-- Trust Marquee -->
@@ -1478,68 +1578,9 @@
           <div id="landingHeatmapGrid" class="heatmap-grid"></div>
           <div class="heatmap-legend">
             <span><i class="heatmap-dot"></i> No activity</span>
-            <span><i class="heatmap-dot heatmap-l1"></i> Light review</span>
-            <span><i class="heatmap-dot heatmap-l2"></i> Active quiz</span>
-            <span><i class="heatmap-dot heatmap-l3"></i> Deep mastery</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Auth Forms -->
-      <section class="auth-section" id="authSection">
-        <div class="auth-card">
-          <div id="authMessage" class="auth-message"></div>
-
-          <div class="oauth-buttons-idx">
-            <button type="button" class="btn-oauth-idx" id="googleLoginBtn">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.20454Z" fill="#4285F4"/>
-                <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
-                <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40681 3.78409 7.83 3.96409 7.29V4.95818H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
-                <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95818L3.96409 7.29C4.67182 5.16273 6.65454 3.57955 9 3.57955Z" fill="#EA4335"/>
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-            <button type="button" class="btn-oauth-idx" id="githubLoginBtn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-              </svg>
-              <span>Continue with GitHub</span>
-            </button>
-          </div>
-
-          <div class="oauth-divider-idx"><span>or</span></div>
-
-          <!-- Login Form -->
-          <form id="loginForm" class="auth-form">
-          <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Sign in</h3>
-          <label>
-            Email
-            <input type="email" name="loginEmail" autocomplete="email" required />
-          </label>
-          <label>
-            Password
-            <input type="password" name="loginPassword" autocomplete="current-password" required minlength="8" />
-          </label>
-          <button type="submit" class="btn-submit">Login</button>
-        </form>
-
-          <!-- Register Form (hidden by default) -->
-          <form id="registerForm" class="auth-form idx-hidden">
-          <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Create account</h3>
-          <label>
-            Email
-            <input type="email" name="registerEmail" autocomplete="email" required />
-          </label>
-          <label>
-            Password
-            <input type="password" name="registerPassword" autocomplete="new-password" required minlength="8" />
-          </label>
-          <button type="submit" class="btn-submit">Register</button>
-        </form>
-
-          <div class="auth-toggle" id="authToggle">
-            Don't have an account? <a id="toggleToRegister">Sign up</a>
+            <span><i class="heatmap-dot heatmap-l1"></i> Materials viewed</span>
+            <span><i class="heatmap-dot heatmap-l2"></i> Quiz completed</span>
+            <span><i class="heatmap-dot heatmap-l3"></i> Quiz &gt; 80%</span>
           </div>
         </div>
       </section>
@@ -1591,25 +1632,24 @@
     <div id="dashboardView" class="idx-hidden">
       <section class="dashboard-top-region">
       <div class="dash">
-        <section class="member-hero">
-          <span class="member-hero-kicker">Focus Mode</span>
-          <h2>Start output-first learning right now.</h2>
-          <p>Your core actions are pinned here so you can create a quiz, review recent work, and jump into analytics without any scrolling.</p>
+        <section class="member-hero command-header">
+          <span class="member-hero-kicker">Today</span>
+          <h2 class="welcome-name" id="welcomeName">Welcome back!</h2>
+          <p class="welcome-email" id="welcomeEmail"></p>
+          <p class="command-sub">Upload material, quiz actively, and pick up where you left off.</p>
           <div class="member-hero-actions">
-            <a href="create.html" class="member-action primary">Open Exam Workspace</a>
-            <a href="history.html" class="member-action">Review History</a>
-            <a href="analytics-dashboard.html" class="member-action" data-admin-only data-i18n="nav.analyticsAdmin">Admin Analytics</a>
+            <a href="create.html" class="member-action primary">Start new quiz</a>
+            <a href="create.html?review=1" class="member-action" id="dashContinueWrong">Continue wrong answers</a>
+            <a href="history.html" class="member-action">History</a>
           </div>
         </section>
 
-        <!-- Welcome Banner -->
-        <div class="welcome-banner">
-          <h1 class="welcome-name" id="welcomeName">Welcome back!</h1>
-          <p class="welcome-email" id="welcomeEmail"></p>
+        <div class="today-strip" id="todayStrip">
+          <span id="todayStripText">Loading progress…</span>
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-4" id="statsGrid">
+        <div class="grid grid-3" id="statsGrid">
           <div class="stat-card">
             <span class="stat-label">Total Quizzes</span>
             <span class="stat-value" id="statQuizzes">–</span>
@@ -1622,24 +1662,20 @@
             <span class="stat-label">Questions Answered</span>
             <span class="stat-value" id="statQuestions">–</span>
           </div>
-          <a href="create.html" class="cta-card">
-            <span class="cta-card-icon">✨</span>
-            <span class="cta-card-text">Open Exam Workspace</span>
-          </a>
         </div>
 
-        <section class="science-widget" id="scienceWidget">
+        <section class="science-widget science-widget-compact" id="scienceWidget">
           <div class="science-widget-head">
             <div>
-              <h2>Science of Learning</h2>
-              <p>Open any step to see the mechanism, evidence, and top citations.</p>
+              <h2>Science tip</h2>
+              <p id="scienceTipText">Active retrieval beats passive review — quiz yourself on what you just read.</p>
             </div>
-            <a class="science-widget-link" href="/science/index.html">Explore all -&gt;</a>
+            <a class="science-widget-link science-step-chip" href="/science/index.html">Explore Science →</a>
           </div>
-          <div id="scienceWidgetGrid"></div>
+          <div id="scienceWidgetGrid" class="science-tip-chips"></div>
         </section>
 
-        <section class="heatmap-section" id="heatmapSection">
+        <section class="heatmap-section heatmap-collapsible" id="heatmapSection">
           <div class="heatmap-head">
             <div>
               <h2>Study Streak Heatmap</h2>
@@ -1811,17 +1847,17 @@
     function renderScienceWidget() {
       var grid = document.getElementById("scienceWidgetGrid");
       if (!grid) return;
-      if (!window.quizallScience || !window.quizallScienceData) {
+      if (!window.quizallScienceData || !window.quizallScienceData.steps) {
         grid.innerHTML = "";
         return;
       }
-
-      window.quizallScience.renderStepGrid(grid, {
-        activeLabel: "View details",
-        onStepClick: function (step) {
-          window.quizallScience.openStepModal(step.id);
-        }
-      });
+      var step = window.quizallScienceData.steps[2] || window.quizallScienceData.steps[0];
+      grid.innerHTML =
+        '<a class="science-step-chip" href="/science/index.html#' + step.id + '">' +
+        'Step ' + step.number + ' · ' + (step.tagline || step.title) +
+        '</a>';
+      var tip = document.getElementById("scienceTipText");
+      if (tip && step.description) tip.textContent = step.description;
     }
 
     function renderLandingHeatmapPreview() {
@@ -2085,12 +2121,14 @@
         var bundle = await Promise.all([
           fetchAuthed("/api/quiz/history?limit=8&page=1"),
           fetchAuthed("/api/quiz/study-streak?days=140"),
-          fetchAuthed("/api/quiz/projects?limit=100")
+          fetchAuthed("/api/quiz/projects?limit=100"),
+          fetchAuthed("/api/quiz/wrong-answers?limit=1").catch(function () { return { dueToday: 0 }; })
         ]);
 
         var historyData = bundle[0];
         var streakData = bundle[1];
         var projectsData = bundle[2];
+        var wrongData = bundle[3];
 
         var rows = Array.isArray(historyData.results) ? historyData.results : [];
         var totalQuizzes = historyData.pagination && Number.isFinite(historyData.pagination.total) ? historyData.pagination.total : rows.length;
@@ -2110,6 +2148,18 @@
         document.getElementById("statQuizzes").textContent = String(totalQuizzes);
         document.getElementById("statAvg").textContent = scored ? Math.round(scoreSum / scored) + "%" : "–";
         document.getElementById("statQuestions").textContent = String(totalQuestions);
+
+        var todayStrip = document.getElementById("todayStripText");
+        if (todayStrip) {
+          todayStrip.textContent = totalQuestions + " questions answered · streak " + (streakData.currentStreak || 0) + "d";
+        }
+        var wrongCta = document.getElementById("dashContinueWrong");
+        if (wrongCta) {
+          var due = wrongData.dueToday || 0;
+          wrongCta.textContent = due > 0 ? "Continue wrong answers (" + due + " due · 0 Credits)" : "Continue wrong answers";
+          wrongCta.href = due > 0 ? "create.html?review=1" : "create.html";
+          wrongCta.style.display = due > 0 || (wrongData.items && wrongData.items.length) ? "" : "none";
+        }
 
         var projectCount = Array.isArray(projectsData.projects) ? projectsData.projects.length : 0;
         document.getElementById("welcomeEmail").textContent =
@@ -2185,10 +2235,40 @@
       if (e.key === TOKEN_KEY) showView();
     });
 
+    document.getElementById("landingComposerGo")?.addEventListener("click", function () {
+      var token = localStorage.getItem(TOKEN_KEY);
+      var draft = document.getElementById("landingComposerInput")?.value?.trim();
+      if (draft) sessionStorage.setItem("quizall.landingDraft", draft);
+      if (token) {
+        window.location.href = "create.html" + (draft ? "?draft=1" : "");
+        return;
+      }
+      var authEl = document.getElementById("authSection");
+      if (authEl) authEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
     // ─── Init ──────────────────────────────────
     renderTrustMarquee();
     renderLandingHeatmapPreview();
     bindProtectedNavLinks();
+    var landingGo = document.getElementById("landingComposerGo");
+    var landingInput = document.getElementById("landingComposerInput");
+    if (landingGo) {
+      landingGo.addEventListener("click", function () {
+        var token = localStorage.getItem(TOKEN_KEY);
+        var draft = landingInput && landingInput.value ? landingInput.value.trim() : "";
+        if (token) {
+          var url = "create.html" + (draft ? "?draft=" + encodeURIComponent(draft.slice(0, 500)) : "");
+          window.location.href = url;
+          return;
+        }
+        if (landingInput && draft) {
+          try { sessionStorage.setItem("quizall.landingDraft", draft); } catch (e) {}
+        }
+        var authEl = document.getElementById("authSection");
+        if (authEl) authEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
     if (new URLSearchParams(window.location.search).get("login") === "1") {
       var authSection = document.getElementById("authSection");
       if (authSection) authSection.scrollIntoView({ behavior: "smooth", block: "start" });

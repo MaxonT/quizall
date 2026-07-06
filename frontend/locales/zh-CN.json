@@ -5,9 +5,9 @@
     "terms": "条款",
     "cookies": "Cookie",
     "account": "账户",
-    "questionWizard": "问题向导",
+    "questionWizard": "学习会话",
     "system": "系统",
-    "tryIt": "开始向导",
+    "tryIt": "开始学习",
     "home": "首页",
     "subscription": "订阅",
     "specs": "规格",
@@ -30,9 +30,9 @@
     "dark": "深色"
   },
   "hero": {
-    "title": "QuizAll — 提示优化工作室",
-    "subtitle": "以可视化为先的工作流程，看到每一次收益、每一笔成本、每一个版本。",
-    "eyebrow": "QuizAll · 工作流模式"
+    "title": "QuizAll — 把任何资料变成测验",
+    "subtitle": "上传学习资料，获得带解析的 AI 互动测验。",
+    "eyebrow": "QuizAll · 备考工作台"
   },
   "mode": {
     "header": "你想如何开始？",

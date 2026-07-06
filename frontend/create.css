@@ -7,38 +7,38 @@
 .chat-app {
   --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
 
-  /* Surfaces */
-  --c-bg: #08080a;
-  --c-bg-elevated: #101014;
-  --c-panel: rgba(255, 255, 255, 0.028);
-  --c-panel-hover: rgba(255, 255, 255, 0.055);
-  --c-panel-active: rgba(255, 255, 255, 0.075);
-  --c-border: rgba(255, 255, 255, 0.07);
-  --c-border-strong: rgba(255, 255, 255, 0.12);
-  --c-text: #f4f4f5;
-  --c-text-dim: #a1a1aa;
-  --c-text-faint: #71717a;
+  /* Surfaces — alias global theme tokens */
+  --c-bg: var(--bg, #08080a);
+  --c-bg-elevated: var(--bg-soft, #101014);
+  --c-panel: var(--surface-lighter, rgba(255, 255, 255, 0.028));
+  --c-panel-hover: var(--surface-hover, rgba(255, 255, 255, 0.055));
+  --c-panel-active: var(--surface-active, rgba(255, 255, 255, 0.075));
+  --c-border: var(--border-light, rgba(255, 255, 255, 0.07));
+  --c-border-strong: var(--border, rgba(255, 255, 255, 0.12));
+  --c-text: var(--text, #f4f4f5);
+  --c-text-dim: var(--muted, #a1a1aa);
+  --c-text-faint: var(--text-secondary, #71717a);
   --c-dot: rgba(255, 255, 255, 0.03);
 
   /* Brand */
-  --g1: #8b5cf6;
-  --g2: #06b6d4;
+  --g1: var(--primary, #8b5cf6);
+  --g2: var(--accent, #06b6d4);
   --g3: #22d3ee;
   --glow-violet: rgba(139, 92, 246, 0.22);
   --glow-cyan: rgba(34, 211, 238, 0.14);
 
   /* Status */
-  --ok: #34d399;
-  --ok-bg: rgba(52, 211, 153, 0.12);
-  --bad: #f87171;
-  --bad-bg: rgba(248, 113, 113, 0.12);
+  --ok: var(--ok, #34d399);
+  --ok-bg: var(--success-bg, rgba(52, 211, 153, 0.12));
+  --bad: var(--err, #f87171);
+  --bad-bg: var(--error-bg, rgba(248, 113, 113, 0.12));
 
-  --radius-xl: 28px;
-  --radius-lg: 22px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
+  --radius-xl: var(--radius-xl, 28px);
+  --radius-lg: var(--radius-lg, 22px);
+  --radius-md: var(--radius-md, 16px);
+  --radius-sm: var(--radius-sm, 12px);
   --shadow-dock: 0 -20px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  --shadow-composer: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-composer: var(--shadow-composer, 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06));
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -3378,3 +3378,29 @@ a.projects-session-row:hover {
 .usage-warn a {
   color: var(--g1, #8b5cf6);
 }
+
+/* Sidebar credits */
+.sidebar-credits {
+  margin: 10px 12px 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  background: var(--c-panel);
+}
+.sidebar-credits.is-empty { border-color: rgba(248, 113, 113, 0.45); }
+.credits-head { display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 8px; }
+.credits-label { font-weight: 600; color: var(--c-text-dim); }
+.credits-value { font-variant-numeric: tabular-nums; }
+.credits-bar { height: 4px; border-radius: 999px; background: var(--c-panel-active); overflow: hidden; }
+.credits-bar-fill { height: 100%; background: linear-gradient(90deg, var(--g1), var(--g3)); transition: width 0.3s var(--ease); }
+.credits-bar-fill.is-low { background: var(--bad); }
+.credits-reset { margin: 6px 0 0; font-size: 0.72rem; color: var(--c-text-faint); }
+
+/* Training loop */
+.training-loop-artifact { margin-top: 12px; }
+.training-loop-head { display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--c-text-dim); margin-bottom: 12px; }
+.training-loop-history { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; max-height: 220px; overflow-y: auto; }
+.training-history-item { border: 1px solid var(--c-border); border-radius: 10px; padding: 6px 10px; font-size: 0.875rem; }
+.training-loop-active { max-width: 520px; margin: 0 auto 12px; }
+.training-loop-active .option-btn.correct { border-left: 3px solid var(--ok); }
+.training-loop-active .option-btn.wrong { border-left: 3px solid var(--bad); }

@@ -4,6 +4,8 @@ import { requireAuth } from "./auth.js";
 import { db, ensureColumn } from "../lib/db.js";
 import { USE_POSTGRES, dbGet, dbRun, dbAll } from "../lib/dbHelpers.js";
 import { chatJsonAnthropic } from "../lib/anthropicClient.js";
+import { debitCredits, hasEnoughCredits } from "../lib/creditsService.js";
+import { CREDIT_COSTS } from "../lib/subscriptionConfig.js";
 
 export const quizRouter = Router();
 
@@ -115,6 +117,31 @@ CREATE TABLE IF NOT EXISTS quiz_shares (
   CONSTRAINT fk_quiz_shares_project FOREIGN KEY (project_id) REFERENCES study_projects(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_quiz_shares_token ON quiz_shares(token);
+
+CREATE TABLE IF NOT EXISTS study_chat_transcripts (
+  project_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  messages_json TEXT NOT NULL DEFAULT '[]',
+  training_state_json TEXT,
+  updated_at TEXT NOT NULL,
+  CONSTRAINT fk_transcript_project FOREIGN KEY (project_id) REFERENCES study_projects(id) ON DELETE CASCADE,
+  CONSTRAINT fk_transcript_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_transcripts_user ON study_chat_transcripts(user_id, updated_at);
+
+CREATE TABLE IF NOT EXISTS wrong_answer_reviews (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  question_id TEXT NOT NULL,
+  next_review_at TEXT NOT NULL,
+  interval_days REAL NOT NULL DEFAULT 1,
+  ease_factor REAL NOT NULL DEFAULT 2.5,
+  review_count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  CONSTRAINT uq_wrong_review UNIQUE (user_id, question_id)
+);
+CREATE INDEX IF NOT EXISTS idx_wrong_reviews_due ON wrong_answer_reviews(user_id, next_review_at);
 `;
 
 const QUIZ_SCHEMA_SQL = `
@@ -363,6 +390,50 @@ function computeAccuracyPercent(score, total) {
     return bounded;
   }
   return Math.max(0, Math.min(100, Math.round((s / t) * 100)));
+}
+
+function buildAnalyticsRecommendations(rows) {
+  if (!rows?.length) {
+    return [
+      {
+        topic: "Getting started",
+        score: 0,
+        scienceStep: 1,
+        action: "Upload material and generate a study plan to begin active retrieval practice.",
+      },
+    ];
+  }
+  const latest = rows[rows.length - 1];
+  const acc = computeAccuracyPercent(latest.score, latest.total);
+  const recentLow = rows.slice(-3).some((r) => computeAccuracyPercent(r.score, r.total) < 60);
+  if (acc >= 80 && !recentLow) {
+    return [
+      {
+        topic: "Overall",
+        score: acc,
+        scienceStep: 6,
+        action: "Strong session. Schedule spaced review tomorrow to beat the forgetting curve.",
+      },
+    ];
+  }
+  if (acc < 50 || recentLow) {
+    return [
+      {
+        topic: "Weak areas",
+        score: acc,
+        scienceStep: 4,
+        action: "Use Training mode for variable practice on concepts you missed.",
+      },
+    ];
+  }
+  return [
+    {
+      topic: "Next step",
+      score: acc,
+      scienceStep: 3,
+      action: "Take another Testing round to strengthen active retrieval.",
+    },
+  ];
 }
 
 function tokenize(text) {
@@ -1036,20 +1107,22 @@ function buildMockQuiz(analysis, allowedTypes, numQuestions, ragSnippets, fallba
 }
 
 function buildQuizPrompt(content, analysis, types, numQuestions, sourcePack, typeMix, options = {}) {
-  const { trainingMode = false, topicHint = "", excludeQuestions = [] } = options;
+  const { trainingMode = false, topicHint = "", excludeQuestions = [], examPresetHint = "" } = options;
 
   if (trainingMode) {
     const excludeHint = excludeQuestions.length
       ? `Do NOT repeat these questions: ${excludeQuestions.slice(-8).join(" | ")}`
       : "";
+    const count = Math.max(1, numQuestions);
     return {
       system: [
-        "You are an expert quiz coach running TRAINING MODE — one MCQ at a time.",
+        "You are an expert quiz coach running TRAINING MODE.",
         SIMPLE_LANGUAGE_RULE,
-        "Generate exactly 1 multiple_choice question.",
+        examPresetHint,
+        `Generate exactly ${count} multiple_choice question${count > 1 ? "s" : ""}.`,
         excludeHint,
         topicHint ? `Focus on topic: ${topicHint}` : "",
-        "Return a JSON array with one element:",
+        "Return a JSON array with one element per question:",
         "{",
         '  "type": "multiple_choice",',
         '  "question": "string",',
@@ -1095,6 +1168,7 @@ function buildQuizPrompt(content, analysis, types, numQuestions, sourcePack, typ
     system: [
       "You are an expert quiz generator for exam prep.",
       SIMPLE_LANGUAGE_RULE,
+      examPresetHint,
       `Generate exactly ${numQuestions} quiz questions using ONLY these question types: ${typeList}.`,
       mixHint,
       frqPriority,
@@ -1669,6 +1743,15 @@ quizRouter.post("/projects/:id/files", requireAuth, async (req, res) => {
       return res.status(400).json({ ok: false, error: `Upload at most ${MAX_FILE_BATCH} files per request` });
     }
 
+    if (!(await hasEnoughCredits(userId, "fileUpload"))) {
+      return res.status(402).json({
+        ok: false,
+        error: "insufficient_credits",
+        message: `Not enough credits. File upload requires ${CREDIT_COSTS.fileUpload} credits.`,
+        creditsRequired: CREDIT_COSTS.fileUpload,
+      });
+    }
+
     const now = new Date().toISOString();
     const inserted = [];
 
@@ -1698,6 +1781,10 @@ quizRouter.post("/projects/:id/files", requireAuth, async (req, res) => {
     }
 
     await touchProject(projectId);
+
+    if (inserted.length) {
+      await debitCredits(userId, "fileUpload", { projectId, runId: nanoid() });
+    }
 
     return res.status(201).json({
       ok: true,
@@ -1817,6 +1904,15 @@ quizRouter.post("/projects/:id/exam-prep", requireAuth, async (req, res) => {
       });
     }
 
+    if (!(await hasEnoughCredits(userId, "examMap"))) {
+      return res.status(402).json({
+        ok: false,
+        error: "insufficient_credits",
+        message: `Not enough credits. Exam map requires ${CREDIT_COSTS.examMap} credits.`,
+        creditsRequired: CREDIT_COSTS.examMap,
+      });
+    }
+
     const topics = extractTopics(examTopicsText, files.map((file) => file.content).join("\n\n"));
     const rag = buildRagPack(files, examTopicsText, 2);
     const topicAccuracyMap = await getTopicAccuracyMap(userId, projectId);
@@ -1835,6 +1931,7 @@ quizRouter.post("/projects/:id/exam-prep", requireAuth, async (req, res) => {
     });
 
     await touchProject(projectId);
+    await debitCredits(userId, "examMap", { projectId, runId: nanoid() });
 
     return res.json({
       ok: true,
@@ -1949,10 +2046,14 @@ quizRouter.get("/projects/:id/analytics", requireAuth, async (req, res) => {
       accuracy: computeAccuracyPercent(row.score, row.total),
     }));
 
+    const topicAccuracy = await getTopicAccuracyMap(userId, projectId);
+
     return res.json({
       ok: true,
       trend,
       latestAccuracy: trend.length ? trend[trend.length - 1].accuracy : null,
+      topicAccuracy,
+      recommendations: buildAnalyticsRecommendations(rows),
     });
   } catch (err) {
     console.error("[quizall] project analytics error:", err);
@@ -2090,6 +2191,15 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
       });
     }
 
+    if (!(await hasEnoughCredits(userId, "studyPlan"))) {
+      return res.status(402).json({
+        ok: false,
+        error: "INSUFFICIENT_CREDITS",
+        message: `Not enough credits. Study plan requires ${CREDIT_COSTS.studyPlan} credits.`,
+        creditsRequired: CREDIT_COSTS.studyPlan,
+      });
+    }
+
     const start = Date.now();
     const prompt = buildStudyPlanPrompt(content, examTopicHint, { hasUploadedMaterial, fileNames });
     const result = await chatJsonAnthropic({
@@ -2121,6 +2231,15 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
       await touchProject(projectId);
     }
 
+    const creditDebit = await debitCredits(userId, "studyPlan", { projectId, runId: nanoid() });
+    if (!creditDebit.success) {
+      return res.status(402).json({
+        ok: false,
+        error: creditDebit.error || "INSUFFICIENT_CREDITS",
+        message: creditDebit.message || "Not enough credits",
+      });
+    }
+
     return res.json({
       ok: true,
       studyPlan: plan,
@@ -2130,6 +2249,7 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
         key_concepts: Array.isArray(plan.key_concepts) ? plan.key_concepts : [],
       },
       hasUploadedMaterial,
+      creditsDebited: creditDebit.creditsDebited,
     });
   } catch (err) {
     console.error("[quizall] study-plan POST error:", err);
@@ -2174,10 +2294,20 @@ quizRouter.post("/projects/:id/note", requireAuth, async (req, res) => {
     const studyPlan = req.body?.studyPlan || (await getLatestStudyPlan(projectId, userId)) || {};
     const content = String(req.body?.content || "").trim() || (await getProjectCombinedContent(projectId, userId));
 
+    if (!(await hasEnoughCredits(userId, "studyNote"))) {
+      return res.status(402).json({
+        ok: false,
+        error: "insufficient_credits",
+        message: `Not enough credits. Study note requires ${CREDIT_COSTS.studyNote} credits.`,
+        creditsRequired: CREDIT_COSTS.studyNote,
+      });
+    }
+
     if (allowMockAi()) {
       const mockNote = buildMockNote(studyPlan, rounds);
       await saveStudyNoteRecord({ projectId, userId, payload: mockNote });
       await touchProject(projectId);
+      await debitCredits(userId, "studyNote", { projectId, runId: nanoid() });
       return res.json({
         ok: true,
         note: mockNote,
@@ -2205,6 +2335,7 @@ quizRouter.post("/projects/:id/note", requireAuth, async (req, res) => {
 
     await saveStudyNoteRecord({ projectId, userId, payload: note });
     await touchProject(projectId);
+    await debitCredits(userId, "studyNote", { projectId, runId: nanoid() });
 
     return res.json({ ok: true, note });
   } catch (err) {
@@ -2246,7 +2377,7 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
     }
 
     const numQuestions = trainingMode
-      ? 1
+      ? Math.min(10, Math.max(1, Number.parseInt(body.batchSize, 10) || 5))
       : Number.parseInt(body.numQuestions, 10);
     if (
       !trainingMode &&
@@ -2348,6 +2479,20 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
       });
     }
 
+    const creditAction = trainingMode
+      ? body.isRefill
+        ? "trainingRefill"
+        : "trainingBatch"
+      : "quizTesting";
+    if (!(await hasEnoughCredits(userId, creditAction))) {
+      return res.status(402).json({
+        ok: false,
+        error: "INSUFFICIENT_CREDITS",
+        message: `Not enough credits. This action requires ${CREDIT_COSTS[creditAction]} credits.`,
+        creditsRequired: CREDIT_COSTS[creditAction],
+      });
+    }
+
     const analysisStart = Date.now();
     let analysis = null;
     const providedAnalysis = req.body?.analysis;
@@ -2379,10 +2524,18 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
       ? body.excludeQuestions.map((q) => String(q || "").slice(0, 120)).filter(Boolean)
       : [];
     const topicHint = String(body.topicHint || body.currentTopic || "").trim();
+    const examPreset = String(body.examPreset || "general").toLowerCase();
+    const EXAM_PRESET_HINTS = {
+      general: "",
+      finals: "Exam preset: comprehensive finals — broad unit integration, multi-step reasoning, and cumulative review difficulty.",
+      ap: "Exam preset: AP exam style — stimulus-based MCQs, concise stems, and college-board calibrated difficulty.",
+    };
+    const examPresetHint = EXAM_PRESET_HINTS[examPreset] || "";
     const quizPrompt = buildQuizPrompt(content, analysis, normalizedTypes, numQuestions, sourcePackString, typeMix, {
       trainingMode,
       topicHint,
       excludeQuestions,
+      examPresetHint,
     });
     const quizResult = await chatJsonAnthropic({
       system: quizPrompt.system,
@@ -2412,6 +2565,15 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
 
     if (projectId) await touchProject(projectId);
 
+    const creditDebit = await debitCredits(userId, creditAction, { projectId, runId: nanoid() });
+    if (!creditDebit.success) {
+      return res.status(402).json({
+        ok: false,
+        error: creditDebit.error || "INSUFFICIENT_CREDITS",
+        message: creditDebit.message || "Not enough credits",
+      });
+    }
+
     return res.json({
       ok: true,
       project: project
@@ -2423,15 +2585,18 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
           }
         : null,
       quiz: normalizedQuiz,
+      questions: normalizedQuiz,
       analysis: {
         subject: analysis.subject,
         topics: analysis.topics,
         key_concepts: Array.isArray(analysis.key_concepts) ? analysis.key_concepts : [],
       },
       sources: rag.snippets,
+      creditsDebited: creditDebit.creditsDebited,
       meta: {
         requestedTypes: normalizedTypes,
         numQuestions,
+        batchSize: trainingMode ? numQuestions : undefined,
         mode: trainingMode ? "training" : "testing",
         hasUploadedMaterial: projectFiles.length > 0,
       },
@@ -2755,6 +2920,62 @@ quizRouter.get("/wrong-answers", requireAuth, async (req, res) => {
       [userId, limit]
     );
 
+    const now = new Date().toISOString();
+    const items = await Promise.all(
+      rows.map(async (row) => {
+        const review = await dbGet(
+          `SELECT next_review_at, interval_days, review_count FROM wrong_answer_reviews WHERE user_id = ? AND question_id = ?`,
+          [userId, row.id]
+        );
+        const nextReviewAt = review?.next_review_at || null;
+        const dueToday = nextReviewAt ? nextReviewAt <= now : true;
+        return {
+          id: row.id,
+          question: row.question,
+          type: row.type,
+          options: safeJsonParse(row.options, null),
+          correctAnswer: row.correct_answer,
+          userAnswer: row.user_answer,
+          explanation: row.explanation,
+          subject: row.subject,
+          roundLabel: row.round_label,
+          projectId: row.project_id,
+          projectName: row.project_name,
+          createdAt: row.created_at,
+          nextReviewAt,
+          dueToday,
+          reviewCount: review?.review_count || 0,
+        };
+      })
+    );
+
+    const dueTodayCount = items.filter((i) => i.dueToday).length;
+
+    return res.json({ ok: true, items, total: items.length, dueToday: dueTodayCount });
+  } catch (err) {
+    console.error("[quizall] wrong-answers error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load wrong answers" });
+  }
+});
+
+quizRouter.get("/review-queue", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const limit = Math.min(30, Math.max(1, Number.parseInt(req.query.limit, 10) || 10));
+    const now = new Date().toISOString();
+
+    const rows = await dbAll(
+      `SELECT qq.id, qq.question, qq.type, qq.options, qq.correct_answer, qq.user_answer, qq.explanation,
+              qr.subject, qr.project_id, war.next_review_at, war.interval_days, war.review_count
+       FROM wrong_answer_reviews war
+       JOIN quiz_questions qq ON qq.id = war.question_id
+       JOIN quiz_results qr ON qr.id = qq.result_id
+       WHERE war.user_id = ? AND war.next_review_at <= ?
+       ORDER BY war.next_review_at ASC
+       LIMIT ?`,
+      [userId, now, limit]
+    );
+
     const items = rows.map((row) => ({
       id: row.id,
       question: row.question,
@@ -2764,16 +2985,65 @@ quizRouter.get("/wrong-answers", requireAuth, async (req, res) => {
       userAnswer: row.user_answer,
       explanation: row.explanation,
       subject: row.subject,
-      roundLabel: row.round_label,
       projectId: row.project_id,
-      projectName: row.project_name,
-      createdAt: row.created_at,
+      nextReviewAt: row.next_review_at,
+      reviewCount: row.review_count || 0,
     }));
 
-    return res.json({ ok: true, items, total: items.length });
+    return res.json({ ok: true, items, dueToday: items.length });
   } catch (err) {
-    console.error("[quizall] wrong-answers error:", err);
-    return res.status(500).json({ ok: false, error: "Failed to load wrong answers" });
+    console.error("[quizall] review-queue error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load review queue" });
+  }
+});
+
+quizRouter.post("/wrong-answers/:questionId/review", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const questionId = req.params.questionId;
+    const wasCorrect = Boolean(req.body?.correct ?? req.body?.isCorrect);
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    const existing = await dbGet(
+      `SELECT id, interval_days, ease_factor, review_count FROM wrong_answer_reviews WHERE user_id = ? AND question_id = ?`,
+      [userId, questionId]
+    );
+
+    let intervalDays = 1;
+    let easeFactor = 2.5;
+    let reviewCount = 0;
+
+    if (existing) {
+      intervalDays = Number(existing.interval_days) || 1;
+      easeFactor = Number(existing.ease_factor) || 2.5;
+      reviewCount = Number(existing.review_count) || 0;
+      if (wasCorrect) {
+        intervalDays = Math.min(30, intervalDays * easeFactor);
+        easeFactor = Math.min(3.0, easeFactor + 0.1);
+      } else {
+        intervalDays = 1;
+        easeFactor = Math.max(1.3, easeFactor - 0.2);
+      }
+      reviewCount += 1;
+      const nextReview = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000).toISOString();
+      await dbRun(
+        `UPDATE wrong_answer_reviews SET next_review_at = ?, interval_days = ?, ease_factor = ?, review_count = ?, updated_at = ? WHERE user_id = ? AND question_id = ?`,
+        [nextReview, intervalDays, easeFactor, reviewCount, nowIso, userId, questionId]
+      );
+      return res.json({ ok: true, nextReviewAt: nextReview, intervalDays, reviewCount });
+    }
+
+    const nextReview = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    await dbRun(
+      `INSERT INTO wrong_answer_reviews (id, user_id, question_id, next_review_at, interval_days, ease_factor, review_count, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nanoid(), userId, questionId, nextReview, 1, 2.5, 1, nowIso, nowIso]
+    );
+    return res.json({ ok: true, nextReviewAt: nextReview, intervalDays: 1, reviewCount: 1 });
+  } catch (err) {
+    console.error("[quizall] wrong-answer review error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to update review schedule" });
   }
 });
 

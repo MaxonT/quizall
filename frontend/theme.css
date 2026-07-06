@@ -81,6 +81,20 @@
   --brand-3: #22D3EE;
   --brand-4: #4ADE80;
   --brand-5: #F59E0B;
+
+  /* Radius scale */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Type scale */
+  --text-xs: 0.72rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+
+  --surface-chat: var(--card);
+  --shadow-composer: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 [data-theme="light"] {

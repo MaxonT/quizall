@@ -27,35 +27,33 @@
     const status = await fetchBillingUsage(apiFn);
     if (!status) return { ok: true };
 
+    const credits = status.credits;
+    if (credits && typeof credits.balance === "number") {
+      if (credits.balance <= 0) {
+        return {
+          ok: false,
+          soft: false,
+          message: "No credits left. Upgrade your plan or wait for daily refresh.",
+        };
+      }
+      if (credits.balance < 5) {
+        return {
+          ok: false,
+          soft: true,
+          message: `Low credits (${credits.balance} remaining). Consider upgrading for more study sessions.`,
+        };
+      }
+      return { ok: true };
+    }
+
     const tokens = status.tokens?.total ?? 0;
-    const plan = status.subscription?.plan || status.plan || "free";
-    const wizardUsed = status.usage?.questionWizard ?? 0;
-    const wizardLimit = status.limits?.questionWizard?.daily ?? 5;
-
-    if (tokens <= 0 && plan === "free") {
+    if (tokens <= 0) {
       return {
         ok: false,
         soft: false,
-        message: "No quiz tokens left today. Upgrade your plan or wait until tomorrow.",
+        message: "No credits left today. Upgrade your plan or wait until tomorrow.",
       };
     }
-
-    if (tokens > 0 && tokens < 5000 && plan === "free") {
-      return {
-        ok: false,
-        soft: true,
-        message: `Low token balance (${status.tokens?.totalFormatted || tokens}). Consider upgrading for unlimited quizzes.`,
-      };
-    }
-
-    if (wizardLimit > 0 && wizardUsed >= wizardLimit && plan === "free") {
-      return {
-        ok: false,
-        soft: false,
-        message: `Daily quiz limit reached (${wizardLimit}/day on Free). Upgrade for more.`,
-      };
-    }
-
     return { ok: true };
   }
 
@@ -63,5 +61,19 @@
     usageCache = { at: 0, data: null };
   }
 
-  window.QuizAllCreateApi = { checkQuizUsage, invalidateUsageCache, fetchBillingUsage };
+  async function fetchCreditHistory(apiFn, limit = 15) {
+    try {
+      const data = await apiFn(`/api/billing/credit-history?limit=${limit}`);
+      return data.items || [];
+    } catch {
+      return [];
+    }
+  }
+
+  window.QuizAllCreateApi = {
+    checkQuizUsage,
+    invalidateUsageCache,
+    fetchBillingUsage,
+    fetchCreditHistory,
+  };
 })();

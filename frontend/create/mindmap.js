@@ -188,10 +188,33 @@
     return { element: wrap, update: (next) => rerenderTree(wrap, next, h) };
   }
 
+  function applyMasteryToMindmap(mindmap, topicScores) {
+    if (!mindmap?.nodes || !topicScores) return mindmap;
+    const scores = topicScores;
+    function walk(nodes) {
+      (nodes || []).forEach((node) => {
+        const key = String(node.text || "").toLowerCase();
+        const match = Object.entries(scores).find(([t]) => String(t).toLowerCase() === key);
+        if (match) {
+          const acc = match[1];
+          if (acc >= 80) node.status = "green";
+          else if (acc >= 60) node.status = "yellow";
+          else node.status = "red";
+        } else if (!node.status) {
+          node.status = "gray";
+        }
+        walk(node.children);
+      });
+    }
+    walk(mindmap.nodes);
+    return mindmap;
+  }
+
   window.QuizAllMindmap = {
     createMindmapArtifact,
     renderOutlineChips,
     pickWeakTopic,
     collectTopicNodes,
+    applyMasteryToMindmap,
   };
 })();

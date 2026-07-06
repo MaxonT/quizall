@@ -11,6 +11,7 @@ import { analyticsDashboardRouter } from "./routes/analyticsDashboard.js";
 import { adminRouter } from "./routes/admin.js";
 import { oauthRouter } from "./routes/oauth.js";
 import { quizRouter } from "./routes/quiz.js";
+import { quizTranscriptRouter } from "./routes/quizTranscript.js";
 import { dailyRefreshJob } from "./lib/dailyRefreshJob.js";
 import dailyCompensationJob from "./lib/dailyCompensationJob.js";
 import { FEATURES } from "./lib/subscriptionConfig.js";
@@ -162,6 +163,7 @@ app.use("/api/auth", authRouter);
 console.log(`[quizall]   ✓ /api/auth`);
 
 app.use("/api/quiz", quizRouter);
+app.use("/api/quiz", quizTranscriptRouter);
 console.log(`[quizall]   ✓ /api/quiz`);
 
 app.use("/api/billing", billingRouter);

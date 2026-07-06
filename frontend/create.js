@@ -35,6 +35,7 @@
     outlineCandidates: [],
     selectedOutlineFileId: null,
     appSettings: { subscriptionsEnabled: true },
+    examPreset: "general",
   };
 
   const els = {
@@ -93,6 +94,10 @@
     sidebarWrongbook: document.getElementById("sidebarWrongbook"),
     wrongbookList: document.getElementById("wrongbookList"),
     wrongbookRefresh: document.getElementById("wrongbookRefresh"),
+    sidebarCredits: document.getElementById("sidebarCredits"),
+    creditsValue: document.getElementById("creditsValue"),
+    creditsBarFill: document.getElementById("creditsBarFill"),
+    creditsResetNote: document.getElementById("creditsResetNote"),
     settingsOverlay: document.getElementById("settingsOverlay"),
     settingsBody: document.getElementById("settingsBody"),
     settingsTabTitle: document.getElementById("settingsTabTitle"),
@@ -522,9 +527,45 @@
     refreshComposerDisabled();
   }
 
-  function appendMessage(role, html) {
+  function scheduleChatSave() {
+    if (!state.projectId || !window.QuizAllTranscript) return;
+    window.QuizAllTranscript.scheduleTranscriptSave(api, state.projectId, els.chatInner, state.training);
+  }
+
+  async function refreshCredits() {
+    if (!els.creditsValue) return;
+    window.QuizAllCreateApi?.invalidateUsageCache?.();
+    try {
+      const status = await api("/api/billing/status");
+      const c = status.credits;
+      if (!c) {
+        const tokens = status.tokens?.total ?? 0;
+        els.creditsValue.textContent = `${Math.floor(tokens / 1000)} cr`;
+        return;
+      }
+      const balance = c.balance ?? 0;
+      const allowance = c.dailyAllowance ?? 80;
+      els.creditsValue.textContent = `${balance} / ${allowance}`;
+      const pct = allowance > 0 ? Math.min(100, Math.round((balance / allowance) * 100)) : 0;
+      if (els.creditsBarFill) {
+        els.creditsBarFill.style.width = `${pct}%`;
+        els.creditsBarFill.classList.toggle("is-low", balance < 10);
+      }
+      if (els.creditsResetNote && status.nextResetAt) {
+        const dt = new Date(status.nextResetAt);
+        els.creditsResetNote.textContent = `Resets ${dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      }
+      els.sidebarCredits?.classList.toggle("is-empty", balance <= 0);
+    } catch {
+      els.creditsValue.textContent = "— / —";
+    }
+  }
+
+  function appendMessage(role, html, msgType = "message") {
     const wrap = document.createElement("div");
     wrap.className = `msg ${role}`;
+    wrap.dataset.ts = String(Date.now());
+    wrap.dataset.msgType = msgType;
     const avatar =
       role === "ai"
         ? `<div class="msg-avatar">${icon("i-sparkles")}</div>`
@@ -532,6 +573,7 @@
     wrap.innerHTML = `${avatar}<div class="msg-bubble">${html}</div>`;
     els.chatInner.appendChild(wrap);
     scrollToBottom();
+    scheduleChatSave();
     return wrap;
   }
 
@@ -1390,6 +1432,70 @@
     bubble.appendChild(element);
     els.chatInner.appendChild(wrap);
     scrollToBottom();
+    scheduleChatSave();
+  }
+
+  async function appendMindmapWithMastery(mindmap, projectId) {
+    let map = mindmap;
+    const pid = projectId || state.projectId;
+    if (pid && window.QuizAllMindmap?.applyMasteryToMindmap) {
+      try {
+        const data = await api(`/api/quiz/projects/${encodeURIComponent(pid)}/analytics`);
+        if (data.topicAccuracy && Object.keys(data.topicAccuracy).length) {
+          map = window.QuizAllMindmap.applyMasteryToMindmap(
+            JSON.parse(JSON.stringify(mindmap)),
+            data.topicAccuracy
+          );
+        }
+      } catch {
+        /* mastery optional */
+      }
+    }
+    appendMindmapMessage(map);
+  }
+
+  async function showAnalyticsCoach(projectId) {
+    if (!projectId) return;
+    try {
+      const data = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/analytics`);
+      const rec = data.recommendations?.[0];
+      if (!rec) return;
+      const science = window.quizallScience?.renderSciencePrescription?.({ lastSession: "quiz" });
+      const scienceHref = science?.href || "/science/index.html";
+      appendMessage(
+        "ai",
+        `<div class="analytics-coach-card science-inline-tip">` +
+          `<strong>Next action</strong>` +
+          `<p>${escapeHtml(rec.action)}</p>` +
+          `<a href="${escapeHtml(scienceHref)}" class="meta-line">Science · Step ${rec.scienceStep || science?.step || 1}</a>` +
+          `</div>`,
+        "coach"
+      );
+    } catch {
+      /* optional */
+    }
+  }
+
+  async function startChallengeFromToken(token) {
+    try {
+      const API_BASE = (window.authGuard?.API_BASE || window.QUIZALL_API_BASE || window.location.origin).replace(/\/$/, "");
+      const res = await fetch(`${API_BASE}/api/quiz/share/${encodeURIComponent(token)}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Challenge not found");
+      const best = (data.rounds || []).reduce((m, r) => Math.max(m, Number(r.accuracy) || 0), 0);
+      state.challengeTarget = best;
+      setConversationActive(true);
+      appendMessage(
+        "ai",
+        `<div class="challenge-banner science-inline-tip">` +
+          `<strong>Challenge mode</strong>` +
+          `<p>Beat <strong>${best}%</strong> on <em>${escapeHtml(data.projectName || data.subject || "this quiz")}</em>. Start a study session and take Testing mode when ready.</p>` +
+          `</div>`,
+        "challenge"
+      );
+    } catch (err) {
+      appendMessage("ai", `<p>Could not load challenge: ${escapeHtml(err.message)}</p>`);
+    }
   }
 
   async function generateExamPrep(projectId, { selectedFileId, topicsInput, sourceMode } = {}) {
@@ -1403,12 +1509,13 @@
       }),
     });
     state.mindmap = data.mindmap;
+    await refreshCredits();
     return data;
   }
 
   async function tryBuildExamMap(projectId) {
     if (state.mindmap) {
-      appendMindmapMessage(state.mindmap);
+      await appendMindmapWithMastery(state.mindmap, projectId);
       return true;
     }
     try {
@@ -1425,7 +1532,7 @@
       });
       removeTyping(typing);
       if (prep.mindmap) {
-        appendMindmapMessage(prep.mindmap);
+        await appendMindmapWithMastery(prep.mindmap, projectId);
         return true;
       }
     } catch (err) {
@@ -1498,6 +1605,9 @@
     try {
       const data = await api("/api/quiz/wrong-answers?limit=8");
       const items = data.items || [];
+      const due = data.dueToday ?? 0;
+      const head = els.sidebarWrongbook.querySelector(".wrongbook-head span");
+      if (head) head.textContent = due > 0 ? `Wrong answers · ${due} due` : "Wrong answers";
       if (!items.length) {
         els.sidebarWrongbook.classList.add("hidden");
         return;
@@ -1556,27 +1666,241 @@
         analysis: state.analysis,
         content: state.materialPreview || undefined,
         mode: "testing",
+        examPreset: state.examPreset || "general",
       }),
     });
+    await refreshCredits();
     return data.quiz || [];
   }
 
-  async function generateTrainingQuestion(excludeQuestions, topicHint) {
+  async function generateTrainingBatch(excludeQuestions, topicHint, { isRefill = false } = {}) {
     const data = await api("/api/quiz/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         projectId: state.projectId,
         mode: "training",
+        batchSize: 5,
+        isRefill,
         analysis: state.analysis,
         content: state.materialPreview || undefined,
         excludeQuestions,
         topicHint,
         currentTopic: topicHint,
+        examPreset: state.examPreset || "general",
       }),
     });
-    const quiz = data.quiz || [];
-    return quiz[0] || null;
+    await refreshCredits();
+    return data.quiz || data.questions || [];
+  }
+
+  function getTrainingLoopEl() {
+    return document.getElementById("training-loop");
+  }
+
+  function ensureTrainingArtifact() {
+    let loop = getTrainingLoopEl();
+    if (loop) return loop.closest(".msg");
+
+    const html =
+      `<h3>Training mode</h3>` +
+      `<p class="meta-line">One MCQ at a time — your full history stays in this session.</p>` +
+      `<div id="training-loop" class="training-loop-artifact quiz-card">` +
+      `<div class="training-loop-head">` +
+      `<span class="training-accuracy">0% accuracy</span>` +
+      `<span class="training-done">0 done</span>` +
+      `</div>` +
+      `<div class="training-loop-history" id="trainingLoopHistory"></div>` +
+      `<div class="training-loop-active" id="trainingLoopActive"></div>` +
+      `<button type="button" class="btn-round training-finish">Finish & write note</button>` +
+      `</div>`;
+
+    const msg = appendMessage("ai", html, "training-artifact");
+    const finishBtn = msg.querySelector(".training-finish");
+    finishBtn?.addEventListener("click", async (e) => {
+      e.currentTarget.disabled = true;
+      await finishTrainingAndNote();
+    });
+    return msg;
+  }
+
+  function updateTrainingLoopStats() {
+    const loop = getTrainingLoopEl();
+    if (!loop || !state.training) return;
+    const accEl = loop.querySelector(".training-accuracy");
+    const doneEl = loop.querySelector(".training-done");
+    if (accEl) accEl.textContent = `${trainingAccuracy()}% accuracy`;
+    if (doneEl) doneEl.textContent = `${state.training.total} done`;
+  }
+
+  function appendTrainingHistoryItem(entry, qNum) {
+    const historyEl = document.getElementById("trainingLoopHistory");
+    if (!historyEl) return;
+    const nq = entry.question;
+    const details = document.createElement("details");
+    details.className = "training-history-item";
+    details.innerHTML =
+      `<summary>Q${qNum} · ${entry.isCorrect ? "✓" : "✗"} ${escapeHtml(String(nq.question).slice(0, 72))}${nq.question.length > 72 ? "…" : ""}</summary>` +
+      `<p class="q-text">${escapeHtml(nq.question)}</p>` +
+      `<p class="meta-line">Your answer: ${escapeHtml(displayAnswer(nq, entry.userAnswer))}</p>` +
+      (entry.isCorrect ? `<p class="training-ok">Correct</p>` : `<p class="training-miss">Correct: ${escapeHtml(displayAnswer(nq, nq.correct_answer))}</p>`) +
+      (nq.explanation ? `<p>${escapeHtml(nq.explanation)}</p>` : "");
+    historyEl.appendChild(details);
+    scheduleChatSave();
+  }
+
+  function bindTrainingQuestionOptions(activeEl, question, nq) {
+    let answered = false;
+    const feedback = activeEl.querySelector(".training-feedback");
+
+    activeEl.querySelectorAll(".option-btn").forEach((btn, idx) => {
+      btn.setAttribute("data-key", String.fromCharCode(65 + idx));
+    });
+
+    const onKey = (e) => {
+      const key = e.key?.toUpperCase();
+      if (!"ABCD".includes(key)) return;
+      const idx = key.charCodeAt(0) - 65;
+      const target = activeEl.querySelector(`.option-btn[data-o="${idx}"]`);
+      if (target && !target.disabled) target.click();
+    };
+    document.addEventListener("keydown", onKey);
+
+    activeEl.querySelectorAll(".option-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (answered) return;
+        answered = true;
+        document.removeEventListener("keydown", onKey);
+        const selected = Number(btn.getAttribute("data-o"));
+        const isCorrect = selected === Number(nq.correct_answer);
+        activeEl.querySelectorAll(".option-btn").forEach((b) => {
+          b.disabled = true;
+          const o = Number(b.getAttribute("data-o"));
+          if (o === Number(nq.correct_answer)) b.classList.add("correct");
+          else if (o === selected) b.classList.add("wrong");
+        });
+        if (!state.training) state.training = { correct: 0, total: 0, history: [], queue: [] };
+        state.training.total += 1;
+        if (isCorrect) state.training.correct += 1;
+        state.training.history.push({ question: nq, raw: question, userAnswer: selected, isCorrect });
+        updateTrainingLoopStats();
+        if (feedback) {
+          feedback.classList.remove("hidden");
+          feedback.innerHTML =
+            (isCorrect ? `<p class="training-ok">Correct!</p>` : `<p class="training-miss">Not quite.</p>`) +
+            (nq.explanation ? `<p>${escapeHtml(nq.explanation)}</p>` : "");
+        }
+        await new Promise((r) => setTimeout(r, 900));
+        appendTrainingHistoryItem(state.training.history[state.training.history.length - 1], state.training.total);
+        await showNextTrainingFromQueue();
+      });
+    });
+  }
+
+  function renderActiveTrainingQuestion(question) {
+    const activeEl = document.getElementById("trainingLoopActive");
+    if (!activeEl) return;
+    const nq = normalizeQuestion(question);
+    const qNum = (state.training?.total || 0) + 1;
+    const imp = importanceTag(question?.importance);
+    const topic = question?.topic_focus || state.studyPlan?.progress?.current_lecture?.title || state.studyPlan?.subject || "Core";
+
+    activeEl.innerHTML =
+      `<div class="training-head">` +
+      `<span class="training-round">MCQ ${imp}</span>` +
+      `<span class="training-topic">${escapeHtml(topic)}</span>` +
+      `<span class="training-qnum">Q${qNum}</span>` +
+      `</div>` +
+      `<div class="quiz-question" data-qi="0">` +
+      `<p class="q-text">${escapeHtml(nq.question)}</p>` +
+      `<div class="answers">${buildAnswerHtml(nq, 0)}</div>` +
+      `</div>` +
+      `<div class="training-feedback hidden"></div>`;
+
+    bindTrainingQuestionOptions(activeEl, question, nq);
+    scheduleChatSave();
+  }
+
+  function renderTrainingLoading() {
+    const activeEl = document.getElementById("trainingLoopActive");
+    if (!activeEl) return;
+    activeEl.innerHTML = `<div class="training-loading"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  }
+
+  async function refillTrainingQueue() {
+    const exclude = (state.training?.history || []).map((h) => h.question?.question).filter(Boolean);
+    const topicHint = getTrainingTopicHint();
+    const isRefill = (state.training?.history?.length || 0) > 0;
+    const batch = await generateTrainingBatch(exclude, topicHint, { isRefill });
+    if (!state.training) state.training = { correct: 0, total: 0, history: [], queue: [] };
+    state.training.queue = (state.training.queue || []).concat(batch);
+    scheduleChatSave();
+    return batch.length;
+  }
+
+  async function showNextTrainingFromQueue() {
+    if (!state.training) state.training = { correct: 0, total: 0, history: [], queue: [] };
+    if (!state.training.queue?.length) {
+      renderTrainingLoading();
+      try {
+        const n = await refillTrainingQueue();
+        if (!n) throw new Error("No questions generated");
+      } catch (err) {
+        const activeEl = document.getElementById("trainingLoopActive");
+        if (activeEl) {
+          activeEl.innerHTML = `<p class="meta-line">${escapeHtml(err.message)}</p><button type="button" class="btn-text training-retry">Retry</button>`;
+          activeEl.querySelector(".training-retry")?.addEventListener("click", () => showNextTrainingFromQueue());
+        }
+        setProcessing(false);
+        return;
+      }
+    }
+    const next = state.training.queue.shift();
+    renderActiveTrainingQuestion(next);
+    setProcessing(false);
+    scheduleChatSave();
+  }
+
+  async function startTrainingLoop() {
+    state.training = { correct: 0, total: 0, history: [], queue: [] };
+    state.roundIndex = 0;
+    ensureTrainingArtifact();
+    setProcessing(true);
+    const typing = appendTyping("Loading training questions…");
+    try {
+      await refillTrainingQueue();
+      removeTyping(typing);
+      await showNextTrainingFromQueue();
+    } catch (err) {
+      removeTyping(typing);
+      appendErrorWithRetry(`Sorry, training failed: ${err.message}`, "retry-quiz");
+      setProcessing(false);
+    }
+  }
+
+  async function restoreTrainingFromState(trainingState) {
+    if (!trainingState) return;
+    state.training = {
+      correct: trainingState.correct || 0,
+      total: trainingState.total || 0,
+      history: Array.isArray(trainingState.history) ? trainingState.history : [],
+      queue: Array.isArray(trainingState.queue) ? trainingState.queue : [],
+    };
+    ensureTrainingArtifact();
+    updateTrainingLoopStats();
+    const historyEl = document.getElementById("trainingLoopHistory");
+    if (historyEl) {
+      historyEl.innerHTML = "";
+      state.training.history.forEach((entry, i) => appendTrainingHistoryItem(entry, i + 1));
+    }
+    if (state.training.queue?.length) {
+      await showNextTrainingFromQueue();
+    } else if (!state.training.history.length) {
+      await startTrainingLoop();
+    } else {
+      renderTrainingLoading();
+      await showNextTrainingFromQueue();
+    }
   }
 
   function trainingAccuracy() {
@@ -1598,148 +1922,6 @@
       (percent ? `<span>${escapeHtml(percent)}</span>` : "") +
       `</div>`
     );
-  }
-
-  function renderTrainingArtifact(question, { loading = false } = {}) {
-    const nq = normalizeQuestion(question);
-    const imp = importanceTag(question?.importance);
-    const topic = question?.topic_focus || state.studyPlan?.progress?.current_lecture?.title || state.studyPlan?.subject || "Core";
-    const qNum = state.training?.total ? state.training.total + 1 : 1;
-    const acc = trainingAccuracy();
-    const done = state.training?.total || 0;
-    const canPrev = state.training?.history?.length > 0;
-
-    const cardId = `training-${Date.now()}`;
-    const html =
-      `<h3>Training mode</h3>` +
-      `<p class="meta-line">One MCQ at a time — keep going as long as you like.</p>` +
-      `<div class="training-artifact quiz-card" id="${cardId}">` +
-      `<div class="training-head">` +
-      `<span class="training-round">Round 1: MCQ ${imp}</span>` +
-      `<span class="training-topic">${escapeHtml(topic)}</span>` +
-      `</div>` +
-      `<div class="training-stats">` +
-      `<span class="training-accuracy">${acc}% accuracy</span>` +
-      `<button type="button" class="btn-text training-prev" ${canPrev ? "" : "disabled"}>← Previous</button>` +
-      `<span class="training-done">${done} done</span>` +
-      `<span class="training-qnum">Q${qNum}</span>` +
-      `</div>` +
-      (loading
-        ? `<div class="training-loading"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`
-        : `<div class="quiz-question" data-qi="0">` +
-          `<div class="q-label">Q${qNum}</div>` +
-          `<p class="q-text">${escapeHtml(nq.question)}</p>` +
-          `<div class="answers">${buildAnswerHtml(nq, 0)}</div>` +
-          `</div>` +
-          `<div class="training-feedback hidden"></div>`) +
-      buildTrainingSessionFooter(question) +
-      `<button type="button" class="btn-round training-finish">Finish & write note</button>` +
-      `</div>`;
-
-    const msg = appendMessage("ai", html);
-    const card = msg.querySelector(`#${cardId}`);
-    if (!card || loading) return { msg, card };
-
-    const feedback = card.querySelector(".training-feedback");
-    let answered = false;
-
-    card.querySelector(".training-prev")?.addEventListener("click", () => showTrainingPrevious(cardId));
-    card.querySelector(".training-finish")?.addEventListener("click", async (e) => {
-      e.currentTarget.disabled = true;
-      await finishTrainingAndNote();
-    });
-
-    card.querySelectorAll(".option-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        if (answered) return;
-        answered = true;
-        const selected = Number(btn.getAttribute("data-o"));
-        const isCorrect = selected === Number(nq.correct_answer);
-        card.querySelectorAll(".option-btn").forEach((b) => {
-          b.disabled = true;
-          const o = Number(b.getAttribute("data-o"));
-          if (o === Number(nq.correct_answer)) b.classList.add("correct");
-          else if (o === selected) b.classList.add("wrong");
-        });
-        if (!state.training) state.training = { correct: 0, total: 0, history: [] };
-        state.training.total += 1;
-        if (isCorrect) state.training.correct += 1;
-        state.training.history.push({
-          question: nq,
-          raw: question,
-          userAnswer: selected,
-          isCorrect,
-        });
-        const accEl = card.querySelector(".training-accuracy");
-        const doneEl = card.querySelector(".training-done");
-        if (accEl) accEl.textContent = `${trainingAccuracy()}% accuracy`;
-        if (doneEl) doneEl.textContent = `${state.training.total} done`;
-        const prevBtn = card.querySelector(".training-prev");
-        if (prevBtn) prevBtn.disabled = false;
-        if (feedback) {
-          feedback.classList.remove("hidden");
-          feedback.innerHTML =
-            (isCorrect ? `<p class="training-ok">Correct!</p>` : `<p class="training-miss">Not quite.</p>`) +
-            (nq.explanation ? `<p>${escapeHtml(nq.explanation)}</p>` : "") +
-            (question?.scenario1 ? `<p class="concept-scenario">[落地场景1] ${escapeHtml(question.scenario1)}</p>` : "") +
-            (question?.scenario2 ? `<p class="concept-scenario">[落地场景2] ${escapeHtml(question.scenario2)}</p>` : "");
-        }
-        await new Promise((r) => setTimeout(r, 1200));
-        card.closest(".msg")?.remove();
-        await loadNextTrainingQuestion();
-      });
-    });
-    return { msg, card };
-  }
-
-  function showTrainingPrevious(currentCardId) {
-    if (!state.training?.history?.length) return;
-    const last = state.training.history[state.training.history.length - 1];
-    const nq = last.question;
-    const html =
-      `<h3>Previous question</h3>` +
-      `<div class="training-artifact quiz-card training-review">` +
-      `<div class="q-label">Review</div>` +
-      `<p class="q-text">${escapeHtml(nq.question)}</p>` +
-      `<p class="meta-line">Your answer: ${escapeHtml(displayAnswer(nq, last.userAnswer))}</p>` +
-      `<p class="meta-line">${last.isCorrect ? "Correct" : `Correct: ${escapeHtml(displayAnswer(nq, nq.correct_answer))}`}</p>` +
-      `</div>`;
-    appendMessage("ai", html);
-  }
-
-  async function loadNextTrainingQuestion() {
-    const exclude = (state.training?.history || []).map((h) => h.question?.question).filter(Boolean);
-    const topicHint = getTrainingTopicHint();
-    const { card } = renderTrainingArtifact({}, { loading: true });
-    try {
-      const question = await generateTrainingQuestion(exclude, topicHint);
-      card?.closest(".msg")?.remove();
-      if (!question) throw new Error("No question generated");
-      renderTrainingArtifact(question);
-      setProcessing(false);
-    } catch (err) {
-      card?.closest(".msg")?.remove();
-      appendErrorWithRetry(`Training paused: ${err.message}`, "retry-quiz");
-      setProcessing(false);
-    }
-  }
-
-  async function startTrainingLoop() {
-    state.training = { correct: 0, total: 0, history: [] };
-    state.roundIndex = 0;
-    const typing = appendTyping("Preparing training question…");
-    try {
-      const topicHint = getTrainingTopicHint();
-      const question = await generateTrainingQuestion([], topicHint);
-      removeTyping(typing);
-      if (!question) throw new Error("No question generated");
-      renderTrainingArtifact(question);
-      setProcessing(false);
-    } catch (err) {
-      removeTyping(typing);
-      appendErrorWithRetry(`Sorry, training failed: ${err.message}`, "retry-quiz");
-      setProcessing(false);
-    }
   }
 
   async function finishTrainingAndNote() {
@@ -2060,6 +2242,32 @@
     }
   }
 
+  function rebindTranscriptInteractive() {
+    els.chatInner.querySelectorAll(".training-finish").forEach((btn) => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = "1";
+      btn.addEventListener("click", async (e) => {
+        e.currentTarget.disabled = true;
+        await finishTrainingAndNote();
+      });
+    });
+    const activeEl = document.getElementById("trainingLoopActive");
+    if (activeEl?.querySelector(".option-btn") && state.training?.queue?.length) {
+      const next = state.training.queue[0];
+      if (next) renderActiveTrainingQuestion(next);
+    }
+    els.chatInner.querySelectorAll(".history-toggle").forEach((toggle) => {
+      const msg = toggle.closest(".msg");
+      if (toggle.dataset.bound || !msg) return;
+      toggle.dataset.bound = "1";
+      bindHistoryRoundToggle(msg);
+    });
+    els.chatInner.querySelectorAll(".continue-quiz-btn, .requiz-btn, .continue-plan-btn, .continue-note-btn, .new-session-btn").forEach((btn) => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = "1";
+    });
+  }
+
   async function openProject(projectId) {
     if (!projectId) return;
     setProcessing(false);
@@ -2077,16 +2285,16 @@
     const typing = appendTyping("Loading session…");
 
     try {
-      const detail = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`);
+      const [detail, transcriptRes] = await Promise.all([
+        api(`/api/quiz/projects/${encodeURIComponent(projectId)}`),
+        window.QuizAllTranscript?.loadTranscript(api, projectId).catch(() => null),
+      ]);
       state.projectName = detail.project?.name || "Study session";
       state.hasUploadedMaterial = !!(detail.files?.length);
       if (detail.examPrep?.mindmap) {
         state.mindmap = detail.examPrep.mindmap;
       }
-      removeTyping(typing);
-      appendMessage("user", `<p>Reopened: <strong>${escapeHtml(state.projectName)}</strong></p>`);
 
-      let planLoaded = false;
       try {
         const planRes = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/study-plan`);
         if (planRes.studyPlan) {
@@ -2097,15 +2305,46 @@
             key_concepts: planRes.studyPlan.key_concepts || [],
           };
           state.materialPreview = buildContentFromPlan(planRes.studyPlan);
-          appendMessage("ai", formatStudyPlanHtml(planRes.studyPlan, { includeNextStep: false }));
-          planLoaded = true;
         }
       } catch {
-        /* no plan yet */
+        /* no plan */
+      }
+
+      if (transcriptRes?.messages?.length) {
+        removeTyping(typing);
+        els.chatInner.innerHTML = "";
+        transcriptRes.messages.forEach((m) => {
+          const wrap = appendMessage(m.role === "user" ? "user" : "ai", m.html, m.type || "message");
+          if (m.ts) wrap.dataset.ts = String(m.ts);
+        });
+        if (transcriptRes.trainingState) {
+          state.training = transcriptRes.trainingState;
+          if (getTrainingLoopEl()) {
+            updateTrainingLoopStats();
+          }
+        }
+        rebindTranscriptInteractive();
+        ensureComposerReady();
+        updateComposerPlaceholder();
+        await loadHistorySidebar();
+        els.composerInput.focus();
+        if (state.roundResults?.length || (transcriptRes.trainingState?.total > 0)) {
+          await showAnalyticsCoach(projectId);
+        }
+        return;
+      }
+
+      removeTyping(typing);
+      appendMessage("user", `<p>Reopened: <strong>${escapeHtml(state.projectName)}</strong></p>`);
+
+      let planLoaded = false;
+      if (state.studyPlan) {
+        appendMessage("ai", formatStudyPlanHtml(state.studyPlan, { includeNextStep: false }));
+        planLoaded = true;
       }
 
       if (state.mindmap) {
-        appendMindmapMessage(state.mindmap);
+        await appendMindmapWithMastery(state.mindmap, projectId);
       }
 
       if (!planLoaded && detail.files?.length) {
@@ -2209,6 +2448,9 @@
             `<button type="button" class="btn-round new-session-btn">Start new session</button>`
         );
         msg.querySelector(".new-session-btn")?.addEventListener("click", resetNewChat);
+      }
+      if (state.roundResults?.length) {
+        await showAnalyticsCoach(projectId);
       }
       await loadHistorySidebar();
       ensureComposerReady();
@@ -2433,19 +2675,34 @@
   async function renderUsageTab() {
     els.settingsBody.innerHTML = '<div class="settings-loading">Loading usage…</div>';
     try {
-      const [statusData, streakData] = await Promise.all([
+      const [statusData, historyItems, streakData] = await Promise.all([
         api("/api/billing/status").catch(() => null),
+        window.QuizAllCreateApi?.fetchCreditHistory?.(api, 12) || Promise.resolve([]),
         api("/api/quiz/study-streak?days=7").catch(() => null),
       ]);
 
       let html = "";
 
-      if (statusData) {
-        const usage = statusData.usage || {};
-        const limits = statusData.limits || {};
-        html += usageMeter("Quiz generations today", usage.promptOptimization ?? 0, limits.promptOptimization?.daily ?? 0);
-        html += usageMeter("Study sessions today", usage.questionWizard ?? 0, limits.questionWizard?.daily ?? 0);
-        html += `<p class="set-note">Limits reset daily at midnight in your timezone.</p>`;
+      if (statusData?.credits) {
+        const c = statusData.credits;
+        html += usageMeter("Credits remaining", c.balance ?? 0, c.dailyAllowance ?? 80);
+        html += `<p class="set-note">Daily allowance resets at midnight in your timezone.</p>`;
+      }
+
+      if (historyItems.length) {
+        html += `<div class="credit-history"><h3 class="set-subhead">Recent usage</h3><ul class="credit-history-list">`;
+        historyItems.forEach((item) => {
+          html += `<li><span>−${item.credits}</span> ${escapeHtml(item.reason || "Usage")}</li>`;
+        });
+        html += `</ul></div>`;
+      }
+
+      if (statusData?.creditCosts) {
+        html += `<div class="credit-costs-ref"><h3 class="set-subhead">Action costs</h3><ul>`;
+        Object.entries(statusData.creditCosts).forEach(([key, val]) => {
+          html += `<li>${escapeHtml(key)}: ${val} credits</li>`;
+        });
+        html += `</ul></div>`;
       }
 
       if (streakData && Array.isArray(streakData.heatmap)) {
@@ -2625,6 +2882,13 @@
         e.stopPropagation();
         adjustMixTotal(1);
       });
+      document.getElementById("mixExamPresets")?.querySelectorAll(".mix-exam-preset").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          state.examPreset = btn.getAttribute("data-exam") || "general";
+          document.querySelectorAll(".mix-exam-preset").forEach((b) => b.classList.toggle("is-active", b === btn));
+        });
+      });
     }
 
     els.composerInput.addEventListener("input", () => {
@@ -2712,6 +2976,7 @@
     loadHistorySidebar();
     loadSidebarStreak();
     loadWrongbook();
+    refreshCredits();
     els.wrongbookRefresh?.addEventListener("click", () => loadWrongbook());
     api("/api/settings")
       .then((data) => {
@@ -2730,8 +2995,16 @@
       openSettings(TAB_TITLES[tab] ? tab : "account");
     }
 
+    const challenge = new URLSearchParams(window.location.search).get("challenge");
+    const review = new URLSearchParams(window.location.search).get("review");
     const projectId = new URLSearchParams(window.location.search).get("project");
-    if (projectId) openProject(projectId);
+    if (challenge) startChallengeFromToken(challenge);
+    else if (projectId) openProject(projectId);
+    else if (review === "1") {
+      setQuizMode("training");
+      appendMessage("ai", `<p class="meta-line">Review mode — practice from your wrong-answer queue. Open a session with a study plan to begin.</p>`);
+      loadWrongbook();
+    }
     else if (hash === "history") focusHistorySidebar();
   }
 
