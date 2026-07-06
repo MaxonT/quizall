@@ -42,6 +42,9 @@
     fileInput: null,
     attachmentsBar: document.getElementById("attachmentsBar"),
     avatarMenu: document.getElementById("avatarMenu"),
+    projectItemMenu: document.getElementById("projectItemMenu"),
+    projectMenuRename: document.getElementById("projectMenuRename"),
+    projectMenuDelete: document.getElementById("projectMenuDelete"),
     sampleLink: document.getElementById("sampleLink"),
     settingsOverlay: document.getElementById("settingsOverlay"),
     settingsBody: document.getElementById("settingsBody"),
@@ -169,7 +172,8 @@
       `<p>${escapeHtml(note.summary || "")}</p>` +
       `<div class="note-section-label">What you know</div><ul class="note-list">${list(note.what_you_know)}</ul>` +
       `<div class="note-section-label">What to review</div><ul class="note-list">${list(note.what_to_review)}</ul>` +
-      `<div class="note-section-label">Key takeaways</div><ul class="note-list">${list(note.key_takeaways)}</ul>`
+      `<div class="note-section-label">Key takeaways</div><ul class="note-list">${list(note.key_takeaways)}</ul>` +
+      `<p class="science-link-wrap">Curious why this 3-round method works? <a href="science/index.html" target="_blank" rel="noopener noreferrer" class="science-link">See the science →</a></p>`
     );
   }
 
@@ -309,8 +313,8 @@
     return s || "(no answer)";
   }
 
-  function renderRoundReview(roundConfig, results, correct, total, isLast, onProceed) {
-    const items = results
+  function buildReviewItemsHtml(results) {
+    return results
       .map((r) => {
         const cls = r.isCorrect ? "correct" : "wrong";
         const badge = r.isCorrect
@@ -333,6 +337,65 @@
         );
       })
       .join("");
+  }
+
+  function historyRoundTitle(roundLabel) {
+    const label = String(roundLabel || "Quiz round").trim();
+    if (/round\s*\d/i.test(label)) {
+      const match = label.match(/round\s*\d+/i);
+      if (match) return `${match[0]} results`;
+    }
+    return label;
+  }
+
+  function normalizeHistoryQuestions(questions) {
+    return (questions || []).map((q) => {
+      const type = normalizeType(q.type);
+      let options = null;
+      if (type === "multiple_choice") {
+        options = (Array.isArray(q.options) ? q.options : []).map(String);
+      }
+      let correct = q.correct_answer ?? q.correctAnswer ?? "";
+      if (type === "multiple_choice") {
+        const n = Number.parseInt(String(correct), 10);
+        correct = Number.isInteger(n) ? n : 0;
+      } else {
+        correct = String(correct || "").trim();
+      }
+      return {
+        type,
+        question: String(q.question || ""),
+        options,
+        correct_answer: correct,
+        userAnswer: q.userAnswer ?? q.user_answer ?? "",
+        isCorrect: Boolean(q.isCorrect ?? q.is_correct),
+        explanation: String(q.explanation || ""),
+      };
+    });
+  }
+
+  function formatHistoryRoundHtml(roundLabel, correct, total, results) {
+    return (
+      `<h3>${escapeHtml(historyRoundTitle(roundLabel))}</h3>` +
+      `<div class="review-score"><span class="num">${correct}/${total}</span><span class="lbl">correct</span></div>` +
+      `<button type="button" class="btn-text history-toggle" aria-expanded="false">Show details</button>` +
+      `<div class="review-list history-details hidden">${buildReviewItemsHtml(results)}</div>`
+    );
+  }
+
+  function bindHistoryRoundToggle(msg) {
+    const toggle = msg.querySelector(".history-toggle");
+    const details = msg.querySelector(".history-details");
+    if (!toggle || !details) return;
+    toggle.addEventListener("click", () => {
+      const collapsed = details.classList.toggle("hidden");
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      toggle.textContent = collapsed ? "Show details" : "Hide details";
+    });
+  }
+
+  function renderRoundReview(roundConfig, results, correct, total, isLast, onProceed) {
+    const items = buildReviewItemsHtml(results);
 
     const proceedLabel = isLast
       ? `Write my note ${icon("i-arrow-right")}`
@@ -374,6 +437,82 @@
     return bits.length ? bits.join(" · ") : "Draft session";
   }
 
+  let projectMenuTargetId = null;
+  let projectMenuAnchor = null;
+
+  function closeProjectMenu() {
+    if (!els.projectItemMenu) return;
+    els.projectItemMenu.classList.add("hidden");
+    els.projectItemMenu.style.top = "";
+    els.projectItemMenu.style.left = "";
+    els.projectItemMenu.style.bottom = "";
+    if (projectMenuAnchor) projectMenuAnchor.classList.remove("is-open");
+    projectMenuTargetId = null;
+    projectMenuAnchor = null;
+    els.projectList?.querySelectorAll(".project-row.menu-open").forEach((row) => row.classList.remove("menu-open"));
+  }
+
+  function openProjectMenu(projectId, anchorBtn) {
+    if (!els.projectItemMenu || !anchorBtn) return;
+    closeProjectMenu();
+    projectMenuTargetId = projectId;
+    projectMenuAnchor = anchorBtn;
+    anchorBtn.classList.add("is-open");
+    anchorBtn.closest(".project-row")?.classList.add("menu-open");
+
+    const rect = anchorBtn.getBoundingClientRect();
+    els.projectItemMenu.style.bottom = "auto";
+    els.projectItemMenu.style.top = `${Math.round(rect.bottom + 6)}px`;
+    els.projectItemMenu.style.left = `${Math.max(8, Math.round(rect.right - 168))}px`;
+    els.projectItemMenu.classList.remove("hidden");
+  }
+
+  async function renameProject(projectId) {
+    const rowBtn = els.projectList?.querySelector(`.project-item[data-id="${CSS.escape(projectId)}"]`);
+    const currentName = rowBtn?.querySelector(".pi-name")?.textContent?.trim() || "";
+    const nextName = window.prompt("Rename session", currentName);
+    if (nextName == null) return;
+    const name = nextName.trim();
+    if (!name || name.length < 2) return;
+
+    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+
+    if (state.projectId === projectId) state.projectName = name;
+    await loadProjects();
+  }
+
+  async function deleteProject(projectId) {
+    const rowBtn = els.projectList?.querySelector(`.project-item[data-id="${CSS.escape(projectId)}"]`);
+    const label = rowBtn?.querySelector(".pi-name")?.textContent?.trim() || "this session";
+    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
+
+    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, { method: "DELETE" });
+
+    if (state.projectId === projectId) resetNewChat();
+    else await loadProjects();
+  }
+
+  function bindProjectListEvents() {
+    els.projectList.querySelectorAll(".project-item").forEach((btn) => {
+      btn.addEventListener("click", () => openProject(btn.getAttribute("data-id")));
+    });
+    els.projectList.querySelectorAll(".project-more").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const projectId = btn.getAttribute("data-id");
+        if (els.projectItemMenu?.classList.contains("hidden") || projectMenuTargetId !== projectId) {
+          openProjectMenu(projectId, btn);
+        } else {
+          closeProjectMenu();
+        }
+      });
+    });
+  }
+
   async function loadProjects() {
     try {
       const data = await api("/api/quiz/projects?limit=50");
@@ -403,18 +542,21 @@
         html += list
           .map(
             (p) =>
-              `<button type="button" class="project-item${p.id === state.projectId ? " is-active" : ""}" data-id="${escapeHtml(p.id)}">` +
+              `<div class="project-row${p.id === state.projectId ? " is-active" : ""}">` +
+              `<button type="button" class="project-item" data-id="${escapeHtml(p.id)}">` +
               `<span class="pi-name">${escapeHtml(p.name)}</span>` +
               `<span class="pi-meta">${escapeHtml(projectMeta(p))}</span>` +
-              `</button>`
+              `</button>` +
+              `<button type="button" class="project-more" data-id="${escapeHtml(p.id)}" aria-label="Session options" title="Session options">` +
+              `<svg class="icon"><use href="#i-more-horizontal"></use></svg>` +
+              `</button>` +
+              `</div>`
           )
           .join("");
       });
 
       els.projectList.innerHTML = html;
-      els.projectList.querySelectorAll(".project-item").forEach((btn) => {
-        btn.addEventListener("click", () => openProject(btn.getAttribute("data-id")));
-      });
+      bindProjectListEvents();
     } catch (err) {
       console.error(err);
     }
@@ -750,11 +892,39 @@
         appendMessage("ai", `<p>This session has ${detail.files.length} uploaded file(s), but no study plan was saved.</p>`);
       }
 
+      let roundsLoaded = false;
+      try {
+        const historyRes = await api(
+          `/api/quiz/history?projectId=${encodeURIComponent(projectId)}&limit=10&order=asc&includeQuestions=1`
+        );
+        const rounds = historyRes.results || [];
+        rounds.forEach((round) => {
+          if (!round.questions?.length) return;
+          roundsLoaded = true;
+          const results = normalizeHistoryQuestions(round.questions);
+          const msg = appendMessage(
+            "ai",
+            formatHistoryRoundHtml(round.roundLabel, round.score, round.total, results)
+          );
+          bindHistoryRoundToggle(msg);
+        });
+      } catch {
+        /* no saved rounds */
+      }
+
+      let noteLoaded = false;
       try {
         const noteRes = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/note`);
-        if (noteRes.note) appendMessage("ai", formatNoteHtml(noteRes.note));
+        if (noteRes.note) {
+          appendMessage("ai", formatNoteHtml(noteRes.note));
+          noteLoaded = true;
+        }
       } catch {
-        if (planLoaded) appendMessage("ai", `<p class="meta-line">Quiz rounds weren't finished in this session.</p>`);
+        if (planLoaded && !roundsLoaded) {
+          appendMessage("ai", `<p class="meta-line">Quiz rounds weren't finished in this session.</p>`);
+        } else if (planLoaded && roundsLoaded && !noteLoaded) {
+          appendMessage("ai", `<p class="meta-line">Rounds are saved, but no study note was generated yet.</p>`);
+        }
       }
 
       if (planLoaded) {
@@ -1018,6 +1188,34 @@
       });
     }
 
+    if (els.projectMenuRename) {
+      els.projectMenuRename.addEventListener("click", async () => {
+        const id = projectMenuTargetId;
+        closeProjectMenu();
+        if (!id) return;
+        try {
+          await renameProject(id);
+        } catch (err) {
+          window.alert(err.message || "Could not rename session");
+        }
+      });
+    }
+    if (els.projectMenuDelete) {
+      els.projectMenuDelete.addEventListener("click", async () => {
+        const id = projectMenuTargetId;
+        closeProjectMenu();
+        if (!id) return;
+        try {
+          await deleteProject(id);
+        } catch (err) {
+          window.alert(err.message || "Could not delete session");
+        }
+      });
+    }
+    if (els.projectItemMenu) {
+      els.projectItemMenu.addEventListener("click", (e) => e.stopPropagation());
+    }
+
     if (els.sampleLink) {
       els.sampleLink.addEventListener("click", () => {
         els.composerInput.value = SAMPLE_TEXT;
@@ -1045,9 +1243,13 @@
 
     els.avatarBtn.addEventListener("click", (e) => {
       e.stopPropagation();
+      closeProjectMenu();
       els.avatarMenu.classList.toggle("hidden");
     });
-    document.addEventListener("click", () => els.avatarMenu.classList.add("hidden"));
+    document.addEventListener("click", () => {
+      els.avatarMenu.classList.add("hidden");
+      closeProjectMenu();
+    });
     els.avatarMenu.addEventListener("click", (e) => e.stopPropagation());
 
     document.getElementById("menuSettings").addEventListener("click", () => openSettings("account"));
@@ -1070,7 +1272,10 @@
       if (e.target === els.settingsOverlay) closeSettings();
     });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !els.settingsOverlay.classList.contains("hidden")) closeSettings();
+      if (e.key === "Escape") {
+        if (!els.settingsOverlay.classList.contains("hidden")) closeSettings();
+        closeProjectMenu();
+      }
     });
 
     if (els.mobileMenuBtn) {

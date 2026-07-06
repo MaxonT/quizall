@@ -240,29 +240,81 @@ html[data-theme="light"] .sidebar {
   padding: 6px 8px 8px;
 }
 
-.project-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 8px 10px;
+.project-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
   margin-bottom: 2px;
   border: 1px solid transparent;
   border-radius: 10px;
+  transition: background 0.2s var(--ease);
+}
+
+.project-row:hover {
+  background: var(--c-panel-hover);
+}
+
+.project-row.is-active {
+  background: var(--c-panel-active);
+}
+
+.project-row.menu-open {
+  background: var(--c-panel-active);
+}
+
+.project-item {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 8px 6px 8px 10px;
+  border: none;
+  border-radius: 10px 0 0 10px;
   background: transparent;
   color: var(--c-text-dim);
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+  transition: color 0.2s var(--ease);
 }
 
-.project-item:hover {
+.project-row:hover .project-item,
+.project-row.is-active .project-item,
+.project-row.menu-open .project-item {
+  color: var(--c-text);
+}
+
+.project-more {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0 10px 10px 0;
+  background: transparent;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s var(--ease), color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.project-row:hover .project-more,
+.project-row.is-active .project-more,
+.project-row.menu-open .project-more {
+  opacity: 1;
+}
+
+.project-more:hover,
+.project-more.is-open {
+  color: var(--c-text);
   background: var(--c-panel-hover);
-  color: var(--c-text);
 }
 
-.project-item.is-active {
-  background: var(--c-panel-active);
-  color: var(--c-text);
+.project-more .icon {
+  width: 16px;
+  height: 16px;
 }
 
 .project-item .pi-name {
@@ -489,10 +541,11 @@ html[data-theme="light"] .sidebar {
 
 .hero p {
   margin: 0;
-  font-size: 1rem;
+  font-size: clamp(0.8125rem, 1.6vw, 0.9375rem);
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.4;
   color: var(--c-text-dim);
+  white-space: nowrap;
 }
 
 /* ────────────────────────── Messages ────────────────────────── */
@@ -876,6 +929,45 @@ html[data-theme="light"] .sidebar {
   margin-top: 4px;
 }
 
+.history-toggle {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--g3);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s var(--ease);
+}
+
+.history-toggle:hover {
+  opacity: 0.8;
+}
+
+.history-details.hidden {
+  display: none;
+}
+
+.science-link-wrap {
+  margin: 18px 0 0;
+  font-size: 0.85rem;
+  color: var(--c-text-dim);
+}
+
+.science-link {
+  color: var(--g3);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.science-link:hover {
+  text-decoration: underline;
+}
+
 .review-item {
   padding: 13px 15px;
   border-radius: var(--radius-sm);
@@ -1193,6 +1285,19 @@ html[data-theme="light"] .sidebar {
 }
 
 /* ────────────────────────── Popup menu ────────────────────────── */
+.popup-menu.project-item-menu {
+  width: 168px;
+  padding: 5px;
+  bottom: auto;
+  left: auto;
+  z-index: 1100;
+}
+
+.popup-menu.project-item-menu button {
+  padding: 9px 10px;
+  font-size: 0.8125rem;
+}
+
 .popup-menu {
   position: fixed;
   bottom: 76px;

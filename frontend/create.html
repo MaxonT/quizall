@@ -39,6 +39,9 @@
       <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
       <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
       <symbol id="i-notebook" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M16 2v20"/></symbol>
+      <symbol id="i-more-horizontal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+      <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L8.5 11.5 7 16l4.5-1.5z"/><path d="m15 5 4 4"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
     </defs>
   </svg>
 
@@ -100,7 +103,7 @@
             AI quiz coach
           </span>
           <h1>What do you want to <span class="accent">master</span> today?</h1>
-          <p>Upload your notes or paste any text. I'll build a simple plan, then quiz you across three rounds.</p>
+          <p>Upload or paste notes — plan, three quiz rounds, one note.</p>
         </div>
 
         <div class="composer-wrap">
@@ -120,6 +123,11 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <div class="popup-menu project-item-menu hidden" id="projectItemMenu">
+    <button type="button" id="projectMenuRename"><svg class="icon"><use href="#i-pencil"></use></svg> Rename</button>
+    <button type="button" class="danger" id="projectMenuDelete"><svg class="icon"><use href="#i-trash"></use></svg> Delete</button>
   </div>
 
   <div class="popup-menu hidden" id="avatarMenu">

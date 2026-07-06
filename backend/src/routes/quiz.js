@@ -23,6 +23,10 @@ let warnedMissingTimezoneColumn = false;
 const SIMPLE_LANGUAGE_RULE =
   "Use extremely simple, plain language. Short sentences only. Avoid jargon; if you must use a term, explain it in parentheses immediately. Write as if teaching someone with zero background.";
 
+function allowMockAi() {
+  return !ANTHROPIC_ENABLED && (process.env.NODE_ENV !== "production" || process.env.QUIZALL_E2E_MOCK === "1");
+}
+
 const OUTLINE_KEYWORDS = ["syllabus", "outline", "review", "exam", "topic", "考纲", "重点", "复习"];
 
 const PROJECT_SCHEMA_SQL = `
@@ -571,6 +575,50 @@ function normalizeUserAnswer(answer) {
   if (typeof answer === "number") return String(answer);
   if (typeof answer === "string") return answer.trim();
   return JSON.stringify(answer);
+}
+
+function parseStoredAnswer(raw, type) {
+  if (raw == null || raw === "") {
+    return normalizeType(type) === "multiple_choice" ? null : "";
+  }
+  const normalizedType = normalizeType(type);
+  if (normalizedType === "multiple_choice") {
+    const asNumber = Number.parseInt(String(raw), 10);
+    if (Number.isInteger(asNumber)) return asNumber;
+    const parsed = safeJsonParse(raw, null);
+    if (typeof parsed === "number" && Number.isInteger(parsed)) return parsed;
+    return raw;
+  }
+  return String(raw);
+}
+
+async function getResultQuestions(resultId) {
+  const rows = await dbAll(
+    `SELECT type, question, options, correct_answer, user_answer, is_correct, explanation, order_index
+     FROM quiz_questions
+     WHERE result_id = ?
+     ORDER BY order_index ASC`,
+    [resultId]
+  );
+
+  return rows.map((row) => {
+    const type = normalizeType(row.type);
+    let options = null;
+    if (row.options) {
+      const parsed = safeJsonParse(row.options, null);
+      options = Array.isArray(parsed) ? parsed.map((item) => String(item)) : null;
+    }
+    const isCorrect = USE_POSTGRES ? row.is_correct === true : Number(row.is_correct) === 1;
+    return {
+      type,
+      question: row.question,
+      options,
+      correct_answer: parseStoredAnswer(row.correct_answer, type),
+      userAnswer: parseStoredAnswer(row.user_answer, type),
+      isCorrect,
+      explanation: row.explanation || "",
+    };
+  });
 }
 
 function evaluateAnswer(type, userAnswer, correctAnswer) {
@@ -1159,31 +1207,54 @@ quizRouter.patch("/projects/:id", requireAuth, async (req, res) => {
       return res.status(404).json({ ok: false, error: "Project not found" });
     }
 
-    const hasExamDate = Object.prototype.hasOwnProperty.call(req.body || {}, "examDate");
-    if (!hasExamDate) {
+    const body = req.body || {};
+    const hasExamDate = Object.prototype.hasOwnProperty.call(body, "examDate");
+    const hasName = Object.prototype.hasOwnProperty.call(body, "name");
+    if (!hasExamDate && !hasName) {
       return res.status(400).json({ ok: false, error: "No updatable project field provided" });
     }
 
-    const examDate = normalizeIsoDateOrNull(req.body?.examDate || "");
-    if (examDate === undefined) {
-      return res.status(400).json({ ok: false, error: "examDate must be YYYY-MM-DD or empty" });
+    const updates = [];
+    const params = [];
+    let nextName = project.name;
+
+    if (hasName) {
+      nextName = normalizeWhitespace(body.name || "");
+      if (!nextName || nextName.length < 2 || nextName.length > 120) {
+        return res.status(400).json({ ok: false, error: "Project name must be 2-120 characters" });
+      }
+      updates.push("name = ?");
+      params.push(nextName);
+    }
+
+    let nextExamDate = project.exam_date;
+    if (hasExamDate) {
+      nextExamDate = normalizeIsoDateOrNull(body.examDate || "");
+      if (nextExamDate === undefined) {
+        return res.status(400).json({ ok: false, error: "examDate must be YYYY-MM-DD or empty" });
+      }
+      updates.push("exam_date = ?");
+      params.push(nextExamDate);
     }
 
     const now = new Date().toISOString();
+    updates.push("updated_at = ?");
+    params.push(now, projectId, userId);
+
     await dbRun(
       `UPDATE study_projects
-       SET exam_date = ?, updated_at = ?
+       SET ${updates.join(", ")}
        WHERE id = ? AND user_id = ?`,
-      [examDate, now, projectId, userId]
+      params
     );
 
     return res.json({
       ok: true,
       project: {
         id: project.id,
-        name: project.name,
+        name: nextName,
         examName: project.exam_name,
-        examDate: examDate,
+        examDate: nextExamDate,
         description: project.description,
         createdAt: project.created_at,
         updatedAt: now,
@@ -1192,6 +1263,29 @@ quizRouter.patch("/projects/:id", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[quizall] projects update error:", err);
     return res.status(500).json({ ok: false, error: "Failed to update project" });
+  }
+});
+
+quizRouter.delete("/projects/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: "Project not found" });
+    }
+
+    const rows = await dbAll(`SELECT id FROM quiz_results WHERE user_id = ? AND project_id = ?`, [userId, projectId]);
+    for (const row of rows) {
+      await dbRun(`DELETE FROM quiz_questions WHERE result_id = ?`, [row.id]);
+    }
+    await dbRun(`DELETE FROM quiz_results WHERE user_id = ? AND project_id = ?`, [userId, projectId]);
+    await dbRun(`DELETE FROM study_projects WHERE id = ? AND user_id = ?`, [projectId, userId]);
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("[quizall] projects delete error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to delete project" });
   }
 });
 
@@ -1670,7 +1764,7 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
 
     const examTopicHint = normalizeWhitespace(req.body?.examTopics || "");
 
-    if (!ANTHROPIC_ENABLED && process.env.NODE_ENV !== "production") {
+    if (allowMockAi()) {
       const mockPlan = buildMockStudyPlan(content, project.name);
       await saveStudyPlanRecord({ projectId, userId, payload: mockPlan });
       await touchProject(projectId);
@@ -1759,7 +1853,7 @@ quizRouter.post("/projects/:id/note", requireAuth, async (req, res) => {
     const studyPlan = req.body?.studyPlan || (await getLatestStudyPlan(projectId, userId)) || {};
     const content = String(req.body?.content || "").trim() || (await getProjectCombinedContent(projectId, userId));
 
-    if (!ANTHROPIC_ENABLED && process.env.NODE_ENV !== "production") {
+    if (allowMockAi()) {
       const mockNote = buildMockNote(studyPlan, rounds);
       await saveStudyNoteRecord({ projectId, userId, payload: mockNote });
       await touchProject(projectId);
@@ -1879,7 +1973,7 @@ quizRouter.post("/generate", optionalAuth, async (req, res) => {
     }
 
     const fallbackSource = project ? `${project.name} materials` : "Provided content";
-    if (!ANTHROPIC_ENABLED && process.env.NODE_ENV !== "production") {
+    if (allowMockAi()) {
       const mockAnalysis = buildMockAnalysis(content, examTopicHint, project?.exam_name || project?.name || "");
       const mockQuiz = buildMockQuiz(mockAnalysis, normalizedTypes, numQuestions, rag.snippets, fallbackSource);
       const normalizedMockQuiz = normalizeGeneratedQuizPayload(
@@ -2019,6 +2113,11 @@ quizRouter.get("/history", requireAuth, async (req, res) => {
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
     const limit = Math.min(HISTORY_MAX_LIMIT, Math.max(1, Number.parseInt(req.query.limit, 10) || 20));
     const offset = (page - 1) * limit;
+    const orderAsc = String(req.query.order || "").toLowerCase() === "asc";
+    const includeQuestions =
+      req.query.includeQuestions === "1" ||
+      req.query.includeQuestions === "true" ||
+      Boolean(projectId);
 
     const where = ["qr.user_id = ?"];
     const params = [userId];
@@ -2028,21 +2127,22 @@ quizRouter.get("/history", requireAuth, async (req, res) => {
     }
 
     const whereSql = where.join(" AND ");
+    const orderSql = orderAsc ? "ASC" : "DESC";
 
     const countRow = await dbGet(`SELECT COUNT(*) AS total FROM quiz_results qr WHERE ${whereSql}`, params);
 
     const rows = await dbAll(
-      `SELECT qr.id, qr.project_id, sp.name AS project_name, qr.subject, qr.score, qr.total, qr.topics, qr.elapsed, qr.created_at,
+      `SELECT qr.id, qr.project_id, sp.name AS project_name, qr.subject, qr.score, qr.total, qr.topics, qr.elapsed, qr.created_at, qr.round_label,
               (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.result_id = qr.id) AS question_count
        FROM quiz_results qr
        LEFT JOIN study_projects sp ON sp.id = qr.project_id
        WHERE ${whereSql}
-       ORDER BY qr.created_at DESC
+       ORDER BY qr.created_at ${orderSql}
        LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
-    const results = rows.map((row) => ({
+    let results = rows.map((row) => ({
       id: row.id,
       projectId: row.project_id || null,
       projectName: row.project_name || null,
@@ -2051,10 +2151,19 @@ quizRouter.get("/history", requireAuth, async (req, res) => {
       total: Number(row.total) || 0,
       accuracy: computeAccuracyPercent(row.score, row.total),
       questionCount: Number(row.question_count) || 0,
+      roundLabel: row.round_label || null,
       topics: safeJsonParse(row.topics, []),
       elapsed: Number(row.elapsed) || null,
       createdAt: row.created_at,
     }));
+
+    if (includeQuestions && results.length) {
+      const questionLists = await Promise.all(results.map((result) => getResultQuestions(result.id)));
+      results = results.map((result, index) => ({
+        ...result,
+        questions: questionLists[index],
+      }));
+    }
 
     const total = Number(countRow?.total) || 0;
 
