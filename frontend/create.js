@@ -466,7 +466,24 @@
     els.sendBtn.disabled = disabled;
     els.attachBtn.disabled = disabled;
     els.composerInput.disabled = disabled;
+    els.composerInput.readOnly = disabled;
     if (els.mixBtn) els.mixBtn.disabled = disabled;
+  }
+
+  function ensureComposerReady() {
+    state.isProcessing = false;
+    els.composerInput.disabled = false;
+    els.composerInput.readOnly = false;
+    els.attachBtn.disabled = false;
+    els.sendBtn.disabled = false;
+    if (els.mixBtn) els.mixBtn.disabled = false;
+  }
+
+  function updateComposerPlaceholder() {
+    if (!els.composerInput) return;
+    els.composerInput.placeholder = state.resumedSession
+      ? "Add more material or continue this session…"
+      : "Paste study material, or attach files…";
   }
 
   function setProcessing(on) {
@@ -482,6 +499,8 @@
     if (textEl) {
       textEl.textContent = on ? "Continuing saved session" : "Viewing a saved session";
     }
+    if (on) ensureComposerReady();
+    updateComposerPlaceholder();
     refreshComposerDisabled();
   }
 
@@ -1727,7 +1746,9 @@
   }
 
   async function openProject(projectId) {
-    if (!projectId || state.isProcessing) return;
+    if (!projectId) return;
+    setProcessing(false);
+    state.training = null;
     state.projectId = projectId;
     state.roundResults = [];
     state.analysis = null;
@@ -1868,10 +1889,13 @@
         msg.querySelector(".new-session-btn")?.addEventListener("click", resetNewChat);
       }
       await loadHistorySidebar();
+      ensureComposerReady();
+      updateComposerPlaceholder();
       els.composerInput.focus();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Could not load session: ${escapeHtml(err.message)}</p>`);
+      ensureComposerReady();
     }
   }
 
@@ -1902,7 +1926,8 @@
   }
 
   function resetNewChat() {
-    if (state.isProcessing) return;
+    // "Start new session" must always let the user escape a stuck run.
+    setProcessing(false);
     state.projectId = null;
     state.projectName = "";
     state.analysis = null;
@@ -1914,6 +1939,7 @@
     state.training = null;
     setResumedSession(false);
     setActiveNav("navHome");
+    updateComposerPlaceholder();
     els.composerInput.value = "";
     autosizeComposer();
     renderAttachmentsBar();
@@ -2352,6 +2378,7 @@
     renderWelcome();
     setQuizMode(loadQuizMode());
     updateMixPanelUi();
+    updateComposerPlaceholder();
     loadHistorySidebar();
     autosizeComposer();
     els.composerInput.focus();
