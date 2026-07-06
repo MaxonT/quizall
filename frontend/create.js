@@ -340,7 +340,7 @@
   function formatSessionDate(iso) {
     if (!iso) return "";
     try {
-      return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
     } catch {
       return "";
     }
@@ -1241,7 +1241,7 @@
 
   function autoProjectName() {
     const d = new Date();
-    return `Study · ${d.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+    return `Study · ${d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;    
   }
 
   async function createProject(name) {

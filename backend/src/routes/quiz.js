@@ -113,10 +113,14 @@ CREATE TABLE IF NOT EXISTS quiz_shares (
   payload_json TEXT NOT NULL,
   created_at TEXT NOT NULL,
   expires_at TEXT,
+  is_public INTEGER NOT NULL DEFAULT 0,
+  subject_category TEXT,
+  view_count INTEGER NOT NULL DEFAULT 0,
   CONSTRAINT fk_quiz_shares_user FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_quiz_shares_project FOREIGN KEY (project_id) REFERENCES study_projects(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_quiz_shares_token ON quiz_shares(token);
+CREATE INDEX IF NOT EXISTS idx_quiz_shares_public ON quiz_shares(is_public, created_at);
 
 CREATE TABLE IF NOT EXISTS study_chat_transcripts (
   project_id TEXT PRIMARY KEY,
@@ -226,6 +230,9 @@ await Promise.resolve(ensureColumn("quiz_questions", "source_reference", "TEXT")
 await Promise.resolve(ensureColumn("quiz_questions", "topic_node", "TEXT"));
 await Promise.resolve(ensureColumn("quiz_questions", "difficulty", "TEXT"));
 await Promise.resolve(ensureColumn("quiz_questions", "bloom_level", "TEXT"));
+await Promise.resolve(ensureColumn("quiz_shares", "is_public", "INTEGER NOT NULL DEFAULT 0"));
+await Promise.resolve(ensureColumn("quiz_shares", "subject_category", "TEXT"));
+await Promise.resolve(ensureColumn("quiz_shares", "view_count", "INTEGER NOT NULL DEFAULT 0"));
 
 if (USE_POSTGRES) {
   await db.exec(`CREATE INDEX IF NOT EXISTS idx_quiz_results_project ON quiz_results(project_id, created_at);`);
@@ -3101,17 +3108,20 @@ quizRouter.post("/share", requireAuth, async (req, res) => {
     const token = nanoid(24);
     const now = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const isPublic = req.body?.isPublic === true || req.body?.isPublic === 1 ? 1 : 0;
+    const subject = plan?.subject || project.name || "";
+    const subjectCategory = inferCategory(subject);
 
     await dbRun(
-      `INSERT INTO quiz_shares (id, user_id, project_id, token, payload_json, created_at, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, userId, projectId, token, JSON.stringify(payload), now, expiresAt]
+      `INSERT INTO quiz_shares (id, user_id, project_id, token, payload_json, created_at, expires_at, is_public, subject_category, view_count)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+      [id, userId, projectId, token, JSON.stringify(payload), now, expiresAt, isPublic, subjectCategory]
     );
 
     const base = (process.env.FRONTEND_URL || "http://localhost:4173").replace(/\/$/, "");
     const url = `${base}/share.html?token=${token}`;
 
-    return res.json({ ok: true, url, token, expiresAt });
+    return res.json({ ok: true, url, token, expiresAt, isPublic: isPublic === 1, category: subjectCategory });
   } catch (err) {
     console.error("[quizall] share create error:", err);
     return res.status(500).json({ ok: false, error: "Failed to create share link" });
@@ -3125,7 +3135,7 @@ quizRouter.get("/share/:token", async (req, res) => {
       return res.status(400).json({ ok: false, error: "Invalid token" });
     }
 
-    const row = await dbGet(`SELECT payload_json, expires_at, created_at FROM quiz_shares WHERE token = ?`, [token]);
+    const row = await dbGet(`SELECT id, payload_json, expires_at, created_at, is_public, subject_category, view_count FROM quiz_shares WHERE token = ?`, [token]);
     if (!row) {
       return res.status(404).json({ ok: false, error: "Share link not found or expired" });
     }
@@ -3134,15 +3144,141 @@ quizRouter.get("/share/:token", async (req, res) => {
       return res.status(410).json({ ok: false, error: "This share link has expired" });
     }
 
+    // Increment view count (fire-and-forget, don't block response)
+    dbRun(`UPDATE quiz_shares SET view_count = view_count + 1 WHERE id = ?`, [row.id]).catch(() => {});
+
     const payload = safeJsonParse(row.payload_json, {});
     return res.json({
       ok: true,
       ...payload,
       createdAt: row.created_at,
       expiresAt: row.expires_at,
+      isPublic: row.is_public === 1 || row.is_public === true,
+      category: row.subject_category || null,
+      viewCount: Number(row.view_count) || 0,
     });
   } catch (err) {
     console.error("[quizall] share resolve error:", err);
     return res.status(500).json({ ok: false, error: "Failed to load share" });
+  }
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Public Library
+// ────────────────────────────────────────────────────────────────────────────────
+
+const LIBRARY_PAGE_LIMIT = 24;
+const VALID_CATEGORIES = new Set([
+  "math", "science", "history", "language", "programming", "business", "medicine", "law", "other",
+]);
+
+function inferCategory(subject = "") {
+  const s = subject.toLowerCase();
+  if (/math|calc|algebra|geometry|statistics|probability/.test(s)) return "math";
+  if (/physics|chemistry|biology|anatomy|science/.test(s)) return "science";
+  if (/history|geography|civics|politics|sociology/.test(s)) return "history";
+  if (/english|literature|language|grammar|writing|japanese|chinese|spanish|french|german/.test(s)) return "language";
+  if (/programming|code|software|computer|algorithm|data structure|javascript|python|java/.test(s)) return "programming";
+  if (/business|economics|finance|accounting|marketing|management/.test(s)) return "business";
+  if (/medicine|medical|nursing|pharmacology|anatomy|physiology/.test(s)) return "medicine";
+  if (/law|legal|constitution|ethics/.test(s)) return "law";
+  return "other";
+}
+
+quizRouter.get("/library", async (req, res) => {
+  try {
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(LIBRARY_PAGE_LIMIT, Math.max(1, Number.parseInt(req.query.limit, 10) || LIBRARY_PAGE_LIMIT));
+    const offset = (page - 1) * limit;
+    const category = normalizeWhitespace(req.query.category || "").toLowerCase();
+    const search = normalizeWhitespace(req.query.q || "").slice(0, 80);
+    const now = new Date().toISOString();
+
+    const where = ["is_public = 1", "(expires_at IS NULL OR expires_at > ?)"];
+    const params = [now];
+
+    if (category && VALID_CATEGORIES.has(category)) {
+      where.push("subject_category = ?");
+      params.push(category);
+    }
+
+    const whereSql = where.join(" AND ");
+
+    const countRow = await dbGet(`SELECT COUNT(*) AS total FROM quiz_shares WHERE ${whereSql}`, params);
+
+    const rows = await dbAll(
+      `SELECT token, payload_json, subject_category, view_count, created_at
+       FROM quiz_shares
+       WHERE ${whereSql}
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    const items = rows.map((row) => {
+      const p = safeJsonParse(row.payload_json, {});
+      const subject = normalizeWhitespace(p.subject || p.projectName || "Untitled");
+      const filteredSubject = search ? subject.toLowerCase().includes(search.toLowerCase()) : true;
+      return {
+        token: row.token,
+        subject,
+        projectName: normalizeWhitespace(p.projectName || ""),
+        category: row.subject_category || "other",
+        roundCount: Array.isArray(p.rounds) ? p.rounds.length : 0,
+        hasNote: !!(p.note && (p.note.summary || p.note.key_takeaways?.length)),
+        viewCount: Number(row.view_count) || 0,
+        createdAt: row.created_at,
+        _match: filteredSubject,
+      };
+    }).filter((item) => item._match).map(({ _match, ...item }) => item);
+
+    const total = Number(countRow?.total) || 0;
+
+    return res.json({
+      ok: true,
+      items,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 0,
+      },
+      categories: Array.from(VALID_CATEGORIES),
+    });
+  } catch (err) {
+    console.error("[quizall] library list error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load library" });
+  }
+});
+
+quizRouter.patch("/share/:token/publish", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const token = normalizeWhitespace(req.params.token || "");
+    if (!token) return res.status(400).json({ ok: false, error: "Invalid token" });
+
+    const row = await dbGet(
+      `SELECT id, user_id, payload_json, subject_category FROM quiz_shares WHERE token = ?`,
+      [token]
+    );
+    if (!row) return res.status(404).json({ ok: false, error: "Share not found" });
+    if (row.user_id !== userId) return res.status(403).json({ ok: false, error: "Not your share" });
+
+    const isPublic = req.body?.isPublic === true || req.body?.isPublic === 1;
+    let category = normalizeWhitespace(req.body?.category || "").toLowerCase();
+    if (!VALID_CATEGORIES.has(category)) {
+      const p = safeJsonParse(row.payload_json, {});
+      category = row.subject_category || inferCategory(p.subject || p.projectName || "");
+    }
+
+    await dbRun(
+      `UPDATE quiz_shares SET is_public = ?, subject_category = ? WHERE id = ?`,
+      [isPublic ? 1 : 0, category, row.id]
+    );
+
+    return res.json({ ok: true, isPublic, category });
+  } catch (err) {
+    console.error("[quizall] share publish error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to update publish status" });
   }
 });

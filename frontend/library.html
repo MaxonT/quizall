@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuizAll Public Library — Browse Community Quizzes</title>
+  <meta name="description" content="Explore thousands of AI-generated quizzes shared by the QuizAll community. Filter by subject, take a challenge, and sharpen your knowledge." />
+  <meta name="keywords" content="quiz library, study quizzes, AI quiz, exam prep, free quizzes, community quizzes" />
+  <link rel="canonical" href="https://quizall.app/library.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://quizall.app/library.html" />
+  <meta property="og:title" content="QuizAll Public Library — Browse Community Quizzes" />
+  <meta property="og:description" content="Explore AI-generated quizzes on math, science, history, programming, and more." />
+  <meta property="og:image" content="https://quizall.app/assets/quizall-icon.svg" />
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
+  <script src="lib/themeManager.js"></script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+  <style>
+    /* ── Layout ── */
+    .lib-page { max-width: 1100px; margin: 0 auto; padding: 0 20px 80px; }
+
+    /* ── Nav ── */
+    .lib-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); max-width: 1100px; margin: 0 auto; gap: 12px; flex-wrap: wrap; }
+    .lib-nav-brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-weight: 600; font-size: 1rem; }
+    .lib-nav-brand img { width: 26px; height: 26px; }
+    .lib-nav-links { display: flex; gap: 20px; align-items: center; }
+    .lib-nav-links a { text-decoration: none; color: var(--text-muted); font-size: 0.9rem; transition: color 0.15s; }
+    .lib-nav-links a:hover { color: var(--text); }
+    .lib-nav-links a.active { color: var(--text); font-weight: 500; }
+    .lib-nav-actions { display: flex; align-items: center; gap: 10px; }
+
+    /* ── Hero ── */
+    .lib-hero { padding: 48px 0 32px; text-align: center; }
+    .lib-hero h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 700; margin-bottom: 10px; }
+    .lib-hero p { color: var(--text-muted); font-size: 1rem; max-width: 560px; margin: 0 auto 28px; }
+
+    /* ── Search + filter bar ── */
+    .lib-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px; }
+    .lib-search { display: flex; align-items: center; gap: 8px; background: var(--surface-2, var(--surface)); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; flex: 1; max-width: 340px; }
+    .lib-search input { border: none; background: transparent; color: var(--text); font-size: 0.9rem; outline: none; width: 100%; }
+    .lib-search input::placeholder { color: var(--text-muted); }
+    .lib-search svg { flex-shrink: 0; color: var(--text-muted); width: 16px; height: 16px; }
+    .lib-filter-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+    .chip { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .chip:hover { border-color: var(--accent, #7c6af0); color: var(--text); }
+    .chip.active { background: var(--accent, #7c6af0); border-color: var(--accent, #7c6af0); color: #fff; }
+
+    /* ── Grid ── */
+    .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .quiz-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px; transition: border-color 0.15s, transform 0.1s; }
+    .quiz-card:hover { border-color: var(--accent, #7c6af0); transform: translateY(-2px); }
+    .quiz-card-subject { font-weight: 600; font-size: 1rem; line-height: 1.4; color: var(--text); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .quiz-card-meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .quiz-card-badge { font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; background: var(--surface-2, rgba(124,106,240,0.12)); color: var(--text-muted); text-transform: capitalize; }
+    .quiz-card-badge.cat { background: var(--accent-bg, rgba(124,106,240,0.15)); color: var(--accent, #7c6af0); }
+    .quiz-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border); }
+    .quiz-card-stats { font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 10px; }
+    .quiz-card-cta { font-size: 0.78rem; font-weight: 500; color: var(--accent, #7c6af0); white-space: nowrap; }
+
+    /* ── Empty / loading states ── */
+    .lib-empty { text-align: center; padding: 64px 20px; color: var(--text-muted); }
+    .lib-empty p { margin-top: 12px; font-size: 0.9rem; }
+    .lib-loading { text-align: center; padding: 64px 20px; color: var(--text-muted); }
+    .lib-skeleton { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; height: 130px; animation: pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+    /* ── Pagination ── */
+    .lib-pager { display: flex; gap: 8px; justify-content: center; align-items: center; }
+    .pager-btn { padding: 7px 16px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 0.85rem; cursor: pointer; transition: background 0.12s; }
+    .pager-btn:hover:not(:disabled) { background: var(--surface); }
+    .pager-btn:disabled { opacity: 0.35; cursor: default; }
+    .pager-info { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* ── Misc ── */
+    .lib-create-cta { text-align: center; margin-top: 40px; padding: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .lib-create-cta p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 14px; }
+    .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--accent, #7c6af0); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 0.9rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: opacity 0.15s; }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-ghost { display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; cursor: pointer; text-decoration: none; transition: color 0.15s, border-color 0.15s; }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+
+    @media (max-width: 600px) {
+      .lib-grid { grid-template-columns: 1fr; }
+      .lib-nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <header>
+    <nav class="lib-nav">
+      <a href="index.html" class="lib-nav-brand">
+        <img src="assets/quizall-icon.svg" alt="QuizAll" />
+        QuizAll
+      </a>
+      <div class="lib-nav-links">
+        <a href="index.html">Dashboard</a>
+        <a href="create.html">Create Quiz</a>
+        <a href="library.html" class="active">Library</a>
+      </div>
+      <div class="lib-nav-actions">
+        <a href="create.html" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Quiz
+        </a>
+        <button id="themeToggle" class="btn-ghost" style="border:none;padding:6px 10px;" title="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="lib-page">
+    <!-- Hero -->
+    <section class="lib-hero">
+      <h1>Community Quiz Library</h1>
+      <p>Browse AI-generated quizzes shared by learners like you. Take a challenge or create your own.</p>
+    </section>
+
+    <!-- Controls -->
+    <div class="lib-controls">
+      <label class="lib-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="search" id="searchInput" placeholder="Search quizzes…" autocomplete="off" maxlength="80" />
+      </label>
+    </div>
+    <div class="lib-filter-chips" id="filterChips">
+      <button class="chip active" data-cat="">All subjects</button>
+      <button class="chip" data-cat="math">Math</button>
+      <button class="chip" data-cat="science">Science</button>
+      <button class="chip" data-cat="history">History</button>
+      <button class="chip" data-cat="language">Language</button>
+      <button class="chip" data-cat="programming">Programming</button>
+      <button class="chip" data-cat="business">Business</button>
+      <button class="chip" data-cat="medicine">Medicine</button>
+      <button class="chip" data-cat="law">Law</button>
+      <button class="chip" data-cat="other">Other</button>
+    </div>
+
+    <!-- Grid -->
+    <div id="libGrid" class="lib-grid" style="margin-top:28px;">
+      <!-- Skeleton placeholders -->
+      <div class="lib-skeleton"></div>
+      <div class="lib-skeleton"></div>
+      <div class="lib-skeleton"></div>
+      <div class="lib-skeleton"></div>
+      <div class="lib-skeleton"></div>
+      <div class="lib-skeleton"></div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="libPager" class="lib-pager" style="display:none;"></div>
+
+    <!-- Create CTA -->
+    <div class="lib-create-cta">
+      <p>Don't see what you're looking for? Create your own quiz in seconds.</p>
+      <a href="create.html" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+        Create a Quiz
+      </a>
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    'use strict';
+
+    const API_BASE = window.QUIZALL_API_BASE || window.location.origin || 'http://localhost:8080';
+    const grid = document.getElementById('libGrid');
+    const pager = document.getElementById('libPager');
+    const searchInput = document.getElementById('searchInput');
+    const filterChips = document.getElementById('filterChips');
+
+    let state = { page: 1, category: '', q: '' };
+    let debounceTimer = null;
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = String(text ?? '');
+      return d.innerHTML;
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      try {
+        return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      } catch { return ''; }
+    }
+
+    function categoryEmoji(cat) {
+      const map = {
+        math: '📐', science: '🔬', history: '📜', language: '📖',
+        programming: '💻', business: '📊', medicine: '🩺', law: '⚖️', other: '📚',
+      };
+      return map[cat] || '📚';
+    }
+
+    function renderCard(item) {
+      const cat = item.category || 'other';
+      const rounds = item.roundCount === 1 ? '1 round' : `${item.roundCount} rounds`;
+      const views = item.viewCount > 0 ? `${item.viewCount} view${item.viewCount !== 1 ? 's' : ''}` : 'New';
+      return `
+        <a class="quiz-card" href="share.html?token=${encodeURIComponent(item.token)}" target="_blank" rel="noopener">
+          <div class="quiz-card-subject">${escapeHtml(item.subject || item.projectName || 'Untitled Quiz')}</div>
+          <div class="quiz-card-meta">
+            <span class="quiz-card-badge cat">${categoryEmoji(cat)} ${escapeHtml(cat)}</span>
+            ${item.hasNote ? '<span class="quiz-card-badge">📝 notes</span>' : ''}
+          </div>
+          <div class="quiz-card-footer">
+            <div class="quiz-card-stats">
+              <span>${rounds}</span>
+              <span>·</span>
+              <span>${views}</span>
+            </div>
+            <span class="quiz-card-cta">Take challenge →</span>
+          </div>
+        </a>`;
+    }
+
+    function renderSkeletons(count = 6) {
+      return Array.from({ length: count }, () => '<div class="lib-skeleton"></div>').join('');
+    }
+
+    function renderEmpty() {
+      return `<div class="lib-empty" style="grid-column:1/-1">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        <p>No quizzes found. <a href="create.html" style="color:var(--accent,#7c6af0)">Be the first to share one!</a></p>
+      </div>`;
+    }
+
+    function renderPager(pagination) {
+      if (!pagination || pagination.totalPages <= 1) {
+        pager.style.display = 'none';
+        return;
+      }
+      pager.style.display = 'flex';
+      pager.innerHTML = `
+        <button class="pager-btn" id="prevBtn" ${pagination.page <= 1 ? 'disabled' : ''}>← Prev</button>
+        <span class="pager-info">Page ${pagination.page} of ${pagination.totalPages}</span>
+        <button class="pager-btn" id="nextBtn" ${pagination.page >= pagination.totalPages ? 'disabled' : ''}>Next →</button>`;
+
+      document.getElementById('prevBtn')?.addEventListener('click', () => {
+        state.page = Math.max(1, state.page - 1);
+        loadLibrary();
+      });
+      document.getElementById('nextBtn')?.addEventListener('click', () => {
+        state.page = Math.min(pagination.totalPages, state.page + 1);
+        loadLibrary();
+      });
+    }
+
+    async function loadLibrary() {
+      grid.innerHTML = renderSkeletons();
+      pager.style.display = 'none';
+
+      const params = new URLSearchParams({ page: state.page, limit: 24 });
+      if (state.category) params.set('category', state.category);
+      if (state.q) params.set('q', state.q);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/quiz/library?${params}`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Failed to load');
+
+        if (!data.items || !data.items.length) {
+          grid.innerHTML = renderEmpty();
+          return;
+        }
+
+        grid.innerHTML = data.items.map(renderCard).join('');
+        renderPager(data.pagination);
+      } catch (err) {
+        grid.innerHTML = `<div class="lib-empty" style="grid-column:1/-1">
+          <p>Could not load library. Please try again.</p>
+        </div>`;
+      }
+    }
+
+    // Category chips
+    filterChips.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      filterChips.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.category = chip.dataset.cat || '';
+      state.page = 1;
+      loadLibrary();
+    });
+
+    // Search
+    searchInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        state.q = searchInput.value.trim();
+        state.page = 1;
+        loadLibrary();
+      }, 380);
+    });
+
+    // Theme toggle
+    document.getElementById('themeToggle')?.addEventListener('click', () => {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.querySelector('.theme-icon').textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+
+    // Apply saved theme to toggle icon
+    const savedTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const themeIcon = document.querySelector('.theme-icon');
+    if (themeIcon) themeIcon.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+    // Initial load
+    loadLibrary();
+  })();
+  </script>
+</body>
+</html>
