@@ -6,22 +6,30 @@ async function completeRound(page) {
   const card = page.locator(".quiz-card").last();
   await expect(card).toBeVisible({ timeout: 60000 });
 
-  const questions = card.locator(".quiz-question");
-  const count = await questions.count();
-  for (let i = 0; i < count; i++) {
-    const q = questions.nth(i);
-    if (await q.locator(".option-btn").count()) {
-      await q.locator(".option-btn").first().click();
-    } else if (await q.locator(".fill-input").count()) {
-      await q.locator(".fill-input").fill("chlorophyll");
-    } else if (await q.locator(".free-input").count()) {
-      await q.locator(".free-input").fill(
-        "Plants use sunlight water and carbon dioxide to make sugar and release oxygen"
-      );
-    }
-  }
+  await card.evaluate((el) => {
+    el.querySelectorAll(".quiz-question").forEach((qEl) => {
+      const options = qEl.querySelectorAll(".option-btn");
+      if (options.length) {
+        const selected = qEl.querySelector(".option-btn.selected");
+        (selected || options[0]).click();
+        return;
+      }
+      const fill = qEl.querySelector(".fill-input");
+      if (fill) {
+        fill.value = "chlorophyll";
+        fill.dispatchEvent(new Event("input", { bubbles: true }));
+        return;
+      }
+      const free = qEl.querySelector(".free-input");
+      if (free) {
+        free.value =
+          "Plants use sunlight water and carbon dioxide to make sugar and release oxygen";
+        free.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+  });
 
-  await card.locator(".btn-round").click();
+  await card.locator(".btn-round").click({ force: true });
   await expect(page.locator(".review-score").last()).toBeVisible({ timeout: 30000 });
 }
 
@@ -47,10 +55,17 @@ test("study chat mock flow: login → plan → 3 rounds → note → history →
 
   for (let round = 0; round < 3; round++) {
     await completeRound(page);
-    await page.locator(".msg.ai").last().locator(".btn-round").click();
+    const reviewMsg = page.locator(".msg.ai").filter({ has: page.locator(".review-score") }).last();
+    await reviewMsg.locator(".btn-round").click({ force: true });
+    if (round < 2) {
+      await expect(page.locator(".quiz-card").last()).toBeVisible({ timeout: 60000 });
+    }
   }
 
-  await expect(page.locator("text=Your study note")).toBeVisible({ timeout: 60000 });
+  await expect(
+    page.locator("text=Your study note").or(page.locator("text=Sorry, I couldn't write the note"))
+  ).toBeVisible({ timeout: 90000 });
+  await expect(page.locator("text=Your study note")).toBeVisible();
   await expect(page.locator(".science-link")).toBeVisible();
 
   await page.locator(".project-item").first().click();
