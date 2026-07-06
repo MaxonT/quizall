@@ -56,8 +56,58 @@ const FRONTEND_URL = (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "ht
 const CORS_ORIGIN_RAW = (process.env.CORS_ORIGIN || "").trim();
 const ALLOWED_REDIRECT_ORIGINS = CORS_ORIGIN_RAW === "*" ? [] : CORS_ORIGIN_RAW.split(",").map((o) => o.trim()).filter(Boolean);
 
-// In-memory store for code_verifier (in production, use Redis or database)
-const codeVerifierStore = new Map();
+// Persist PKCE state in DB so Render restarts / multi-instance callbacks still work.
+let oauthStateTableReady = false;
+
+async function ensureOAuthStateTable() {
+  if (oauthStateTableReady) return;
+  await dbRun(`
+    CREATE TABLE IF NOT EXISTS oauth_states (
+      state TEXT PRIMARY KEY,
+      code_verifier TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      return_origin TEXT,
+      expires_at INTEGER NOT NULL
+    )
+  `);
+  oauthStateTableReady = true;
+}
+
+async function saveOAuthState(state, payload) {
+  await ensureOAuthStateTable();
+  await dbRun(
+    `INSERT INTO oauth_states (state, code_verifier, provider, return_origin, expires_at) VALUES (?, ?, ?, ?, ?)`,
+    [state, payload.codeVerifier, payload.provider, payload.returnOrigin, payload.expiresAt]
+  );
+}
+
+async function loadOAuthState(state) {
+  await ensureOAuthStateTable();
+  const row = await dbGet(`SELECT * FROM oauth_states WHERE state = ?`, [state]);
+  if (!row) return null;
+  return {
+    codeVerifier: row.code_verifier,
+    provider: row.provider,
+    returnOrigin: row.return_origin || null,
+    expiresAt: Number(row.expires_at),
+  };
+}
+
+async function deleteOAuthState(state) {
+  await ensureOAuthStateTable();
+  await dbRun(`DELETE FROM oauth_states WHERE state = ?`, [state]);
+}
+
+async function purgeExpiredOAuthStates() {
+  await ensureOAuthStateTable();
+  await dbRun(`DELETE FROM oauth_states WHERE expires_at < ?`, [Date.now()]);
+}
+
+function oauthRedirectError(res, frontendBase, message) {
+  const errorUrl = new URL(`${frontendBase}/index.html`);
+  errorUrl.searchParams.set("oauth_error", message);
+  return res.redirect(errorUrl.toString());
+}
 
 // =============================================
 // Helper Functions
@@ -166,7 +216,7 @@ async function findOrCreateUser(email, provider, providerId) {
  * GET /api/auth/oauth/:provider/authorize
  * Initiates OAuth flow by generating authorization URL with PKCE
  */
-oauthRouter.get("/:provider/authorize", (req, res) => {
+oauthRouter.get("/:provider/authorize", async (req, res) => {
   const { provider } = req.params;
   
   if (provider !== 'google' && provider !== 'github') {
@@ -187,20 +237,19 @@ oauthRouter.get("/:provider/authorize", (req, res) => {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
   
-  // Store code_verifier and optional return_origin (with expiration in 10 minutes)
   const state = nanoid(32);
-  codeVerifierStore.set(state, {
-    codeVerifier,
-    provider,
-    returnOrigin,
-    expiresAt: Date.now() + 10 * 60 * 1000
-  });
-  
-  // Clean up expired entries
-  for (const [key, value] of codeVerifierStore.entries()) {
-    if (value.expiresAt < Date.now()) {
-      codeVerifierStore.delete(key);
-    }
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  try {
+    await purgeExpiredOAuthStates();
+    await saveOAuthState(state, {
+      codeVerifier,
+      provider,
+      returnOrigin,
+      expiresAt,
+    });
+  } catch (storeErr) {
+    console.error("[oauth] Failed to persist OAuth state:", storeErr);
+    return res.status(500).json({ ok: false, error: "Failed to start OAuth flow" });
   }
 
   let authUrl;
@@ -280,7 +329,14 @@ function resolveFrontendBase(stored, req) {
  */
 oauthRouter.get("/callback", async (req, res) => {
   const { code, state, error } = req.query;
-  const stored = state ? codeVerifierStore.get(state) : null;
+  let stored = null;
+  if (state) {
+    try {
+      stored = await loadOAuthState(state);
+    } catch (loadErr) {
+      console.error("[oauth] Failed to load OAuth state:", loadErr);
+    }
+  }
   
   let frontendBase;
   try {
@@ -293,26 +349,19 @@ oauthRouter.get("/callback", async (req, res) => {
   console.log(`[oauth] Callback received - code: ${code ? 'present' : 'missing'}, state: ${state ? 'present' : 'missing'}, error: ${error || 'none'}`);
   console.log(`[oauth] FRONTEND_URL (resolved): ${frontendBase}`);
   
-  // 错误用 query 传（仅错误信息，无敏感 token）；成功用 fragment 传 token（不进入 Referer，符合 OAuth 安全实践）
   if (error) {
-    const errorUrl = new URL(`${frontendBase}/index.html`);
-    errorUrl.searchParams.set('oauth_error', encodeURIComponent(error));
-    return res.redirect(errorUrl.toString());
+    return oauthRedirectError(res, frontendBase, String(error));
   }
   if (!code || !state) {
-    const errorUrl = new URL(`${frontendBase}/index.html`);
-    errorUrl.searchParams.set('oauth_error', encodeURIComponent('Missing code or state'));
-    return res.redirect(errorUrl.toString());
+    return oauthRedirectError(res, frontendBase, "Missing code or state");
   }
   if (!stored || stored.expiresAt < Date.now()) {
-    codeVerifierStore.delete(state);
-    const errorUrl = new URL(`${frontendBase}/index.html`);
-    errorUrl.searchParams.set('oauth_error', encodeURIComponent('Invalid or expired state'));
-    return res.redirect(errorUrl.toString());
+    await deleteOAuthState(state);
+    return oauthRedirectError(res, frontendBase, "Invalid or expired state");
   }
-  
+
   const { codeVerifier, provider } = stored;
-  codeVerifierStore.delete(state);
+  await deleteOAuthState(state);
 
   try {
     let userInfo;
@@ -334,15 +383,22 @@ oauthRouter.get("/callback", async (req, res) => {
       
       const tokenData = await tokenResponse.json();
       if (!tokenResponse.ok) {
-        throw new Error(tokenData.error || 'Failed to exchange code for token');
+        console.error("[oauth] Google token exchange failed:", tokenData);
+        const err = new Error(tokenData.error_description || tokenData.error || "Failed to exchange code for token");
+        err.code = "OAUTH_TOKEN_EXCHANGE";
+        throw err;
       }
-      
+
       // Get user info from Google
       const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
       });
-      
+
       const googleUser = await userResponse.json();
+      if (!userResponse.ok || !googleUser?.email) {
+        console.error("[oauth] Google userinfo failed:", googleUser);
+        throw new Error("Failed to retrieve user information from Google");
+      }
       userInfo = {
         email: googleUser.email,
         providerId: googleUser.id,
@@ -415,9 +471,9 @@ oauthRouter.get("/callback", async (req, res) => {
     console.error('[oauth] Callback error:', err);
     const message = err.code === "ACCOUNT_EXISTS_PASSWORD"
       ? err.message
-      : (process.env.NODE_ENV === "production" ? "OAuth authentication failed" : (err.message || "OAuth authentication failed"));
-    const errorUrl = new URL(`${frontendBase}/index.html`);
-    errorUrl.searchParams.set('oauth_error', encodeURIComponent(message));
-    return res.redirect(errorUrl.toString());
+      : err.code === "OAUTH_TOKEN_EXCHANGE"
+        ? err.message
+        : (process.env.NODE_ENV === "production" ? "OAuth authentication failed" : (err.message || "OAuth authentication failed"));
+    return oauthRedirectError(res, frontendBase, message);
   }
 });
