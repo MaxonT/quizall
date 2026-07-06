@@ -2100,9 +2100,7 @@
       }
 
       if (err) {
-        var decodedErr = err;
-        try { decodedErr = decodeURIComponent(err); } catch (e) {}
-        showAuthMsg(decodedErr, "error");
+        showAuthMsg(decodeURIComponent(err), "error");
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
       }

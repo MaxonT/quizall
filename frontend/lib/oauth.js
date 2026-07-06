@@ -80,9 +80,7 @@
     }
 
     if (error) {
-      var decoded = error;
-      try { decoded = decodeURIComponent(error); } catch (e) {}
-      showError(decoded);
+      showError(decodeURIComponent(error));
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
       return;
     }
