@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QuizAll — Study Chat</title>
+  <title>QuizAll — Projects</title>
   <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
   <script src="lib/themeManager.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -14,16 +14,10 @@
   <script src="config.js"></script>
   <script src="lib/authGuard.js"></script>
 </head>
-<body class="chat-app">
-  <!-- Icon sprite (Lucide-style, stroke) -->
+<body class="chat-app projects-page">
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
       <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
-      <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
-      <symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></symbol>
-      <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></symbol>
-      <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
-      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
       <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
       <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
       <symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
@@ -33,18 +27,15 @@
       <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
       <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
       <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
-      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></symbol>
-      <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol>
-      <symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/></symbol>
       <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
-      <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
       <symbol id="i-notebook" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M16 2v20"/></symbol>
       <symbol id="i-more-horizontal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
       <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L8.5 11.5 7 16l4.5-1.5z"/><path d="m15 5 4 4"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
       <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
       <symbol id="i-panel-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></symbol>
-      <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
     </defs>
   </svg>
 
@@ -63,7 +54,7 @@
       </button>
 
       <nav class="side-nav">
-        <button type="button" class="nav-item is-active" id="navHome">
+        <button type="button" class="nav-item" id="navHome">
           <svg class="icon"><use href="#i-home"></use></svg>
           <span>Home</span>
         </button>
@@ -71,7 +62,7 @@
           <svg class="icon"><use href="#i-file"></use></svg>
           <span>Upload material</span>
         </button>
-        <button type="button" class="nav-item" id="navProjects">
+        <button type="button" class="nav-item is-active" id="navProjects">
           <svg class="icon"><use href="#i-folder"></use></svg>
           <span>Projects</span>
           <span class="nav-count" id="navProjectsCount"></span>
@@ -94,81 +85,47 @@
       </div>
     </aside>
 
-    <main class="chat-main" id="chatMain">
+    <main class="projects-main" id="projectsMain">
       <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle sidebar" aria-expanded="true">
         <svg class="icon icon-menu"><use href="#i-menu"></use></svg>
         <svg class="icon icon-panel"><use href="#i-panel-left"></use></svg>
       </button>
 
-      <div class="chat-scroll" id="chatMessages">
-        <div class="chat-inner" id="chatInner"></div>
-      </div>
-
-      <div class="composer-region">
-        <div class="hero" id="hero">
-          <div class="hero-ambient" aria-hidden="true"></div>
-          <span class="hero-badge">
-            <svg class="icon"><use href="#i-sparkles"></use></svg>
-            AI quiz coach
-          </span>
-          <h1>What do you want to <span class="accent">master</span> today?</h1>
-          <p class="hero-sub">Paste notes or attach files — get a plan, a mixed quiz, and a recap in one flow.</p>
-          <div class="hero-flow" aria-hidden="true">
-            <span class="hero-step"><svg class="icon"><use href="#i-notebook"></use></svg> Study plan</span>
-            <span class="hero-step-divider"></span>
-            <span class="hero-step"><svg class="icon"><use href="#i-target"></use></svg> Mixed quiz</span>
-            <span class="hero-step-divider"></span>
-            <span class="hero-step"><svg class="icon"><use href="#i-clipboard"></use></svg> Study note</span>
-          </div>
-        </div>
-
-        <div class="composer-dock">
-        <div class="composer-wrap">
-          <div class="composer-attachments" id="attachmentsBar"></div>
-          <div class="composer" id="composer">
-            <textarea id="composerInput" rows="1" placeholder="Paste study material, or attach files…"></textarea>
-            <div class="composer-actions">
-              <button type="button" class="btn-icon btn-mix" id="mixBtn" title="Question mix" aria-label="Question mix">
-                <svg class="icon"><use href="#i-layers"></use></svg>
-              </button>
-              <button type="button" class="btn-icon" id="attachBtn" title="Attach files" aria-label="Attach files">
-                <svg class="icon"><use href="#i-paperclip"></use></svg>
-              </button>
-              <button type="button" class="btn-send" id="sendBtn" title="Send" aria-label="Send">
-                <svg class="icon"><use href="#i-arrow-up"></use></svg>
-              </button>
+      <div class="projects-scroll">
+        <div class="projects-inner">
+          <header class="projects-head">
+            <div class="projects-head-copy">
+              <h1>Projects</h1>
+              <p>Group study sessions by course or topic — like folders for your learning.</p>
             </div>
-          </div>
-          <div class="mix-panel hidden" id="mixPanel">
-            <button type="button" class="mix-summary" id="mixSummaryBtn" aria-expanded="false">
-              <span class="mix-summary-text">
-                <span class="mix-summary-label">Quiz shape</span>
-                <span class="mix-preview" id="mixPreview">Balanced · 7 MCQ · 4 Fill · 2 FRQ</span>
-              </span>
-              <svg class="icon mix-chevron" aria-hidden="true"><use href="#i-chevron-down"></use></svg>
+            <button type="button" class="projects-new-btn" id="newFolderBtn">
+              <svg class="icon"><use href="#i-plus"></use></svg>
+              New project
             </button>
-            <div class="mix-details" id="mixDetails">
-              <div class="mix-presets" id="mixPresets" role="radiogroup" aria-label="Question mix">
-                <button type="button" class="mix-preset is-active" data-preset="balanced">Balanced</button>
-                <button type="button" class="mix-preset" data-preset="quiz">MCQ+</button>
-                <button type="button" class="mix-preset" data-preset="recall">Fill+</button>
-                <button type="button" class="mix-preset" data-preset="essay">FRQ+</button>
-              </div>
-              <div class="mix-total">
-                <span class="mix-total-label">Questions</span>
-                <div class="mix-stepper">
-                  <button type="button" class="mix-step" id="mixTotalDown" aria-label="Fewer questions">−</button>
-                  <span class="mix-total-val" id="mixTotalDisplay">13</span>
-                  <button type="button" class="mix-step" id="mixTotalUp" aria-label="More questions">+</button>
-                </div>
-              </div>
+          </header>
+
+          <section class="projects-section" aria-labelledby="foldersTitle">
+            <h2 class="projects-section-title" id="foldersTitle">Your projects</h2>
+            <div class="projects-folder-grid" id="folderGrid"></div>
+          </section>
+
+          <section class="projects-section" id="sessionsSection" aria-labelledby="sessionsTitle">
+            <div class="projects-section-head">
+              <h2 class="projects-section-title" id="sessionsTitle">Study sessions</h2>
+              <button type="button" class="projects-filter-clear hidden" id="clearFolderFilter">Show all</button>
             </div>
-          </div>
-          <p class="composer-hint" id="composerHint">QuizAll builds a plan, quizzes you in one mixed round, then writes your note. <button type="button" class="hint-link" id="sampleLink">Try a sample</button></p>
-        </div>
+            <div class="projects-session-list" id="sessionList"></div>
+          </section>
         </div>
       </div>
     </main>
+  </div>
+
+  <div class="popup-menu project-item-menu hidden" id="projectItemMenu">
+    <button type="button" id="projectMenuRename"><svg class="icon"><use href="#i-pencil"></use></svg> Rename</button>
+    <button type="button" id="projectMenuMove"><svg class="icon"><use href="#i-folder"></use></svg> Move to project…</button>
+    <div class="folder-move-submenu hidden" id="folderMoveSubmenu"></div>
+    <button type="button" class="danger" id="projectMenuDelete"><svg class="icon"><use href="#i-trash"></use></svg> Delete</button>
   </div>
 
   <div class="popup-menu hidden" id="avatarMenu">
@@ -180,35 +137,6 @@
     <button type="button" class="danger" id="menuLogout"><svg class="icon"><use href="#i-logout"></use></svg> Log out</button>
   </div>
 
-  <div class="settings-overlay hidden" id="settingsOverlay">
-    <div class="settings-modal">
-      <aside class="settings-side">
-        <div class="settings-side-title">Settings</div>
-        <button type="button" class="settings-tab is-active" data-tab="account">
-          <svg class="icon"><use href="#i-settings"></use></svg> Account
-        </button>
-        <button type="button" class="settings-tab" data-tab="appearance">
-          <svg class="icon"><use href="#i-sparkles"></use></svg> Appearance
-        </button>
-        <button type="button" class="settings-tab" data-tab="billing">
-          <svg class="icon"><use href="#i-card"></use></svg> Billing
-        </button>
-        <button type="button" class="settings-tab" data-tab="usage">
-          <svg class="icon"><use href="#i-activity"></use></svg> Usage
-        </button>
-      </aside>
-      <section class="settings-content">
-        <div class="settings-content-head">
-          <h2 id="settingsTabTitle">Account</h2>
-          <button type="button" class="settings-close" id="settingsClose" aria-label="Close">
-            <svg class="icon"><use href="#i-x"></use></svg>
-          </button>
-        </div>
-        <div class="settings-body" id="settingsBody"></div>
-      </section>
-    </div>
-  </div>
-
-  <script src="create.js?v=5"></script>
+  <script src="projects.js?v=1"></script>
 </body>
 </html>

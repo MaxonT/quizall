@@ -26,8 +26,6 @@
     isProcessing: false,
     viewOnly: false,
     materialPreview: "",
-    folders: [],
-    folderExpanded: {},
   };
 
   const els = {
@@ -37,9 +35,10 @@
     newChatBtn: document.getElementById("newChatBtn"),
     navHome: document.getElementById("navHome"),
     navUpload: document.getElementById("navUpload"),
+    navProjects: document.getElementById("navProjects"),
     navHistory: document.getElementById("navHistory"),
+    navProjectsCount: document.getElementById("navProjectsCount"),
     navHistoryCount: document.getElementById("navHistoryCount"),
-    projectList: document.getElementById("projectList"),
     avatarBtn: document.getElementById("avatarBtn"),
     avatarInitials: document.getElementById("avatarInitials"),
     avatarEmail: document.getElementById("avatarEmail"),
@@ -62,11 +61,6 @@
     fileInput: null,
     attachmentsBar: document.getElementById("attachmentsBar"),
     avatarMenu: document.getElementById("avatarMenu"),
-    projectItemMenu: document.getElementById("projectItemMenu"),
-    projectMenuRename: document.getElementById("projectMenuRename"),
-    projectMenuDelete: document.getElementById("projectMenuDelete"),
-    projectMenuMove: document.getElementById("projectMenuMove"),
-    folderMoveSubmenu: document.getElementById("folderMoveSubmenu"),
     sampleLink: document.getElementById("sampleLink"),
     settingsOverlay: document.getElementById("settingsOverlay"),
     settingsBody: document.getElementById("settingsBody"),
@@ -703,247 +697,20 @@
     });
   }
 
-  function groupLabelFor(dateStr) {
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return "Earlier";
-    const now = new Date();
-    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startThat = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const diff = Math.round((startToday - startThat) / 86400000);
-    if (diff <= 0) return "Today";
-    if (diff === 1) return "Yesterday";
-    if (diff <= 7) return "Previous 7 days";
-    if (diff <= 30) return "Previous 30 days";
-    return "Earlier";
-  }
-
-  function projectMeta(p) {
-    const bits = [];
-    if (p.quizCount > 0) bits.push(`${p.quizCount} ${p.quizCount === 1 ? "round" : "rounds"}`);
-    else if (p.fileCount > 0) bits.push(`${p.fileCount} ${p.fileCount === 1 ? "file" : "files"}`);
-    if (p.latestAccuracy != null && p.quizCount > 0) bits.push(`${p.latestAccuracy}%`);
-    return bits.length ? bits.join(" · ") : "Draft session";
-  }
-
-  function projectIconId(p) {
-    if (p.quizCount > 0) return "i-target";
-    if (p.fileCount > 0) return "i-file";
-    return "i-notebook";
-  }
-
-  let projectMenuTargetId = null;
-  let projectMenuAnchor = null;
-
-  function closeProjectMenu() {
-    if (!els.projectItemMenu) return;
-    els.projectItemMenu.classList.add("hidden");
-    els.projectItemMenu.style.top = "";
-    els.projectItemMenu.style.left = "";
-    els.projectItemMenu.style.bottom = "";
-    if (projectMenuAnchor) projectMenuAnchor.classList.remove("is-open");
-    projectMenuTargetId = null;
-    projectMenuAnchor = null;
-    els.folderMoveSubmenu?.classList.add("hidden");
-    els.projectList?.querySelectorAll(".project-row.menu-open").forEach((row) => row.classList.remove("menu-open"));
-  }
-
-  function openProjectMenu(projectId, anchorBtn) {
-    if (!els.projectItemMenu || !anchorBtn) return;
-    closeProjectMenu();
-    projectMenuTargetId = projectId;
-    projectMenuAnchor = anchorBtn;
-    anchorBtn.classList.add("is-open");
-    anchorBtn.closest(".project-row")?.classList.add("menu-open");
-
-    const rect = anchorBtn.getBoundingClientRect();
-    els.projectItemMenu.style.bottom = "auto";
-    els.projectItemMenu.style.top = `${Math.round(rect.bottom + 6)}px`;
-    els.projectItemMenu.style.left = `${Math.max(8, Math.round(rect.right - 168))}px`;
-    els.projectItemMenu.classList.remove("hidden");
-  }
-
-  async function renameProject(projectId) {
-    const rowBtn = els.projectList?.querySelector(`.project-session[data-id="${CSS.escape(projectId)}"]`);
-    const currentName = rowBtn?.querySelector("span:not(.nav-count)")?.textContent?.trim() || "";
-    const nextName = window.prompt("Rename session", currentName);
-    if (nextName == null) return;
-    const name = nextName.trim();
-    if (!name || name.length < 2) return;
-
-    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-
-    if (state.projectId === projectId) state.projectName = name;
-    await loadProjects();
-  }
-
-  async function deleteProject(projectId) {
-    const rowBtn = els.projectList?.querySelector(`.project-session[data-id="${CSS.escape(projectId)}"]`);
-    const label = rowBtn?.querySelector("span:not(.nav-count)")?.textContent?.trim() || "this session";
-    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
-
-    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, { method: "DELETE" });
-
-    if (state.projectId === projectId) resetNewChat();
-    else await loadProjects();
-  }
-
-  function bindProjectListEvents() {
-    els.projectList.querySelectorAll(".project-session").forEach((btn) => {
-      btn.addEventListener("click", () => openProject(btn.getAttribute("data-id")));
-    });
-    els.projectList.querySelectorAll(".project-more").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const projectId = btn.getAttribute("data-id");
-        if (els.projectItemMenu?.classList.contains("hidden") || projectMenuTargetId !== projectId) {
-          openProjectMenu(projectId, btn);
-        } else {
-          closeProjectMenu();
-        }
-      });
-    });
-  }
-
-  function renderProjectRow(p) {
-    const active = p.id === state.projectId;
-    return (
-      `<div class="project-row${active ? " is-active" : ""}">` +
-      `<button type="button" class="nav-item project-session${active ? " is-active" : ""}" data-id="${escapeHtml(p.id)}">` +
-      icon(projectIconId(p)) +
-      `<span>${escapeHtml(p.name)}</span>` +
-      `<span class="nav-count project-meta">${escapeHtml(projectMeta(p))}</span>` +
-      `</button>` +
-      `<button type="button" class="project-more" data-id="${escapeHtml(p.id)}" aria-label="Session options" title="Session options">` +
-      `<svg class="icon"><use href="#i-more-horizontal"></use></svg>` +
-      `</button>` +
-      `</div>`
-    );
-  }
-
-  async function loadFolders() {
+  async function updateNavCounts() {
     try {
-      const data = await api("/api/quiz/folders");
-      state.folders = data.folders || [];
-    } catch {
-      state.folders = [];
-    }
-  }
-
-  async function createFolder() {
-    const name = window.prompt("New project name");
-    if (name == null) return;
-    const trimmed = name.trim();
-    if (trimmed.length < 2) return;
-    await api("/api/quiz/folders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: trimmed }),
-    });
-    await loadProjects();
-  }
-
-  async function moveProjectToFolder(projectId, folderId) {
-    await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ folderId: folderId || null }),
-    });
-    closeProjectMenu();
-    await loadProjects();
-  }
-
-  function renderFolderMoveSubmenu(projectId) {
-    if (!els.folderMoveSubmenu) return;
-    const items = [
-      `<button type="button" class="folder-move-item" data-folder="">Unfiled</button>`,
-      ...state.folders.map(
-        (f) =>
-          `<button type="button" class="folder-move-item" data-folder="${escapeHtml(f.id)}">${escapeHtml(f.name)}</button>`
-      ),
-    ];
-    els.folderMoveSubmenu.innerHTML = items.join("");
-    els.folderMoveSubmenu.classList.remove("hidden");
-    els.folderMoveSubmenu.querySelectorAll(".folder-move-item").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const folderId = btn.getAttribute("data-folder") || null;
-        try {
-          await moveProjectToFolder(projectId, folderId);
-        } catch (err) {
-          window.alert(err.message || "Could not move session");
-        }
-      });
-    });
-  }
-
-  function renderProjectsHeader() {
-    return (
-      `<div class="nav-item nav-item--section" role="presentation">` +
-      `${icon("i-folder")}` +
-      `<span>Projects</span>` +
-      `<button type="button" class="nav-inline-action" id="newFolderBtn">+ New project</button>` +
-      `</div>`
-    );
-  }
-
-  async function loadProjects() {
-    try {
-      await loadFolders();
-      const data = await api("/api/quiz/projects?limit=50");
-      const projects = data.projects || [];
-
-      if (els.navHistoryCount) els.navHistoryCount.textContent = projects.length ? String(projects.length) : "";
-
-      if (!projects.length) {
-        els.projectList.innerHTML =
-          renderProjectsHeader() +
-          '<div class="project-empty">No sessions yet.<br>Start one from the box on the right.</div>';
-        document.getElementById("newFolderBtn")?.addEventListener("click", createFolder);
-        return;
+      const [projectsData, foldersData] = await Promise.all([
+        api("/api/quiz/projects?limit=50"),
+        api("/api/quiz/folders").catch(() => ({ folders: [] })),
+      ]);
+      const projects = projectsData.projects || [];
+      const folders = foldersData.folders || [];
+      if (els.navHistoryCount) {
+        els.navHistoryCount.textContent = projects.length ? String(projects.length) : "";
       }
-
-      const folderMap = {};
-      state.folders.forEach((f) => {
-        folderMap[f.id] = { folder: f, projects: [] };
-      });
-      const unfiled = [];
-      projects.forEach((p) => {
-        if (p.folderId && folderMap[p.folderId]) folderMap[p.folderId].projects.push(p);
-        else unfiled.push(p);
-      });
-
-      let html = renderProjectsHeader();
-
-      state.folders.forEach((folder) => {
-        const group = folderMap[folder.id];
-        const list = group?.projects || [];
-        const expanded = state.folderExpanded[folder.id] !== false;
-        html += `<div class="folder-group${expanded ? " is-open" : ""}" data-folder-id="${escapeHtml(folder.id)}">`;
-        html += `<button type="button" class="nav-item folder-toggle" data-folder-id="${escapeHtml(folder.id)}">`;
-        html += `${icon("i-folder")}<span>${escapeHtml(folder.name)}</span><span class="nav-count">${list.length}</span></button>`;
-        html += `<div class="folder-sessions">`;
-        if (!list.length) html += '<div class="folder-empty">No sessions yet</div>';
-        else html += list.map(renderProjectRow).join("");
-        html += `</div></div>`;
-      });
-
-      if (unfiled.length) html += unfiled.map(renderProjectRow).join("");
-
-      els.projectList.innerHTML = html;
-      document.getElementById("newFolderBtn")?.addEventListener("click", createFolder);
-      els.projectList.querySelectorAll(".folder-toggle").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const folderId = btn.getAttribute("data-folder-id");
-          const currentlyOpen = state.folderExpanded[folderId] !== false;
-          state.folderExpanded[folderId] = !currentlyOpen;
-          btn.closest(".folder-group")?.classList.toggle("is-open", state.folderExpanded[folderId]);
-        });
-      });
-      bindProjectListEvents();
+      if (els.navProjectsCount) {
+        els.navProjectsCount.textContent = folders.length ? String(folders.length) : "";
+      }
     } catch (err) {
       console.error(err);
     }
@@ -1179,7 +946,7 @@
       appendMessage("ai", formatNoteHtml(data.note));
       appendMessage("ai", `<p class="meta-line">Session complete. Start a new study session anytime from the left.</p>`);
       setProcessing(false);
-      await loadProjects();
+      await updateNavCounts();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Sorry, I couldn't write the note: ${escapeHtml(err.message)}</p>`);
@@ -1231,7 +998,7 @@
       const project = await createProject(autoProjectName());
       state.projectId = project.id;
       state.projectName = project.name;
-      await loadProjects();
+      await updateNavCounts();
 
       if (filesToUpload.length) {
         const typing = appendTyping();
@@ -1330,7 +1097,7 @@
       } else {
         appendMessage("ai", `<p class="meta-line">This is a saved session. Click "New study session" to start fresh.</p>`);
       }
-      await loadProjects();
+      await updateNavCounts();
     } catch (err) {
       removeTyping(typing);
       appendMessage("ai", `<p>Could not load session: ${escapeHtml(err.message)}</p>`);
@@ -1378,7 +1145,7 @@
     autosizeComposer();
     renderAttachmentsBar();
     renderWelcome();
-    loadProjects();
+    updateNavCounts();
     els.composerInput.focus();
   }
 
@@ -1586,7 +1353,7 @@
   }
 
   function setActiveNav(id) {
-    [els.navHome, els.navUpload, els.navHistory].forEach((el) => {
+    [els.navHome, els.navUpload, els.navProjects, els.navHistory].forEach((el) => {
       if (el) el.classList.toggle("is-active", el.id === id);
     });
   }
@@ -1603,53 +1370,15 @@
 
     if (els.navHome) els.navHome.addEventListener("click", () => { setActiveNav("navHome"); resetNewChat(); });
     if (els.navUpload) els.navUpload.addEventListener("click", () => { setActiveNav("navHome"); triggerUpload(); });
+    if (els.navProjects) {
+      els.navProjects.addEventListener("click", () => {
+        window.location.href = "projects.html";
+      });
+    }
     if (els.navHistory) {
       els.navHistory.addEventListener("click", () => {
-        setActiveNav("navHistory");
-        const first = els.projectList.querySelector(".project-session");
-        if (first) first.click();
-        if (window.innerWidth < SIDEBAR_BP_MOBILE) setSidebarOpen(true);
+        window.location.href = "projects.html#sessions";
       });
-    }
-
-    if (els.projectMenuRename) {
-      els.projectMenuRename.addEventListener("click", async () => {
-        const id = projectMenuTargetId;
-        closeProjectMenu();
-        if (!id) return;
-        try {
-          await renameProject(id);
-        } catch (err) {
-          window.alert(err.message || "Could not rename session");
-        }
-      });
-    }
-    if (els.projectMenuDelete) {
-      els.projectMenuDelete.addEventListener("click", async () => {
-        const id = projectMenuTargetId;
-        closeProjectMenu();
-        if (!id) return;
-        try {
-          await deleteProject(id);
-        } catch (err) {
-          window.alert(err.message || "Could not delete session");
-        }
-      });
-    }
-    if (els.projectMenuMove) {
-      els.projectMenuMove.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const id = projectMenuTargetId;
-        if (!id) return;
-        if (els.folderMoveSubmenu?.classList.contains("hidden")) {
-          renderFolderMoveSubmenu(id);
-        } else {
-          els.folderMoveSubmenu.classList.add("hidden");
-        }
-      });
-    }
-    if (els.projectItemMenu) {
-      els.projectItemMenu.addEventListener("click", (e) => e.stopPropagation());
     }
 
     if (els.sampleLink) {
@@ -1719,12 +1448,10 @@
 
     els.avatarBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      closeProjectMenu();
       els.avatarMenu.classList.toggle("hidden");
     });
     document.addEventListener("click", () => {
       els.avatarMenu.classList.add("hidden");
-      closeProjectMenu();
     });
     els.avatarMenu.addEventListener("click", (e) => e.stopPropagation());
 
@@ -1750,7 +1477,6 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if (!els.settingsOverlay.classList.contains("hidden")) closeSettings();
-        closeProjectMenu();
       }
     });
 
@@ -1775,7 +1501,7 @@
     bindEvents();
     renderWelcome();
     updateMixPanelUi();
-    loadProjects();
+    updateNavCounts();
     autosizeComposer();
     els.composerInput.focus();
 
@@ -1785,6 +1511,9 @@
       const tab = hash.split("/")[1];
       openSettings(TAB_TITLES[tab] ? tab : "account");
     }
+
+    const projectId = new URLSearchParams(window.location.search).get("project");
+    if (projectId) openProject(projectId);
   }
 
   if (document.readyState === "loading") {
