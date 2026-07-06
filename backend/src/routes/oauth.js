@@ -12,6 +12,7 @@ import { nanoid } from "nanoid";
 export const oauthRouter = Router();
 
 const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
+const DB_BOOL_TRUE = USE_POSTGRES ? true : 1;
 
 // 与 auth.js 一致：PG 下必须用异步 query，否则 oauth 回调拿到的是 Promise 而非用户行，导致 JWT 里 sub/email 为 undefined、/me 查不到用户
 async function dbGet(sql, params = []) {
@@ -159,14 +160,14 @@ async function findOrCreateUser(email, provider, providerId) {
     // Update OAuth provider info if not set or different
     if (!user.oauth_provider || user.oauth_provider !== provider || user.oauth_id !== providerId) {
       await dbRun(
-        `UPDATE users SET oauth_provider = ?, oauth_id = ?, email_verified = 1, email_verified_at = COALESCE(email_verified_at, ?), updated_at = ? WHERE id = ?`,
-        [provider, providerId, now, now, user.id]
+        `UPDATE users SET oauth_provider = ?, oauth_id = ?, email_verified = ?, email_verified_at = COALESCE(email_verified_at, ?), updated_at = ? WHERE id = ?`,
+        [provider, providerId, DB_BOOL_TRUE, now, now, user.id]
       );
       user = await dbGet("SELECT * FROM users WHERE id = ?", [user.id]);
     } else if (!user.email_verified) {
       await dbRun(
-        `UPDATE users SET email_verified = 1, email_verified_at = ?, updated_at = ? WHERE id = ?`,
-        [now, now, user.id]
+        `UPDATE users SET email_verified = ?, email_verified_at = ?, updated_at = ? WHERE id = ?`,
+        [DB_BOOL_TRUE, now, now, user.id]
       );
       user = await dbGet("SELECT * FROM users WHERE id = ?", [user.id]);
     }
