@@ -16,7 +16,7 @@ import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import { requireAuth, TOKEN_SECRET, JWT_VERIFY_OPTIONS } from "./auth.js";
-import { dbGet, dbRun } from "../lib/dbHelpers.js";
+import { dbGet, dbRun, DB_TRUE } from "../lib/dbHelpers.js";
 import { stripeService } from "../lib/stripeService.js";
 import { tokenLedger } from "../lib/tokenLedger.js";
 import { trialAntiAbuse } from "../lib/trialAntiAbuse.js";
@@ -534,9 +534,9 @@ billingRouter.post("/start-trial", requireAuth, async (req, res) => {
     const trialNow = new Date().toISOString();
     await dbRun(`
       UPDATE users 
-      SET trial_used = 1, trial_started_at = ?, updated_at = ?
+      SET trial_used = ?, trial_started_at = ?, updated_at = ?
       WHERE id = ?
-    `, [trialNow, trialNow, userId]);
+    `, [DB_TRUE, trialNow, trialNow, userId]);
     
     await trialAntiAbuse.incrementTrialCount(ipAddress);
     await trialAntiAbuse.recordFingerprint(userId, fingerprint, ipAddress);
@@ -671,8 +671,8 @@ billingRouter.post("/redeem-coupon", requireAuth, async (req, res) => {
     }
 
     await dbRun(
-      "UPDATE users SET subscription_tier = ?, subscription_active = 1, updated_at = ? WHERE id = ?",
-      [coupon.plan, now.toISOString(), userId]
+      "UPDATE users SET subscription_tier = ?, subscription_active = ?, updated_at = ? WHERE id = ?",
+      [coupon.plan, DB_TRUE, now.toISOString(), userId]
     );
 
     // Grant tokens for the plan

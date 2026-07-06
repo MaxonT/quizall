@@ -4,7 +4,7 @@
  * Implements safety controls to prevent trial farming.
  */
 
-import { dbGet, dbRun } from "./dbHelpers.js";
+import { dbGet, dbRun, DB_TRUE } from "./dbHelpers.js";
 import {
   DISPOSABLE_EMAIL_DOMAINS,
   MAX_REGISTRATIONS_PER_IP_DAY,
@@ -26,8 +26,8 @@ export async function isEmailVerified(userId) {
 export async function markEmailVerified(userId) {
   const now = new Date().toISOString();
   await dbRun(
-    `UPDATE users SET email_verified = 1, email_verified_at = ?, updated_at = ? WHERE id = ?`,
-    [now, now, userId]
+    `UPDATE users SET email_verified = ?, email_verified_at = ?, updated_at = ? WHERE id = ?`,
+    [DB_TRUE, now, now, userId]
   );
   console.log(`[antiAbuse] Email verified for user ${userId}`);
 }
@@ -285,8 +285,8 @@ export async function checkTrialEligibility({ userId, email, ipAddress, fingerpr
 export async function blockTrial(userId, reason) {
   const now = new Date().toISOString();
   await dbRun(
-    `UPDATE trial_abuse_checks SET trial_blocked = 1, blocked_reason = ?, updated_at = ? WHERE user_id = ?`,
-    [reason, now, userId]
+    `UPDATE trial_abuse_checks SET trial_blocked = ?, blocked_reason = ?, updated_at = ? WHERE user_id = ?`,
+    [DB_TRUE, reason, now, userId]
   );
   console.log(`[antiAbuse] Trial blocked for user ${userId}: ${reason}`);
 }

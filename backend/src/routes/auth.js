@@ -1,8 +1,8 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { db } from "../lib/db.js";
 import { nanoid } from "nanoid";
+import { dbGet, dbRun, DB_TRUE } from "../lib/dbHelpers.js";
 import { getNextLocalMidnightIso, normalizeTimeZone } from "../lib/timezone.js";
 import {
   isDisposableEmail,
@@ -11,8 +11,6 @@ import {
 } from "../lib/trialAntiAbuse.js";
 
 export const authRouter = Router();
-
-const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
 
 const TOKEN_SECRET = process.env.JWT_SECRET;
 if (!TOKEN_SECRET) {
@@ -62,17 +60,6 @@ function sendAuthResponse(res, row) {
   return res.json({ ok: true, token, user });
 }
 
-// Unified db.get that works for both SQLite (sync) and PG (async)
-async function dbGet(sql, params = []) {
-  if (USE_POSTGRES) return await db.get(sql, ...params);
-  return db.prepare(sql).get(...params);
-}
-
-async function dbRun(sql, params = []) {
-  if (USE_POSTGRES) return await db.run(sql, ...params);
-  return db.prepare(sql).run(...params);
-}
-
 function clientIp(req) {
   return req.ip || req.socket?.remoteAddress || "unknown";
 }
@@ -112,7 +99,7 @@ authRouter.post("/register", async (req, res) => {
 
     await dbRun(
       `INSERT INTO users (id, email, password_hash, subscription_tier, subscription_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [userId, normalizedEmail, passwordHash, "free", 1, now, now]
+      [userId, normalizedEmail, passwordHash, "free", DB_TRUE, now, now]
     );
 
     const row = await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
