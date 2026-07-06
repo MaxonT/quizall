@@ -649,6 +649,15 @@ export async function initializeSchema() {
       CONSTRAINT uq_coupon_user UNIQUE (coupon_id, user_id)
     );
 
+    CREATE TABLE IF NOT EXISTS oauth_pkce_states (
+      state VARCHAR(64) PRIMARY KEY,
+      code_verifier TEXT NOT NULL,
+      provider VARCHAR(20) NOT NULL,
+      return_origin TEXT,
+      expires_at TIMESTAMP NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_oauth_pkce_expires ON oauth_pkce_states(expires_at);
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_plan_usage_user_date ON plan_usage(user_id, date, feature_type);
     CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at);
@@ -669,6 +678,16 @@ export async function initializeSchema() {
     await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMP;");
     await db.exec("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS project_id VARCHAR(255);");
     await db.exec("ALTER TABLE quiz_results ADD COLUMN IF NOT EXISTS round_label TEXT;");
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS oauth_pkce_states (
+        state VARCHAR(64) PRIMARY KEY,
+        code_verifier TEXT NOT NULL,
+        provider VARCHAR(20) NOT NULL,
+        return_origin TEXT,
+        expires_at TIMESTAMP NOT NULL
+      );
+    `);
+    await db.exec("CREATE INDEX IF NOT EXISTS idx_oauth_pkce_expires ON oauth_pkce_states(expires_at);");
     await db.run(
       `INSERT INTO coupons (code, plan, max_redemptions, duration_days, active)
        VALUES (?, 'monthly', 10, 30, true)

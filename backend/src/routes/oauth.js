@@ -56,8 +56,43 @@ const FRONTEND_URL = (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "ht
 const CORS_ORIGIN_RAW = (process.env.CORS_ORIGIN || "").trim();
 const ALLOWED_REDIRECT_ORIGINS = CORS_ORIGIN_RAW === "*" ? [] : CORS_ORIGIN_RAW.split(",").map((o) => o.trim()).filter(Boolean);
 
-// In-memory store for code_verifier (in production, use Redis or database)
-const codeVerifierStore = new Map();
+async function saveOAuthState(state, data) {
+  await dbRun(
+    `INSERT INTO oauth_pkce_states (state, code_verifier, provider, return_origin, expires_at)
+     VALUES (?, ?, ?, ?, ?)`,
+    [state, data.codeVerifier, data.provider, data.returnOrigin || null, new Date(data.expiresAt).toISOString()]
+  );
+}
+
+async function consumeOAuthState(state) {
+  const row = await dbGet(
+    `SELECT * FROM oauth_pkce_states WHERE state = ? AND expires_at > ?`,
+    [state, new Date().toISOString()]
+  );
+  if (!row) return null;
+  await dbRun(`DELETE FROM oauth_pkce_states WHERE state = ?`, [state]);
+  return {
+    codeVerifier: row.code_verifier,
+    provider: row.provider,
+    returnOrigin: row.return_origin,
+    expiresAt: new Date(row.expires_at).getTime()
+  };
+}
+
+async function cleanupExpiredOAuthStates() {
+  await dbRun(`DELETE FROM oauth_pkce_states WHERE expires_at <= ?`, [new Date().toISOString()]);
+}
+
+function oauthClientError(err, fallback = "OAuth authentication failed") {
+  if (err?.code === "ACCOUNT_EXISTS_PASSWORD") return err.message;
+  return err?.message || fallback;
+}
+
+function redirectOAuthError(res, frontendBase, message) {
+  const errorUrl = new URL(`${frontendBase}/index.html`);
+  errorUrl.searchParams.set("oauth_error", message);
+  return res.redirect(errorUrl.toString());
+}
 
 // =============================================
 // Helper Functions
@@ -153,7 +188,7 @@ async function findOrCreateUser(email, provider, providerId) {
   await dbRun(
     `INSERT INTO users (id, email, oauth_provider, oauth_id, email_verified, email_verified_at, subscription_tier, subscription_active, created_at, updated_at)
      VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
-    [userId, normalizedEmail, provider, providerId, now, "free", 1, now, now]
+    [userId, normalizedEmail, provider, String(providerId), now, "free", USE_POSTGRES ? true : 1, now, now]
   );
   return await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
 }
@@ -166,7 +201,7 @@ async function findOrCreateUser(email, provider, providerId) {
  * GET /api/auth/oauth/:provider/authorize
  * Initiates OAuth flow by generating authorization URL with PKCE
  */
-oauthRouter.get("/:provider/authorize", (req, res) => {
+oauthRouter.get("/:provider/authorize", async (req, res) => {
   const { provider } = req.params;
   
   if (provider !== 'google' && provider !== 'github') {
@@ -187,20 +222,15 @@ oauthRouter.get("/:provider/authorize", (req, res) => {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
   
-  // Store code_verifier and optional return_origin (with expiration in 10 minutes)
+  // Store code_verifier in DB (survives Render restarts / cold starts)
   const state = nanoid(32);
-  codeVerifierStore.set(state, {
-    codeVerifier,
-    provider,
-    returnOrigin,
-    expiresAt: Date.now() + 10 * 60 * 1000
-  });
-  
-  // Clean up expired entries
-  for (const [key, value] of codeVerifierStore.entries()) {
-    if (value.expiresAt < Date.now()) {
-      codeVerifierStore.delete(key);
-    }
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  try {
+    await cleanupExpiredOAuthStates();
+    await saveOAuthState(state, { codeVerifier, provider, returnOrigin, expiresAt });
+  } catch (storeErr) {
+    console.error("[oauth] Failed to persist OAuth state:", storeErr);
+    return res.status(500).json({ ok: false, error: "Failed to start OAuth flow" });
   }
 
   let authUrl;
@@ -280,7 +310,7 @@ function resolveFrontendBase(stored, req) {
  */
 oauthRouter.get("/callback", async (req, res) => {
   const { code, state, error } = req.query;
-  const stored = state ? codeVerifierStore.get(state) : null;
+  const stored = state ? await consumeOAuthState(state) : null;
   
   let frontendBase;
   try {
@@ -295,24 +325,16 @@ oauthRouter.get("/callback", async (req, res) => {
   
   // 错误用 query 传（仅错误信息，无敏感 token）；成功用 fragment 传 token（不进入 Referer，符合 OAuth 安全实践）
   if (error) {
-    const errorUrl = new URL(`${frontendBase}/index.html`);
-    errorUrl.searchParams.set('oauth_error', encodeURIComponent(error));
-    return res.redirect(errorUrl.toString());
+    return redirectOAuthError(res, frontendBase, String(error));
   }
   if (!code || !state) {
-    const errorUrl = new URL(`${frontendBase}/index.html`);
-    errorUrl.searchParams.set('oauth_error', encodeURIComponent('Missing code or state'));
-    return res.redirect(errorUrl.toString());
+    return redirectOAuthError(res, frontendBase, "Missing code or state");
   }
   if (!stored || stored.expiresAt < Date.now()) {
-    codeVerifierStore.delete(state);
-    const errorUrl = new URL(`${frontendBase}/index.html`);
-    errorUrl.searchParams.set('oauth_error', encodeURIComponent('Invalid or expired state'));
-    return res.redirect(errorUrl.toString());
+    return redirectOAuthError(res, frontendBase, "Invalid or expired state");
   }
   
   const { codeVerifier, provider } = stored;
-  codeVerifierStore.delete(state);
 
   try {
     let userInfo;
@@ -334,7 +356,9 @@ oauthRouter.get("/callback", async (req, res) => {
       
       const tokenData = await tokenResponse.json();
       if (!tokenResponse.ok) {
-        throw new Error(tokenData.error || 'Failed to exchange code for token');
+        const detail = tokenData.error_description || tokenData.error || 'Failed to exchange code for token';
+        console.error("[oauth] Google token exchange failed:", detail, tokenData);
+        throw new Error(detail);
       }
       
       // Get user info from Google
@@ -343,9 +367,13 @@ oauthRouter.get("/callback", async (req, res) => {
       });
       
       const googleUser = await userResponse.json();
+      if (!userResponse.ok || !googleUser.email) {
+        console.error("[oauth] Google userinfo failed:", googleUser);
+        throw new Error('Failed to retrieve user information from Google');
+      }
       userInfo = {
         email: googleUser.email,
-        providerId: googleUser.id,
+        providerId: String(googleUser.id),
         name: googleUser.name
       };
     } else if (provider === 'github') {
@@ -390,7 +418,7 @@ oauthRouter.get("/callback", async (req, res) => {
       
       userInfo = {
         email: email,
-        providerId: githubUser.id.toString(),
+        providerId: String(githubUser.id),
         name: githubUser.name || githubUser.login
       };
     }
@@ -413,11 +441,6 @@ oauthRouter.get("/callback", async (req, res) => {
     return res.redirect(frontendUrl);
   } catch (err) {
     console.error('[oauth] Callback error:', err);
-    const message = err.code === "ACCOUNT_EXISTS_PASSWORD"
-      ? err.message
-      : (process.env.NODE_ENV === "production" ? "OAuth authentication failed" : (err.message || "OAuth authentication failed"));
-    const errorUrl = new URL(`${frontendBase}/index.html`);
-    errorUrl.searchParams.set('oauth_error', encodeURIComponent(message));
-    return res.redirect(errorUrl.toString());
+    return redirectOAuthError(res, frontendBase, oauthClientError(err));
   }
 });

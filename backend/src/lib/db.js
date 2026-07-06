@@ -371,6 +371,15 @@ CREATE TABLE IF NOT EXISTS coupon_redemptions (
 );
 CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_user ON coupon_redemptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_coupon ON coupon_redemptions(coupon_id);
+
+CREATE TABLE IF NOT EXISTS oauth_pkce_states (
+  state TEXT PRIMARY KEY,
+  code_verifier TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  return_origin TEXT,
+  expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_oauth_pkce_expires ON oauth_pkce_states(expires_at);
 `);
 
   // SQLite helper functions
