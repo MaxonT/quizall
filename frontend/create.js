@@ -2510,7 +2510,23 @@
         removeTyping(typing);
         els.chatInner.innerHTML = "";
         transcriptRes.messages.forEach((m) => {
-          const wrap = appendMessage(m.role === "user" ? "user" : "ai", m.html, m.type || "message");
+          // Sanitize persisted HTML before re-injecting to prevent stored XSS
+          // (transcript HTML originates from AI output saved as innerHTML).
+          const safeHtml = typeof DOMPurify !== "undefined"
+            ? DOMPurify.sanitize(m.html || "", {
+                ALLOWED_TAGS: ["p", "br", "strong", "em", "b", "i", "ul", "ol", "li",
+                               "h1", "h2", "h3", "h4", "code", "pre", "blockquote",
+                               "div", "span", "button", "input", "textarea",
+                               "table", "thead", "tbody", "tr", "th", "td",
+                               "a", "details", "summary", "svg", "use"],
+                ALLOWED_ATTR: ["class", "id", "type", "data-q", "data-o", "data-submit",
+                               "data-retry", "placeholder", "rows", "maxlength",
+                               "href", "target", "rel", "aria-label", "aria-live",
+                               "tabindex", "viewBox", "fill", "stroke", "stroke-width",
+                               "stroke-linecap", "stroke-linejoin", "d"],
+              })
+            : m.html || "";
+          const wrap = appendMessage(m.role === "user" ? "user" : "ai", safeHtml, m.type || "message");
           if (m.ts) wrap.dataset.ts = String(m.ts);
         });
         if (transcriptRes.trainingState) {

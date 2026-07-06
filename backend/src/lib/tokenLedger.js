@@ -343,28 +343,71 @@ export async function spendTokens({ userId, creditsToSpend, runId, reason = "API
     spendRecords.push({ bucket, tokens: -toSpend });
   }
 
+  // Tracks the balance read under the advisory lock (Postgres only); used for error messages.
+  let lockedBalances = null;
+
   try {
     if (USE_POSTGRES) {
-      await db.transaction(async () => {
-        for (const record of spendRecords) {
-          const currentBalance = (await getTokenBalances(userId))[record.bucket] || 0;
-          await dbRun(
-            `INSERT INTO token_ledger (user_id, bucket, tokens_change, balance_after, source, reason, run_id, created_at)
+      // Postgres: acquire a per-user advisory lock, re-read balance inside the transaction,
+      // then insert spend records — all on the same connection to prevent TOCTOU double-spend.
+      await db.transaction(async (txClient) => {
+        // hashtext() maps the userId string to an int4; pg_advisory_xact_lock serialises
+        // concurrent calls for the same key and auto-releases on transaction end.
+        await txClient.query('SELECT pg_advisory_xact_lock(hashtext(?))', [userId]);
+
+        // Re-read balance after acquiring the lock so we see all committed spends.
+        const rows = await txClient.query(
+          `SELECT bucket, SUM(tokens_change) AS balance
+           FROM token_ledger
+           WHERE user_id = ? AND (expires_at IS NULL OR expires_at > ?)
+           GROUP BY bucket`,
+          [userId, now]
+        );
+        const lb = { daily_free: 0, monthly: 0, trial_base: 0 };
+        for (const row of rows) {
+          if (Object.prototype.hasOwnProperty.call(lb, row.bucket)) {
+            lb[row.bucket] = Math.max(0, Number(row.balance) || 0);
+          }
+        }
+        lb.total = lb.daily_free + lb.monthly + lb.trial_base;
+        lockedBalances = lb;
+
+        if (lb.total < creditsToSpend) {
+          const err = new Error('INSUFFICIENT_TOKENS');
+          err.code = 'INSUFFICIENT_TOKENS';
+          throw err; // triggers ROLLBACK; caught and mapped below
+        }
+
+        // Recompute allocation from the authoritative locked balance.
+        let remaining = creditsToSpend;
+        const lockedRecords = [];
+        for (const { bucket, available } of [
+          { bucket: BUCKET_TYPES.DAILY_FREE, available: lb.daily_free  },
+          { bucket: BUCKET_TYPES.MONTHLY,    available: lb.monthly     },
+          { bucket: BUCKET_TYPES.TRIAL_BASE, available: lb.trial_base  },
+        ]) {
+          if (remaining <= 0) break;
+          if (available <= 0) continue;
+          const toSpend = Math.min(remaining, available);
+          remaining -= toSpend;
+          lockedRecords.push({ bucket, tokens: -toSpend, balanceBefore: lb[bucket] });
+        }
+
+        for (const record of lockedRecords) {
+          await txClient.query(
+            `INSERT INTO token_ledger
+               (user_id, bucket, tokens_change, balance_after, source, reason, run_id, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-              userId,
-              record.bucket,
-              record.tokens,
-              currentBalance + record.tokens,
-              TOKEN_SOURCES.API_USAGE,
-              reason,
-              runId,
-              now,
+              userId, record.bucket, record.tokens,
+              record.balanceBefore + record.tokens,
+              TOKEN_SOURCES.API_USAGE, reason, runId, now,
             ]
           );
         }
       });
     } else {
+      // SQLite: better-sqlite3 synchronous transactions already prevent concurrent writes.
       const transaction = db.transaction(() => {
         for (const record of spendRecords) {
           const bucketBalances = db.prepare(
@@ -390,6 +433,14 @@ export async function spendTokens({ userId, creditsToSpend, runId, reason = "API
       transaction();
     }
   } catch (err) {
+    if (err.code === 'INSUFFICIENT_TOKENS') {
+      return {
+        success: false,
+        error: 'INSUFFICIENT_TOKENS',
+        message: `Insufficient tokens. Required: ${creditsToSpend}, Available: ${lockedBalances?.total ?? balances.total}`,
+        balances: lockedBalances || balances,
+      };
+    }
     console.error(`[tokenLedger] Error spending tokens for user ${userId}:`, err);
     return { success: false, error: "TRANSACTION_FAILED", message: "Failed to process token spend", balances };
   }

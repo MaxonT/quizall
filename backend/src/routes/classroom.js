@@ -435,8 +435,8 @@ classroomRouter.post("/assignments/:id/submit", requireAuth, async (req, res) =>
 
     const total = Number.parseInt(req.body?.total, 10);
     const score = Number.parseInt(req.body?.score, 10);
-    if (!Number.isInteger(total) || total < 1) {
-      return res.status(400).json({ ok: false, error: "A valid total is required" });
+    if (!Number.isInteger(total) || total < 1 || total > 200) {
+      return res.status(400).json({ ok: false, error: "A valid total (1–200) is required" });
     }
     if (!Number.isInteger(score) || score < 0 || score > total) {
       return res.status(400).json({ ok: false, error: "Score must be between 0 and total" });

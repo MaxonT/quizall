@@ -771,8 +771,9 @@ stripeWebhookRouter.post("/webhook", async (req, res) => {
     res.json({ ok: true, received: true, ...result });
   } catch (err) {
     console.error("[stripe] Webhook processing error:", err);
-    // Return 200 to prevent Stripe from retrying (we've logged the error)
-    res.status(200).json({ ok: false, error: "Webhook processing failed" });
+    // Return 500 so Stripe retries on transient failures (DB outage, cold start, etc.).
+    // Already-processed events are protected by the idempotency check in processWebhookEvent.
+    res.status(500).json({ ok: false, error: "Webhook processing failed" });
   }
 });
 
