@@ -763,8 +763,8 @@
   }
 
   async function renameProject(projectId) {
-    const rowBtn = els.projectList?.querySelector(`.project-item[data-id="${CSS.escape(projectId)}"]`);
-    const currentName = rowBtn?.querySelector(".pi-name")?.textContent?.trim() || "";
+    const rowBtn = els.projectList?.querySelector(`.project-session[data-id="${CSS.escape(projectId)}"]`);
+    const currentName = rowBtn?.querySelector("span:not(.nav-count)")?.textContent?.trim() || "";
     const nextName = window.prompt("Rename session", currentName);
     if (nextName == null) return;
     const name = nextName.trim();
@@ -781,8 +781,8 @@
   }
 
   async function deleteProject(projectId) {
-    const rowBtn = els.projectList?.querySelector(`.project-item[data-id="${CSS.escape(projectId)}"]`);
-    const label = rowBtn?.querySelector(".pi-name")?.textContent?.trim() || "this session";
+    const rowBtn = els.projectList?.querySelector(`.project-session[data-id="${CSS.escape(projectId)}"]`);
+    const label = rowBtn?.querySelector("span:not(.nav-count)")?.textContent?.trim() || "this session";
     if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
 
     await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`, { method: "DELETE" });
@@ -792,7 +792,7 @@
   }
 
   function bindProjectListEvents() {
-    els.projectList.querySelectorAll(".project-item").forEach((btn) => {
+    els.projectList.querySelectorAll(".project-session").forEach((btn) => {
       btn.addEventListener("click", () => openProject(btn.getAttribute("data-id")));
     });
     els.projectList.querySelectorAll(".project-more").forEach((btn) => {
@@ -809,14 +809,13 @@
   }
 
   function renderProjectRow(p) {
+    const active = p.id === state.projectId;
     return (
-      `<div class="project-row${p.id === state.projectId ? " is-active" : ""}">` +
-      `<button type="button" class="project-item" data-id="${escapeHtml(p.id)}">` +
-      `<span class="pi-icon">${icon(projectIconId(p))}</span>` +
-      `<span class="pi-body">` +
-      `<span class="pi-name">${escapeHtml(p.name)}</span>` +
-      `<span class="pi-meta">${escapeHtml(projectMeta(p))}</span>` +
-      `</span>` +
+      `<div class="project-row${active ? " is-active" : ""}">` +
+      `<button type="button" class="nav-item project-session${active ? " is-active" : ""}" data-id="${escapeHtml(p.id)}">` +
+      icon(projectIconId(p)) +
+      `<span>${escapeHtml(p.name)}</span>` +
+      `<span class="nav-count project-meta">${escapeHtml(projectMeta(p))}</span>` +
       `</button>` +
       `<button type="button" class="project-more" data-id="${escapeHtml(p.id)}" aria-label="Session options" title="Session options">` +
       `<svg class="icon"><use href="#i-more-horizontal"></use></svg>` +
@@ -916,8 +915,8 @@
         const list = group?.projects || [];
         const expanded = state.folderExpanded[folder.id] !== false;
         html += `<div class="folder-group${expanded ? " is-open" : ""}" data-folder-id="${escapeHtml(folder.id)}">`;
-        html += `<button type="button" class="folder-toggle" data-folder-id="${escapeHtml(folder.id)}">`;
-        html += `${icon("i-folder")}<span>${escapeHtml(folder.name)}</span><span class="folder-count">${list.length}</span></button>`;
+        html += `<button type="button" class="nav-item folder-toggle" data-folder-id="${escapeHtml(folder.id)}">`;
+        html += `${icon("i-folder")}<span>${escapeHtml(folder.name)}</span><span class="nav-count">${list.length}</span></button>`;
         html += `<div class="folder-sessions">`;
         if (!list.length) html += '<div class="folder-empty">No sessions yet</div>';
         else html += list.map(renderProjectRow).join("");
@@ -1601,7 +1600,7 @@
     if (els.navHistory) {
       els.navHistory.addEventListener("click", () => {
         setActiveNav("navHistory");
-        const first = els.projectList.querySelector(".project-item");
+        const first = els.projectList.querySelector(".project-session");
         if (first) first.click();
         if (window.innerWidth < SIDEBAR_BP_MOBILE) setSidebarOpen(true);
       });

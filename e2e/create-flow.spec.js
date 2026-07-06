@@ -62,7 +62,7 @@ test("study chat mock flow: login → plan → mixed quiz → note → history �
   await expect(page.locator("text=Your study note")).toBeVisible();
   await expect(page.locator(".science-link")).toBeVisible();
 
-  await page.locator(".project-item").first().click();
+  await page.locator(".project-session").first().click();
   await expect(page.locator("text=Your study plan")).toBeVisible();
   await expect(page.locator(".history-toggle").first()).toBeVisible();
   await expect(page.locator("text=Your study note")).toBeVisible();
