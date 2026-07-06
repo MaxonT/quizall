@@ -1295,9 +1295,8 @@
     .science-nudge-meta {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 14px;
+      justify-content: center;
+      margin-bottom: 8px;
     }
     .science-nudge-badge {
       display: inline-flex;
@@ -1320,7 +1319,9 @@
     .science-nudge-dots {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
+      margin: 10px 0 2px;
     }
     .science-nudge-dot {
       width: 6px;
@@ -1340,17 +1341,22 @@
       transform: scale(1.15);
     }
     .science-nudge-quote-wrap {
-      min-height: 4.5rem;
+      min-height: 5rem;
       display: flex;
       align-items: center;
+      justify-content: center;
+      padding: 6px 16px;
     }
     .science-nudge-quote {
-      margin: 0;
-      font-size: 1.02rem;
-      line-height: 1.65;
-      font-weight: 500;
-      color: rgba(255, 251, 245, 0.94);
-      letter-spacing: 0.01em;
+      margin: 0 auto;
+      max-width: 38rem;
+      text-align: center;
+      font-size: 1.1rem;
+      line-height: 1.7;
+      font-weight: 600;
+      color: rgba(255, 253, 248, 0.97);
+      letter-spacing: 0.015em;
+      text-shadow: 0 0 28px rgba(251, 191, 136, 0.14);
       transition: opacity 0.45s ease, transform 0.45s ease;
     }
     .science-nudge-quote.is-fading {
@@ -1518,7 +1524,8 @@
       background: rgba(255, 251, 235, 0.9);
     }
     html[data-theme="light"] .science-nudge-quote {
-      color: #334155;
+      color: #1e293b;
+      text-shadow: 0 0 20px rgba(251, 191, 136, 0.2);
     }
     html[data-theme="light"] .science-nudge-step {
       color: #64748b;
@@ -1917,13 +1924,13 @@
                 <span class="science-nudge-badge-icon" aria-hidden="true">☀️</span>
                 Gentle reminder
               </span>
-              <div class="science-nudge-dots" id="scienceTipDots" aria-hidden="true"></div>
             </div>
             <div class="science-nudge-quote-wrap">
               <p class="science-nudge-quote" id="scienceTipText" aria-live="polite">
                 You're here — that's already a win. One honest quiz beats another passive read-through.
               </p>
             </div>
+            <div class="science-nudge-dots" id="scienceTipDots" aria-hidden="true"></div>
             <div class="science-nudge-foot">
               <span class="science-nudge-step" id="scienceTipStep">Step 03 · Active retrieval</span>
               <a class="science-widget-link" id="scienceTipLink" href="/science/index.html#step03">Explore Science →</a>
