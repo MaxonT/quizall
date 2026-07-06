@@ -129,7 +129,16 @@ app.use((req, res, next) => {
 });
 
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true, status: "healthy", time: new Date().toISOString() });
+  const anthropicConfigured = !!(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim());
+  res.json({
+    ok: true,
+    status: "healthy",
+    time: new Date().toISOString(),
+    anthropic: {
+      configured: anthropicConfigured,
+      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+    },
+  });
 });
 
 app.get("/api/settings", (req, res) => {

@@ -16,7 +16,7 @@ const PROJECT_MAX_LIMIT = 100;
 const FILE_TEXT_MAX_LENGTH = 120000;
 const MAX_FILE_BATCH = 30;
 const STREAK_MAX_DAYS = 365;
-const AI_MODEL = "claude-sonnet-4-20250514";
+const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 const ANTHROPIC_ENABLED = !!(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim());
 let warnedMissingTimezoneColumn = false;
 
@@ -25,6 +25,25 @@ const SIMPLE_LANGUAGE_RULE =
 
 function allowMockAi() {
   return !ANTHROPIC_ENABLED && (process.env.NODE_ENV !== "production" || process.env.QUIZALL_E2E_MOCK === "1");
+}
+
+function formatAiError(err, fallback = "AI request failed") {
+  if (!err) return fallback;
+  if (err.code === "ANTHROPIC_DISABLED") {
+    return "AI service not configured. Set ANTHROPIC_API_KEY on the server.";
+  }
+  const raw = String(err.message || err.error?.message || "").trim();
+  if (!raw) return fallback;
+  if (/model.*not_found|does not exist|retired|deprecated/i.test(raw)) {
+    return "AI model is unavailable. Update ANTHROPIC_MODEL on the server (try claude-sonnet-4-6).";
+  }
+  if (/authentication|invalid.*api.*key|401/i.test(raw)) {
+    return "Anthropic API key was rejected. Check ANTHROPIC_API_KEY on the server.";
+  }
+  if (/rate limit|429|overloaded/i.test(raw)) {
+    return "AI is temporarily busy. Please wait a moment and try again.";
+  }
+  return raw.length > 180 ? `${raw.slice(0, 180)}…` : raw;
 }
 
 const OUTLINE_KEYWORDS = ["syllabus", "outline", "review", "exam", "topic", "考纲", "重点", "复习"];
@@ -1528,7 +1547,7 @@ quizRouter.post("/projects/:id/files", requireAuth, async (req, res) => {
       const fileName = normalizeWhitespace(file?.name || file?.fileName || "Untitled");
       const mimeType = normalizeWhitespace(file?.mimeType || file?.type || "");
       const text = String(file?.text || "").trim();
-      if (!text || text.length < 20) continue;
+      if (!text) continue;
 
       const clippedText = text.slice(0, FILE_TEXT_MAX_LENGTH);
       const score = outlineCandidateScore(fileName, clippedText);
@@ -1958,9 +1977,9 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[quizall] study-plan POST error:", err);
     if (err.code === "ANTHROPIC_DISABLED") {
-      return res.status(503).json({ ok: false, error: "AI service not configured. Set ANTHROPIC_API_KEY." });
+      return res.status(503).json({ ok: false, error: formatAiError(err) });
     }
-    return res.status(500).json({ ok: false, error: "Failed to generate study plan" });
+    return res.status(500).json({ ok: false, error: formatAiError(err, "Failed to generate study plan") });
   }
 });
 
@@ -2034,9 +2053,9 @@ quizRouter.post("/projects/:id/note", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[quizall] note POST error:", err);
     if (err.code === "ANTHROPIC_DISABLED") {
-      return res.status(503).json({ ok: false, error: "AI service is currently unavailable" });
+      return res.status(503).json({ ok: false, error: formatAiError(err) });
     }
-    return res.status(500).json({ ok: false, error: "Failed to generate study note" });
+    return res.status(500).json({ ok: false, error: formatAiError(err, "Failed to generate study note") });
   }
 });
 
@@ -2242,17 +2261,17 @@ quizRouter.post("/generate", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("[quizall] generate error:", err);
     if (err.code === "ANTHROPIC_DISABLED") {
-      return res.status(503).json({ ok: false, error: "AI service is currently unavailable" });
+      return res.status(503).json({ ok: false, error: formatAiError(err) });
     }
     if (err.status === 429) {
       const retrySec = err.headers?.get?.("retry-after") || 60;
       return res.status(429).json({
         ok: false,
-        error: "AI rate limit reached. Please try again in a minute or reduce the content length.",
+        error: formatAiError(err, "AI rate limit reached. Please try again in a minute."),
         retryAfter: Number.parseInt(String(retrySec), 10) || 60,
       });
     }
-    return res.status(500).json({ ok: false, error: "Quiz generation failed" });
+    return res.status(500).json({ ok: false, error: formatAiError(err, "Quiz generation failed") });
   }
 });
 

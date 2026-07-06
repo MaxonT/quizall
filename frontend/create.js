@@ -46,6 +46,8 @@
     avatarInitials: document.getElementById("avatarInitials"),
     avatarEmail: document.getElementById("avatarEmail"),
     chatMain: document.getElementById("chatMain"),
+    viewOnlyBanner: document.getElementById("viewOnlyBanner"),
+    viewOnlyNewSession: document.getElementById("viewOnlyNewSession"),
     chatMessages: document.getElementById("chatMessages"),
     chatInner: document.getElementById("chatInner"),
     composerInput: document.getElementById("composerInput"),
@@ -340,18 +342,6 @@
     if (els.mixBtn) els.mixBtn.title = `Quiz shape: ${counts.preview}`;
   }
 
-  function showComposerError(message) {
-    if (!els.composerHint) return;
-    els.composerHint.classList.add("is-error");
-    els.composerHint.dataset.errorMsg = message;
-    const sampleBtn = els.composerHint.querySelector("#sampleLink");
-    els.composerHint.textContent = "";
-    const span = document.createElement("span");
-    span.textContent = message + " ";
-    els.composerHint.appendChild(span);
-    if (sampleBtn) els.composerHint.appendChild(sampleBtn);
-  }
-
   function clearComposerError() {
     if (!els.composerHint) return;
     if (!els.composerHint.classList.contains("is-error")) return;
@@ -369,14 +359,23 @@
     }
   }
 
-  async function validateComposerContent(text, files) {
-    let combined = text.trim().length;
-    if (combined >= CONTENT_MIN_LENGTH) return true;
+  async function buildMaterialContent(text, files) {
+    const parts = [];
+    const trimmedText = String(text || "").trim();
+    if (trimmedText) parts.push(trimmedText);
     for (const file of files) {
-      const extracted = await extractText(file);
-      combined += String(extracted || "").trim().length;
-      if (combined >= CONTENT_MIN_LENGTH) return true;
+      try {
+        const extracted = String(await extractText(file) || "").trim();
+        if (extracted) parts.push(extracted);
+      } catch (err) {
+        console.warn("Could not read file:", file.name, err);
+      }
     }
+    return parts.join("\n\n");
+  }
+
+  async function validateComposerContent(text, files) {
+    const combined = (await buildMaterialContent(text, files)).length;
     return combined >= CONTENT_MIN_LENGTH;
   }
 
@@ -395,13 +394,17 @@
     els.sendBtn.disabled = on || state.viewOnly;
     els.attachBtn.disabled = on || state.viewOnly;
     els.composerInput.disabled = on || state.viewOnly;
+    if (els.mixBtn) els.mixBtn.disabled = on || state.viewOnly;
+    if (on) closeMixPanel();
   }
 
   function setViewOnly(on) {
     state.viewOnly = !!on;
+    els.viewOnlyBanner?.classList.toggle("hidden", !on);
     els.sendBtn.disabled = on || state.isProcessing;
     els.attachBtn.disabled = on || state.isProcessing;
     els.composerInput.disabled = on || state.isProcessing;
+    if (els.mixBtn) els.mixBtn.disabled = on || state.isProcessing;
   }
 
   function appendMessage(role, html) {
@@ -417,12 +420,15 @@
     return wrap;
   }
 
-  function appendTyping() {
+  function appendTyping(label) {
     const wrap = document.createElement("div");
     wrap.className = "msg ai";
+    const labelHtml = label
+      ? `<p class="typing-label">${escapeHtml(label)}</p>`
+      : "";
     wrap.innerHTML =
       `<div class="msg-avatar">${icon("i-sparkles")}</div>` +
-      '<div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>';
+      `<div class="msg-bubble">${labelHtml}<div class="typing-indicator" aria-live="polite"><span></span><span></span><span></span></div></div>`;
     els.chatInner.appendChild(wrap);
     scrollToBottom();
     return wrap;
@@ -430,6 +436,42 @@
 
   function removeTyping(node) {
     if (node && node.parentNode) node.parentNode.removeChild(node);
+  }
+
+  function appendErrorWithRetry(message, retryAction) {
+    const html =
+      `<p>${escapeHtml(message)}</p>` +
+      `<button type="button" class="btn-round retry-btn" data-retry="${escapeHtml(retryAction)}">Try again</button>`;
+    const msg = appendMessage("ai", html);
+    const btn = msg.querySelector(".retry-btn");
+    if (btn) {
+      btn.addEventListener("click", async (e) => {
+        e.currentTarget.disabled = true;
+        await handleRetry(retryAction);
+      });
+    }
+    return msg;
+  }
+
+  async function handleRetry(action) {
+    if (state.isProcessing) return;
+    if (action === "retry-plan") {
+      if (!state.projectId) return;
+      setProcessing(true);
+      await runStudyPlan(state.projectId, state.materialPreview);
+      return;
+    }
+    if (action === "retry-quiz") {
+      if (!state.projectId || !state.studyPlan) return;
+      setProcessing(true);
+      await startMixedQuiz();
+      return;
+    }
+    if (action === "retry-note") {
+      if (!state.projectId) return;
+      setProcessing(true);
+      await finishAllRounds();
+    }
   }
 
   function renderWelcome() {
@@ -1005,13 +1047,25 @@
 
   async function uploadFilesToProject(projectId, files) {
     const payload = [];
+    const skipped = [];
     for (const file of files) {
-      const text = await extractText(file);
-      if (text && text.trim().length >= 20) {
-        payload.push({ name: file.name, mimeType: file.type || "application/octet-stream", text });
+      try {
+        const text = String(await extractText(file) || "").trim();
+        if (text) {
+          payload.push({ name: file.name, mimeType: file.type || "application/octet-stream", text });
+        } else {
+          skipped.push(file.name);
+        }
+      } catch {
+        skipped.push(file.name);
       }
     }
-    if (!payload.length) return [];
+    if (!payload.length) {
+      const hint = skipped.length
+        ? "Couldn't read text from those files. Try PDF, DOCX, TXT, or paste the content directly."
+        : "No readable files to upload.";
+      throw new Error(hint);
+    }
     const data = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/files`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1026,12 +1080,28 @@
       return;
     }
     els.attachmentsBar.innerHTML = state.pendingFiles
-      .map((f) => `<span class="attachment-chip">${icon("i-paperclip")} ${escapeHtml(f.name)}</span>`)
+      .map(
+        (f, i) =>
+          `<span class="attachment-chip">` +
+          `${icon("i-paperclip")} <span class="attachment-name">${escapeHtml(f.name)}</span>` +
+          `<button type="button" class="attachment-remove" data-index="${i}" aria-label="Remove ${escapeHtml(f.name)}">` +
+          `<svg class="icon"><use href="#i-x"></use></svg></button>` +
+          `</span>`
+      )
       .join("");
+    els.attachmentsBar.querySelectorAll(".attachment-remove").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute("data-index"));
+        if (Number.isNaN(idx)) return;
+        state.pendingFiles.splice(idx, 1);
+        renderAttachmentsBar();
+      });
+    });
   }
 
   async function runStudyPlan(projectId, contentHint) {
-    const typing = appendTyping();
+    const typing = appendTyping("Building your study plan…");
     try {
       const data = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/study-plan`, {
         method: "POST",
@@ -1045,7 +1115,7 @@
       await startMixedQuiz();
     } catch (err) {
       removeTyping(typing);
-      appendMessage("ai", `<p>Sorry, I couldn't make a study plan: ${escapeHtml(err.message)}</p>`);
+      appendErrorWithRetry(`Sorry, I couldn't make a study plan: ${err.message}`, "retry-plan");
       setProcessing(false);
     }
   }
@@ -1122,7 +1192,7 @@
   async function startMixedQuiz() {
     const roundConfig = getMixedRoundConfig();
     state.roundIndex = 0;
-    const typing = appendTyping();
+    const typing = appendTyping("Creating your quiz…");
 
     try {
       const questions = await generateRound(roundConfig);
@@ -1137,13 +1207,13 @@
       });
     } catch (err) {
       removeTyping(typing);
-      appendMessage("ai", `<p>Sorry, the quiz failed: ${escapeHtml(err.message)}</p>`);
+      appendErrorWithRetry(`Sorry, the quiz failed: ${err.message}`, "retry-quiz");
       setProcessing(false);
     }
   }
 
   async function finishAllRounds() {
-    const typing = appendTyping();
+    const typing = appendTyping("Writing your study note…");
     try {
       const data = await api(`/api/quiz/projects/${encodeURIComponent(state.projectId)}/note`, {
         method: "POST",
@@ -1161,7 +1231,7 @@
       await loadHistorySidebar();
     } catch (err) {
       removeTyping(typing);
-      appendMessage("ai", `<p>Sorry, I couldn't write the note: ${escapeHtml(err.message)}</p>`);
+      appendErrorWithRetry(`Sorry, I couldn't write the note: ${err.message}`, "retry-note");
       setProcessing(false);
     }
   }
@@ -1200,9 +1270,10 @@
     if (!text && !hasFiles) return;
 
     clearComposerError();
+    closeMixPanel();
     const filesToCheck = state.pendingFiles.slice();
-    const contentOk = await validateComposerContent(text, filesToCheck);
-    if (!contentOk) {
+    const combinedContent = await buildMaterialContent(text, filesToCheck);
+    if (combinedContent.length < CONTENT_MIN_LENGTH) {
       const userPreview = hasFiles
         ? `Uploaded ${filesToCheck.length} file(s)${text ? " + pasted text" : ""}`
         : text;
@@ -1217,7 +1288,7 @@
     state.roundResults = [];
     state.analysis = null;
     state.studyPlan = null;
-    state.materialPreview = text;
+    state.materialPreview = combinedContent;
 
     const userPreview = hasFiles
       ? `Uploaded ${state.pendingFiles.length} file(s)${text ? ` + pasted text` : ""}`
@@ -1237,12 +1308,12 @@
       await loadHistorySidebar();
 
       if (filesToUpload.length) {
-        const typing = appendTyping();
+        const typing = appendTyping("Reading your files…");
         await uploadFilesToProject(project.id, filesToUpload);
         removeTyping(typing);
       }
 
-      await runStudyPlan(project.id, text || undefined);
+      await runStudyPlan(project.id, combinedContent);
     } catch (err) {
       appendMessage("ai", `<p>Something went wrong: ${escapeHtml(err.message)}</p>`);
       setProcessing(false);
@@ -1261,7 +1332,7 @@
     if (window.innerWidth < SIDEBAR_BP_MOBILE) closeSidebarIfMobile();
 
     els.chatInner.innerHTML = "";
-    const typing = appendTyping();
+    const typing = appendTyping("Loading session…");
 
     try {
       const detail = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}`);
@@ -1607,6 +1678,9 @@
 
   function bindEvents() {
     els.newChatBtn.addEventListener("click", resetNewChat);
+    if (els.viewOnlyNewSession) {
+      els.viewOnlyNewSession.addEventListener("click", resetNewChat);
+    }
     els.sendBtn.addEventListener("click", handleSend);
 
     if (els.navHome) els.navHome.addEventListener("click", () => { setActiveNav("navHome"); resetNewChat(); });

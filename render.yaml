@@ -18,6 +18,9 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Optional override; defaults to claude-sonnet-4-6 in code
+      - key: ANTHROPIC_MODEL
+        sync: false
       - key: CORS_ORIGIN
         sync: false
       - key: FRONTEND_URL

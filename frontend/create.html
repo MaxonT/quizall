@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="theme.css" />
-  <link rel="stylesheet" href="create.css?v=7" />
+  <link rel="stylesheet" href="create.css?v=9" />
   <script src="config.js"></script>
   <script src="lib/authGuard.js"></script>
 </head>
@@ -103,6 +103,11 @@
         <svg class="icon icon-menu"><use href="#i-menu"></use></svg>
         <svg class="icon icon-panel"><use href="#i-panel-left"></use></svg>
       </button>
+
+      <div class="viewonly-banner hidden" id="viewOnlyBanner" role="status">
+        <span class="viewonly-banner-text">Viewing a saved session</span>
+        <button type="button" class="viewonly-banner-btn" id="viewOnlyNewSession">Start new session</button>
+      </div>
 
       <div class="chat-scroll" id="chatMessages">
         <div class="chat-inner" id="chatInner"></div>
@@ -235,6 +240,6 @@
     </div>
   </div>
 
-  <script src="create.js?v=7"></script>
+  <script src="create.js?v=9"></script>
 </body>
 </html>
