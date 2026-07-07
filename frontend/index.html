@@ -1195,12 +1195,17 @@
       gap: 6px;
     }
     .heatmap-dot {
-      width: 11px;
-      height: 11px;
+      width: 12px;
+      height: 12px;
       border-radius: 3px;
-      border: 1px solid rgba(148,163,184,0.3);
-      background: rgba(148,163,184,0.1);
+      flex-shrink: 0;
+      border: 1px solid rgba(148,163,184,0.35);
+      background: rgba(148,163,184,0.18);
     }
+    /* Legend dots need stronger colors than the large cells */
+    .heatmap-dot.heatmap-l1 { background: rgba(14,165,233,0.72); border-color: rgba(14,165,233,0.9); }
+    .heatmap-dot.heatmap-l2 { background: rgba(45,212,191,0.78); border-color: rgba(45,212,191,0.95); }
+    .heatmap-dot.heatmap-l3 { background: rgba(34,197,94,0.82); border-color: rgba(34,197,94,1); }
 
     /* ---------- History Table ---------- */
     .history-section { margin-top: 2rem; }
