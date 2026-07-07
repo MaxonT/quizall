@@ -4,6 +4,13 @@ See [README.md](README.md) for project overview and quick-start commands.
 
 ---
 
+## Workflow
+
+- **Auto commit & push after every task** — when a coding task is complete, always run `git add … && git commit -m "…" && git push` without waiting to be asked. Use a concise conventional-commit message (`feat:`, `fix:`, `chore:`, `security:`, etc.).
+- **Skip test runs** — do not run the test suite or E2E tests as part of normal task completion. Only run tests when the user explicitly asks. Static error-checking (e.g. `get_errors`) is fine.
+
+---
+
 ## Build / Test Commands
 
 ```bash
