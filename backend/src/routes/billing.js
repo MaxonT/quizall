@@ -600,10 +600,10 @@ billingRouter.post("/redeem-coupon", requireAuth, async (req, res) => {
 
     const normalizedCode = code.trim().toUpperCase();
 
-    // Look up the coupon
+    // Look up the coupon — use DB_TRUE so boolean comparison works on both SQLite and PostgreSQL
     const coupon = await dbGet(
-      "SELECT * FROM coupons WHERE code = ? AND active = 1",
-      [normalizedCode]
+      "SELECT * FROM coupons WHERE code = ? AND active = ?",
+      [normalizedCode, DB_TRUE]
     );
 
     if (!coupon) {
