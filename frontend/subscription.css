@@ -922,7 +922,7 @@ html[data-theme="light"] .coupon-input {
 }
 
 [data-theme="dark"] .trial-banner .btn-primary {
-  color: var(--accent);
+  color: #0c0a1a;
 }
 
 /* ============================================
