@@ -185,6 +185,32 @@
       </div>
     </section>
 
+    <!-- Coupon Redemption -->
+    <section class="coupon-section">
+      <div class="coupon-card">
+        <div class="coupon-icon">🎟️</div>
+        <div class="coupon-body">
+          <h3 class="coupon-title">Have a coupon code?</h3>
+          <p class="coupon-subtitle">Enter your code below to activate a subscription.</p>
+          <div class="coupon-form" id="couponForm">
+            <input
+              type="text"
+              id="couponInput"
+              class="coupon-input"
+              placeholder="e.g. QUIZALL-XXXXX"
+              maxlength="80"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" id="redeemCouponBtn" class="btn btn-primary coupon-btn">
+              Redeem
+            </button>
+          </div>
+          <p id="couponMessage" class="coupon-message hidden"></p>
+        </div>
+      </div>
+    </section>
+
     <!-- FAQ Section -->
     <section class="faq-section">
       <h2 data-i18n="subscription.faq_title">Frequently Asked Questions</h2>

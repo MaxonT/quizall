@@ -624,7 +624,7 @@
         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
         `<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L8.5 11.5 7 16l4.5-1.5z"/><path d="m15 5 4 4"/>` +
         `</svg>Edit</button>`;
-      wrap.innerHTML = `${avatar}<div class="msg-bubble">${html}</div>${editBtn}`;
+      wrap.innerHTML = `${avatar}<div class="msg-user-content"><div class="msg-bubble">${html}</div>${editBtn}</div>`;
 
       wrap.querySelector(".msg-edit-btn").addEventListener("click", () => activateMessageEdit(wrap));
     } else {
@@ -1800,7 +1800,16 @@
       }),
     });
     await handleCreditResponse(data, "Quiz round");
-    return data.quiz || [];
+    const questions = data.quiz || [];
+    // Persist questions server-side so user can recover if they navigate away
+    if (questions.length && state.projectId) {
+      api(`/api/quiz/projects/${encodeURIComponent(state.projectId)}/pending-round`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roundConfig, questions }),
+      }).catch(() => {});
+    }
+    return questions;
   }
 
   async function generateTrainingBatch(excludeQuestions, topicHint, { isRefill = false } = {}) {
@@ -2152,6 +2161,12 @@
           questions: results,
         }),
       });
+      // Clear the pending round now that the result is saved
+      if (state.projectId) {
+        api(`/api/quiz/projects/${encodeURIComponent(state.projectId)}/pending-round`, {
+          method: "DELETE",
+        }).catch(() => {});
+      }
     } catch (err) {
       console.error("save history failed", err);
     }
@@ -2537,15 +2552,59 @@
         }
         rebindTranscriptInteractive();
         if (state.studyPlan) {
-          const againMsg = appendMessage(
-            "ai",
-            `<p class="meta-line">Want another pass at this material?</p>` +
-              `<button type="button" class="btn-round requiz-btn">Quiz me again ${icon("i-arrow-right")}</button>`
-          );
-          againMsg.querySelector(".requiz-btn").addEventListener("click", (e) => {
-            e.currentTarget.disabled = true;
-            requizProject();
-          });
+          // Check for a pending (interrupted) quiz round before showing "Quiz me again"
+          let pendingRound = null;
+          try {
+            const pr = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/pending-round`);
+            if (pr.pending?.questions?.length) pendingRound = pr.pending;
+          } catch { /* non-critical */ }
+
+          if (pendingRound) {
+            const resumeMsg = appendMessage(
+              "ai",
+              `<p class="meta-line">⚡ You have a quiz ready from your last session — pick up where you left off.</p>` +
+                `<button type="button" class="btn-round requiz-btn">Resume quiz ${icon("i-arrow-right")}</button>` +
+                `<button type="button" class="btn-text-sm discard-pending-btn" style="margin-left:8px;font-size:0.78rem;color:var(--c-text-dim);background:none;border:none;cursor:pointer;">Discard</button>`
+            );
+            resumeMsg.querySelector(".requiz-btn").addEventListener("click", async (e) => {
+              e.currentTarget.disabled = true;
+              resumeMsg.querySelector(".discard-pending-btn").style.display = "none";
+              state.roundIndex = 0;
+              state.roundResults = [];
+              const rc = pendingRound.roundConfig || getMixedRoundConfig();
+              const qs = pendingRound.questions;
+              renderQuizCard(rc, qs, async (answers) => {
+                const { correct, total, results } = await saveRoundHistory(rc, qs, answers);
+                renderRoundReview(rc, results, correct, total, true, async () => {
+                  await finishAllRounds();
+                });
+              });
+              setProcessing(false);
+            });
+            resumeMsg.querySelector(".discard-pending-btn").addEventListener("click", async (e) => {
+              e.currentTarget.closest(".msg").remove();
+              api(`/api/quiz/projects/${encodeURIComponent(projectId)}/pending-round`, { method: "DELETE" }).catch(() => {});
+              const againMsg = appendMessage(
+                "ai",
+                `<p class="meta-line">Want another pass at this material?</p>` +
+                  `<button type="button" class="btn-round requiz-btn">Quiz me again ${icon("i-arrow-right")}</button>`
+              );
+              againMsg.querySelector(".requiz-btn").addEventListener("click", (ev) => {
+                ev.currentTarget.disabled = true;
+                requizProject();
+              });
+            });
+          } else {
+            const againMsg = appendMessage(
+              "ai",
+              `<p class="meta-line">Want another pass at this material?</p>` +
+                `<button type="button" class="btn-round requiz-btn">Quiz me again ${icon("i-arrow-right")}</button>`
+            );
+            againMsg.querySelector(".requiz-btn").addEventListener("click", (e) => {
+              e.currentTarget.disabled = true;
+              requizProject();
+            });
+          }
         }
         ensureComposerReady();
         updateComposerPlaceholder();

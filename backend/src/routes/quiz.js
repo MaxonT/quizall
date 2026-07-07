@@ -2510,6 +2510,113 @@ quizRouter.post("/youtube", requireAuth, async (req, res) => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────────
+// Pending Quiz Round (background generation recovery)
+// ────────────────────────────────────────────────────────────────────────────────
+
+// Ensure the table exists on SQLite (PG handles it in initializeSchema)
+async function ensurePendingRoundTable() {
+  try {
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS pending_quiz_rounds (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        round_config TEXT NOT NULL,
+        questions TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      )
+    `);
+  } catch {
+    // already exists on PG or concurrent call — safe to ignore
+  }
+}
+
+quizRouter.post("/projects/:id/pending-round", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    const project = await getProjectForUser(projectId, userId);
+    if (!project) return res.status(404).json({ ok: false, error: "Project not found" });
+
+    const { roundConfig, questions } = req.body || {};
+    if (!Array.isArray(questions) || !questions.length) {
+      return res.status(400).json({ ok: false, error: "questions array is required" });
+    }
+
+    await ensurePendingRoundTable();
+    const id = nanoid();
+    // Upsert: one pending round per project per user
+    if (USE_POSTGRES) {
+      await dbRun(
+        `INSERT INTO pending_quiz_rounds (id, project_id, user_id, round_config, questions)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT DO NOTHING`,
+        [id, projectId, userId, JSON.stringify(roundConfig || {}), JSON.stringify(questions)]
+      );
+      // Replace any existing
+      await dbRun(
+        `DELETE FROM pending_quiz_rounds WHERE project_id = ? AND user_id = ? AND id != ?`,
+        [projectId, userId, id]
+      );
+    } else {
+      await dbRun(
+        `DELETE FROM pending_quiz_rounds WHERE project_id = ? AND user_id = ?`,
+        [projectId, userId]
+      );
+      await dbRun(
+        `INSERT INTO pending_quiz_rounds (id, project_id, user_id, round_config, questions) VALUES (?, ?, ?, ?, ?)`,
+        [id, projectId, userId, JSON.stringify(roundConfig || {}), JSON.stringify(questions)]
+      );
+    }
+    return res.json({ ok: true, id });
+  } catch (err) {
+    console.error("[quizall] save pending-round error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to save pending round" });
+  }
+});
+
+quizRouter.get("/projects/:id/pending-round", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    await ensurePendingRoundTable();
+    const row = await dbGet(
+      `SELECT id, round_config, questions, created_at FROM pending_quiz_rounds WHERE project_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1`,
+      [projectId, userId]
+    );
+    if (!row) return res.json({ ok: true, pending: null });
+    return res.json({
+      ok: true,
+      pending: {
+        id: row.id,
+        roundConfig: JSON.parse(row.round_config || "{}"),
+        questions: JSON.parse(row.questions || "[]"),
+        createdAt: row.created_at,
+      },
+    });
+  } catch (err) {
+    console.error("[quizall] get pending-round error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load pending round" });
+  }
+});
+
+quizRouter.delete("/projects/:id/pending-round", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const projectId = req.params.id;
+    await ensurePendingRoundTable();
+    await dbRun(
+      `DELETE FROM pending_quiz_rounds WHERE project_id = ? AND user_id = ?`,
+      [projectId, userId]
+    );
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("[quizall] delete pending-round error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to clear pending round" });
+  }
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
 // Quiz Generation
 // ────────────────────────────────────────────────────────────────────────────────
 

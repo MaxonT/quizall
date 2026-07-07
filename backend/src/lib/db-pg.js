@@ -658,6 +658,17 @@ export async function initializeSchema() {
     );
     CREATE INDEX IF NOT EXISTS idx_oauth_pkce_expires ON oauth_pkce_states(expires_at);
 
+    -- Pending quiz rounds (background generation recovery)
+    CREATE TABLE IF NOT EXISTS pending_quiz_rounds (
+      id VARCHAR(255) PRIMARY KEY,
+      project_id VARCHAR(255) NOT NULL,
+      user_id VARCHAR(255) NOT NULL,
+      round_config TEXT NOT NULL,
+      questions TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_pending_quiz_project ON pending_quiz_rounds(project_id, user_id);
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_plan_usage_user_date ON plan_usage(user_id, date, feature_type);
     CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at);
@@ -703,6 +714,18 @@ END $$`);
        ON CONFLICT (code) DO NOTHING`,
       ["QUIZALL-DEE1636310A6"]
     );
+    // Ensure pending_quiz_rounds exists on pre-existing databases
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS pending_quiz_rounds (
+        id VARCHAR(255) PRIMARY KEY,
+        project_id VARCHAR(255) NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        round_config TEXT NOT NULL,
+        questions TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await db.exec("CREATE INDEX IF NOT EXISTS idx_pending_quiz_project ON pending_quiz_rounds(project_id, user_id);");
     console.log('[quizall] PostgreSQL schema initialized');
   } catch (err) {
     console.error('[quizall] Failed to initialize PostgreSQL schema:', err);

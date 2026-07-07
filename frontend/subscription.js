@@ -66,6 +66,7 @@ import { track, EVENTS } from './lib/analytics.js';
     setupTrialButton();
     setupBetaModal();
     setupAuthModal();
+    setupCouponRedeem();
     
     // Check authentication - use unified authState if available
     if (window.authState && window.authState.getToken) {
@@ -750,6 +751,63 @@ import { track, EVENTS } from './lib/analytics.js';
     betaModal?.addEventListener('click', (e) => {
       if (e.target === betaModal) hideBetaModal();
     });
+  }
+
+  function setupCouponRedeem() {
+    const btn = document.getElementById('redeemCouponBtn');
+    const input = document.getElementById('couponInput');
+    const msgEl = document.getElementById('couponMessage');
+    if (!btn || !input) return;
+
+    function showCouponMsg(text, type) {
+      if (!msgEl) return;
+      msgEl.textContent = text;
+      msgEl.className = `coupon-message ${type}`;
+      msgEl.classList.remove('hidden');
+    }
+
+    async function doRedeem() {
+      const code = input.value.trim();
+      if (!code) { showCouponMsg('Please enter a coupon code.', 'error'); return; }
+
+      const token = authToken || localStorage.getItem('quizall.token');
+      if (!token) {
+        showCouponMsg('Please log in first to redeem a coupon.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Redeeming…';
+      msgEl?.classList.add('hidden');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/billing/redeem-coupon`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ code }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showCouponMsg('🎉 Coupon redeemed! Your subscription has been activated.', 'success');
+          input.value = '';
+          // Refresh billing status
+          if (typeof loadBillingStatus === 'function') await loadBillingStatus();
+        } else {
+          showCouponMsg(data.error || 'Invalid coupon code.', 'error');
+        }
+      } catch {
+        showCouponMsg('Network error — please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Redeem';
+      }
+    }
+
+    btn.addEventListener('click', doRedeem);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doRedeem(); });
   }
 
   function showBetaModal() {
