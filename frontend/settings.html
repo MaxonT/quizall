@@ -113,69 +113,65 @@
 
       <!-- Account Management Section (visible when logged in) -->
       <div id="accountManagementSection" class="account-management hidden">
-        <button id="manageAccountToggle" type="button" class="account-logout">
-          <span id="toggleIcon">▶</span>
-          <span>Manage Account</span>
+        <button id="manageAccountToggle" type="button" class="manage-account-toggle">
+          <span class="manage-account-toggle__label">
+            <svg id="toggleIcon" class="toggle-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 8 10 13 15 8"/></svg>
+            Manage Account
+          </span>
+          <span class="manage-account-toggle__hint">Subscription &amp; usage</span>
         </button>
 
         <!-- Expandable Account Details -->
         <div id="accountDetailsPanel" class="account-details-panel hidden">
+
           <!-- Subscription Card -->
-          <div class="account-card">
-            <div class="card-header">
-              <h3>Subscription</h3>
-              <span id="subscriptionStatus" class="status-badge">--</span>
+          <div class="acct-card">
+            <div class="acct-card__head">
+              <span class="acct-card__title">Subscription</span>
+              <span id="subscriptionStatus" class="status-badge none">No Subscription</span>
             </div>
-            <div class="card-body">
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="info-label">Plan</span>
-                  <span id="planName" class="info-value">--</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Period End</span>
-                  <span id="periodEnd" class="info-value">--</span>
-                </div>
-                <div class="info-item" id="trialEndItem" style="display: none;">
-                  <span class="info-label">Trial Ends</span>
-                  <span id="trialEnd" class="info-value">--</span>
-                </div>
+            <div class="acct-card__body acct-sub-grid">
+              <div class="acct-field">
+                <span class="acct-field__label">PLAN</span>
+                <span id="planName" class="acct-field__value">Free</span>
               </div>
-              <div class="card-actions">
-                <button id="manageSubscriptionBtn" class="btn btn-primary btn-sm">Manage Subscription</button>
-                <a href="subscription.html" class="btn btn-secondary btn-sm">View Plans</a>
+              <div class="acct-field">
+                <span class="acct-field__label">PERIOD END</span>
+                <span id="periodEnd" class="acct-field__value">--</span>
               </div>
+              <div class="acct-field" id="trialEndItem" style="display:none">
+                <span class="acct-field__label">TRIAL ENDS</span>
+                <span id="trialEnd" class="acct-field__value">--</span>
+              </div>
+            </div>
+            <div class="acct-card__foot">
+              <button id="manageSubscriptionBtn" class="btn btn-primary btn-sm" style="display:none">Manage Subscription</button>
+              <a href="subscription.html" class="btn btn-secondary btn-sm">View Plans</a>
             </div>
           </div>
 
-          <!-- Usage Limits Card -->
-          <div class="account-card">
-            <div class="card-header">
-              <h3>Usage limits</h3>
+          <!-- Credits Card -->
+          <div class="acct-card">
+            <div class="acct-card__head">
+              <span class="acct-card__title">Credits today</span>
+              <span id="creditsUsageToday" class="acct-credits-badge">-- / --</span>
             </div>
-            <div class="card-body">
-              <div class="usage-limits-grid">
-                <div class="usage-limit-item">
-                  <span class="usage-limit-label">Credits remaining today</span>
-                  <span id="creditsUsageToday" class="usage-limit-value">--</span>
-                </div>
-                <div class="usage-limit-item usage-limit-item--hidden" aria-hidden="true">
-                  <span class="usage-limit-label">Legacy</span>
-                  <span id="promptUsageToday" class="usage-limit-value">--</span>
-                </div>
-                <div class="usage-limit-item usage-limit-item--hidden" aria-hidden="true">
-                  <span class="usage-limit-label">Legacy</span>
-                  <span id="wizardUsageToday" class="usage-limit-value">--</span>
-                </div>
-                <div class="usage-limit-note" id="settingsDailyResetNote">Resets daily at 00:00 in your timezone</div>
+            <div class="acct-card__body">
+              <div class="acct-credits-bar-track">
+                <div class="acct-credits-bar-fill" id="creditsBarFillSettings"></div>
               </div>
+              <p class="acct-reset-note" id="settingsDailyResetNote">Resets daily at 00:00 in your timezone</p>
             </div>
           </div>
 
+          <!-- hidden legacy placeholders (data only, not displayed) -->
+          <span id="promptUsageToday" style="display:none"></span>
+          <span id="wizardUsageToday" style="display:none"></span>
+          <span id="creditsPoolToday" style="display:none"></span>
         </div>
       </div>
 
-      <button id="logoutBtn" class="account-logout hidden">Log out</button>
+      <button id="logoutBtn" class="btn-logout hidden">Log out</button>
     </section>
 
     <section class="settings-panel settings-panel--science-map">

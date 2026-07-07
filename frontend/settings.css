@@ -116,8 +116,7 @@ html[data-theme="light"] .account-form input{
   border-color:#cbd5e1;
   color:#0f172a;
 }
-.account-form button,
-.account-logout{
+.account-form button{
   border:none;
   border-radius:999px;
   padding:0.5rem 0.9rem;
@@ -126,56 +125,193 @@ html[data-theme="light"] .account-form input{
   background:linear-gradient(120deg,#7C3AED,#06B6D4);
   color:#fff;
 }
-.account-logout{
-  margin-top:0.25rem;
+
+/* Log out button */
+.btn-logout{
+  margin-top:1rem;
+  border:1px solid rgba(239,68,68,0.35);
+  border-radius:999px;
+  padding:0.45rem 1.1rem;
+  font-size:0.82rem;
+  cursor:pointer;
+  background:transparent;
+  color:#f87171;
+  transition:background 0.15s, border-color 0.15s;
+}
+.btn-logout:hover{
+  background:rgba(239,68,68,0.1);
+  border-color:rgba(239,68,68,0.6);
 }
 
-/* Account Management Section */
-.account-management{
-  margin-top:1rem;
+/* ── Manage Account toggle ── */
+.account-management{ margin-top:1rem; }
+.account-management.hidden{ display:none; }
+
+.manage-account-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  background:var(--card,rgba(15,23,42,0.7));
+  border:1px solid var(--border);
+  border-radius:0.75rem;
+  padding:0.7rem 1rem;
+  cursor:pointer;
+  transition:border-color 0.18s, background 0.18s;
 }
-.account-management.hidden{
-  display:none;
+.manage-account-toggle:hover{
+  border-color:rgba(139,92,246,0.45);
+  background:rgba(139,92,246,0.05);
 }
-#manageAccountToggle{
+.manage-account-toggle__label{
   display:flex;
   align-items:center;
   gap:0.5rem;
-  width:100%;
-  justify-content:flex-start;
+  font-size:0.92rem;
+  font-weight:600;
+  color:var(--text);
 }
-#manageAccountToggle #toggleIcon{
-  transition:transform 0.2s ease;
+.manage-account-toggle__hint{
   font-size:0.75rem;
+  color:var(--muted,#94a3b8);
+}
+.toggle-chevron{
+  width:16px;
+  height:16px;
+  flex-shrink:0;
+  transition:transform 0.22s ease;
+  stroke:var(--accent,#06b6d4);
+}
+.manage-account-toggle.is-open .toggle-chevron{
+  transform:rotate(180deg);
 }
 
 /* Account Details Panel */
 .account-details-panel{
-  margin-top:1rem;
-  padding-top:1rem;
-  border-top:1px solid var(--border);
-  animation:slideDown 0.3s ease;
+  margin-top:0.75rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.75rem;
+  animation:slideDown 0.25s ease;
 }
-.account-details-panel.hidden{
-  display:none;
-}
+.account-details-panel.hidden{ display:none; }
 @keyframes slideDown{
-  from{opacity:0;transform:translateY(-10px)}
+  from{opacity:0;transform:translateY(-8px)}
   to{opacity:1;transform:translateY(0)}
 }
 
-/* Override account-card for settings context - use --card/--border */
-.account-details-panel .account-card{
-  background:var(--card);
+/* ── Account Cards ── */
+.acct-card{
+  background:var(--card,rgba(15,23,42,0.7));
   border:1px solid var(--border);
   border-radius:0.75rem;
-  margin-bottom:1rem;
-  padding:0;
+  overflow:hidden;
 }
-.account-details-panel .account-card .card-header h2,
-.account-details-panel .account-card .card-header h3{
+.acct-card__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0.75rem 1rem;
+  border-bottom:1px solid var(--border);
+}
+.acct-card__title{
+  font-size:0.85rem;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  color:var(--muted,#94a3b8);
+}
+.acct-card__body{
+  padding:1rem;
+}
+.acct-card__foot{
+  padding:0.75rem 1rem;
+  border-top:1px solid var(--border);
+  display:flex;
+  gap:0.5rem;
+  flex-wrap:wrap;
+}
+
+/* Subscription fields */
+.acct-sub-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:1rem;
+}
+.acct-field__label{
+  font-size:0.7rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--muted,#94a3b8);
+  margin-bottom:0.2rem;
+  display:block;
+}
+.acct-field__value{
   font-size:1rem;
+  font-weight:700;
+  color:var(--text);
+}
+
+/* Credits badge + bar */
+.acct-credits-badge{
+  font-size:0.95rem;
+  font-weight:800;
+  background:linear-gradient(135deg,#06b6d4,#7c3aed);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.acct-credits-bar-track{
+  height:6px;
+  background:rgba(148,163,184,0.15);
+  border-radius:999px;
+  overflow:hidden;
+  margin-bottom:0.6rem;
+}
+.acct-credits-bar-fill{
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,#06b6d4,#7c3aed);
+  transition:width 0.5s ease;
+}
+.acct-credits-bar-fill.is-low{
+  background:linear-gradient(90deg,#f59e0b,#ef4444);
+}
+.acct-reset-note{
+  font-size:0.72rem;
+  color:var(--muted,#94a3b8);
   margin:0;
+}
+
+/* Status badges */
+.status-badge{
+  display:inline-block;
+  padding:0.2rem 0.65rem;
+  border-radius:999px;
+  font-size:0.75rem;
+  font-weight:700;
+  letter-spacing:0.02em;
+}
+.status-badge.active{
+  background:rgba(16,185,129,0.15);
+  color:#34d399;
+  border:1px solid rgba(16,185,129,0.3);
+}
+.status-badge.trialing{
+  background:rgba(59,130,246,0.15);
+  color:#60a5fa;
+  border:1px solid rgba(59,130,246,0.3);
+}
+.status-badge.none{
+  background:rgba(148,163,184,0.1);
+  color:#94a3b8;
+  border:1px solid rgba(148,163,184,0.2);
+}
+.status-badge.canceled,.status-badge.past_due{
+  background:rgba(239,68,68,0.12);
+  color:#f87171;
+  border:1px solid rgba(239,68,68,0.25);
 }
 
 .hidden{

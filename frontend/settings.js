@@ -81,7 +81,7 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
       logoutBtn?.classList.add("hidden");
       accountManagementSection?.classList.add("hidden");
       accountDetailsPanel?.classList.add("hidden");
-      if (toggleIcon) toggleIcon.textContent = "▶";
+      manageAccountToggle?.classList.remove("is-open");
     }
   }
 
@@ -125,7 +125,7 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
     logoutBtn?.classList.remove("hidden");
     accountManagementSection?.classList.add("hidden");
     accountDetailsPanel?.classList.add("hidden");
-    if (toggleIcon) toggleIcon.textContent = "▶";
+    manageAccountToggle?.classList.remove("is-open");
     setAuthMessage(reason || "Temporarily unable to load account details. Please retry.", true);
   }
 
@@ -265,7 +265,7 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
   manageAccountToggle?.addEventListener("click", () => {
     const isExpanded = !accountDetailsPanel?.classList.contains("hidden");
     accountDetailsPanel?.classList.toggle("hidden");
-    if (toggleIcon) toggleIcon.textContent = isExpanded ? "▶" : "▼";
+    manageAccountToggle?.classList.toggle("is-open", !isExpanded);
     if (!isExpanded) loadAccountManagementData();
   });
 
@@ -314,13 +314,19 @@ if (typeof window !== "undefined" && window.location?.hostname?.includes(".onren
         manageSubscriptionBtn && (manageSubscriptionBtn.style.display = "none");
       }
       if (creditsUsageToday && credits) {
-        creditsUsageToday.textContent = `${credits.balance ?? 0} / ${credits.dailyAllowance ?? 80}`;
-        if (creditsPoolToday) {
-          creditsPoolToday.textContent = credits.poolRemaining != null ? String(credits.poolRemaining) : "—";
+        const balance = credits.balance ?? 0;
+        const allowance = credits.dailyAllowance ?? 80;
+        creditsUsageToday.textContent = `${balance} / ${allowance}`;
+        // update progress bar
+        const barFill = document.getElementById("creditsBarFillSettings");
+        if (barFill) {
+          const pct = allowance > 0 ? Math.round((balance / allowance) * 100) : 0;
+          barFill.style.width = `${pct}%`;
+          barFill.classList.toggle("is-low", balance < 10);
         }
+        if (creditsPoolToday) creditsPoolToday.textContent = credits.poolRemaining != null ? String(credits.poolRemaining) : "—";
       } else if (creditsUsageToday) {
         creditsUsageToday.textContent = "—";
-        if (creditsPoolToday) creditsPoolToday.textContent = "—";
       }
 
       const noteEl = document.getElementById("settingsDailyResetNote");
