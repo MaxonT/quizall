@@ -111,7 +111,7 @@
     const workspaceLink = findWorkspaceNavLink();
     if (!workspaceLink) return;
     const key = hasProjects ? "nav.workspace" : "nav.createProject";
-    const fallback = hasProjects ? "Exam Prep Workspace" : "Create Project";
+    const fallback = hasProjects ? "Workspace" : "Create Project";
     workspaceLink.setAttribute("data-i18n", key);
     workspaceLink.textContent = t(key, fallback);
   }
