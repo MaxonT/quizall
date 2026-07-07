@@ -40,6 +40,8 @@ if (USE_POSTGRES) {
   // 002_analytics creates analytics tables (already done by initializeSchema) but
   // run it anyway to stay idempotent
   runMigration('migrations/002_analytics.js', ' up');
+  // 006_annual_coupon seeds the annual coupon code for PostgreSQL
+  runMigration('migrations/006_annual_coupon.js');
 } else {
   // SQLite: run all migrations
   runMigration('migrations/000_init.js');
@@ -48,6 +50,7 @@ if (USE_POSTGRES) {
   runMigration('migrations/002_checkout_sessions.js', ' up');
   runMigration('migrations/003_stripe_events.js', ' up');
   runMigration('migrations/005_coupons.js', ' up');
+  runMigration('migrations/006_annual_coupon.js');
 }
 
 console.log('[QuizAll] ✅ Migrations complete.');
