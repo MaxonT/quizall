@@ -581,7 +581,7 @@
       padding: 18px;
       background: linear-gradient(165deg, var(--science-panel), var(--science-panel-soft));
       scroll-margin-top: 130px;
-      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18), var(--science-box-glow);
     }
 
     .step-shell {
@@ -1276,7 +1276,7 @@
       --science-box-glow: 0 0 0 1px rgba(37, 99, 235, 0.2), 0 0 14px rgba(37, 99, 235, 0.12);
     }
 
-    :is(.step-shell, .subpanel, .paper-detail, .mindmap-figure, .transition-art, .comparison-shell, .comparison-chart-shell, .citations-shell, .cta-shell, .reading-rail-card, .step-transition, .preface) {
+    :is(.step, .subpanel, .paper-detail, .mindmap-figure, .transition-art, .comparison-shell, .comparison-chart-shell, .citations-shell, .cta-shell, .reading-rail-card, .step-transition, .preface) {
       box-shadow: var(--science-box-glow);
     }
 
