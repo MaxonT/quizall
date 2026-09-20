@@ -32,6 +32,96 @@ export class AnthropicDisabledError extends Error {
   }
 }
 
+function isInsideJsonString(text) {
+  let inString = false;
+  let escape = false;
+  for (const ch of text) {
+    if (!inString) {
+      if (ch === '"') inString = true;
+      continue;
+    }
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') inString = false;
+  }
+  return inString;
+}
+
+function closeJsonContainers(text) {
+  const stack = [];
+  let inString = false;
+  let escape = false;
+  for (const ch of text) {
+    if (inString) {
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (ch === "\\") {
+        escape = true;
+        continue;
+      }
+      if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{") stack.push("}");
+    else if (ch === "[") stack.push("]");
+    else if ((ch === "}" || ch === "]") && stack.length && stack[stack.length - 1] === ch) {
+      stack.pop();
+    }
+  }
+  return stack.reverse().join("");
+}
+
+/**
+ * Recover JSON when the model truncates output or wraps it in markdown fences.
+ * Returns {} if nothing usable can be parsed.
+ */
+export function parseJsonLenient(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return {};
+
+  const unfenced = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  const start = unfenced.search(/[\{\[]/);
+  const candidate = start >= 0 ? unfenced.slice(start) : unfenced;
+
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    // continue to repair
+  }
+
+  let repaired = candidate;
+  if (isInsideJsonString(repaired)) repaired += '"';
+  repaired = repaired
+    .replace(/,\s*$/, "")
+    .replace(/,\s*"[^"\\]*"\s*:\s*$/, "")
+    .replace(/,\s*"[^"\\]*"\s*$/, "")
+    .replace(/:\s*$/, "")
+    .replace(/,\s*$/, "");
+  repaired += closeJsonContainers(repaired);
+
+  try {
+    return JSON.parse(repaired);
+  } catch (parseError) {
+    console.error(`[quizall] ⚠️  Anthropic JSON parse failed:`, parseError.message);
+    return {};
+  }
+}
+
 /**
  * Chat completion that returns JSON via Anthropic Claude
  *
@@ -69,23 +159,14 @@ export async function chatJsonAnthropic({ system, user, model, apiKey: overrideK
     const inputTokens = message.usage?.input_tokens || 0;
     const outputTokens = message.usage?.output_tokens || 0;
     const totalTokens = inputTokens + outputTokens;
+    const stopReason = message.stop_reason || "";
 
-    console.log(`[quizall] ✅ Anthropic call succeeded - Duration: ${duration}ms, Response: ${content.length} chars, Tokens: ${totalTokens} (in:${inputTokens} out:${outputTokens})`);
-
-    let parsed;
-    try {
-      // Try direct parse first
-      parsed = JSON.parse(content);
-    } catch (_) {
-      // Claude sometimes wraps JSON in markdown code fences — strip them
-      const stripped = content.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-      try {
-        parsed = JSON.parse(stripped);
-      } catch (parseError) {
-        console.error(`[quizall] ⚠️  Anthropic JSON parse failed:`, parseError.message);
-        parsed = {};
-      }
+    console.log(`[quizall] ✅ Anthropic call succeeded - Duration: ${duration}ms, Response: ${content.length} chars, Tokens: ${totalTokens} (in:${inputTokens} out:${outputTokens})${stopReason ? `, stop:${stopReason}` : ""}`);
+    if (stopReason === "max_tokens") {
+      console.warn("[quizall] ⚠️  Anthropic response truncated (max_tokens) — attempting JSON repair");
     }
+
+    const parsed = parseJsonLenient(content);
 
     return {
       data: parsed,

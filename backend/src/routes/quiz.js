@@ -16,6 +16,7 @@ const NUM_QUESTIONS_MAX = 20;
 const HISTORY_MAX_LIMIT = 50;
 const PROJECT_MAX_LIMIT = 100;
 const FILE_TEXT_MAX_LENGTH = 120000;
+const STUDY_PLAN_CONTENT_MAX = 40000;
 const MAX_FILE_BATCH = 30;
 const STREAK_MAX_DAYS = 365;
 const AI_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
@@ -803,24 +804,24 @@ function buildStudyPlanPrompt(content, examTopicHint = "", options = {}) {
   const { hasUploadedMaterial = false, fileNames = [] } = options;
   const fileHint = fileNames.length ? `Uploaded files: ${fileNames.join(", ")}` : "";
 
-  const progressBlock = hasUploadedMaterial
-    ? [
-        '  "progress": {',
-        '    "overall_percent": number (0-100, estimate based on material coverage),',
-        '    "current_lecture": { "title": "string", "section": "string", "pages": "string", "citation": "filename p.X-Y" },',
-        '    "completed_lectures": [{ "title": "string", "citation": "filename p.X-Y" }],',
-        '    "phases": [{ "phase": "Phase 1|2|3", "title": "string", "goal": "string", "status": "done|active|upcoming" }]',
-        "  },",
-      ].join("\n")
-    : "";
-
-  const conceptFields = hasUploadedMaterial
-    ? '  "key_concepts": [{ "concept": "string", "detail": "string", "difficulty": "easy|medium|hard", "importance": "core|secondary|peripheral", "scenario1": "real-world use", "scenario2": "another real-world use" }],'
-    : '  "key_concepts": [{ "concept": "string", "detail": "string", "difficulty": "easy|medium|hard" }],';
-
-  const comparisonBlock = hasUploadedMaterial
-    ? '  "comparisons": [{ "a": "string", "b": "string", "rows": [["Aspect", "A", "B"], ["...", "...", "..."]] }],'
-    : "";
+  const fields = [
+    '  "session_name": "descriptive title without ellipsis"',
+    '  "subject": "string"',
+    '  "topics": ["topic strings"]',
+    '  "plan": [{ "title": "string", "why": "string", "estimated_minutes": number, "importance": "core|secondary|peripheral" }]',
+    '  "summary": "one plain sentence; if progress enabled, start with current topic + overall_percent%"',
+    hasUploadedMaterial
+      ? '  "key_concepts": [{ "concept": "string", "detail": "string", "difficulty": "easy|medium|hard", "importance": "core|secondary|peripheral", "scenario1": "real-world use", "scenario2": "another real-world use" }]'
+      : '  "key_concepts": [{ "concept": "string", "detail": "string", "difficulty": "easy|medium|hard" }]',
+  ];
+  if (hasUploadedMaterial) {
+    fields.push(
+      '  "progress": { "overall_percent": number, "current_lecture": { "title": "string", "section": "string", "pages": "string", "citation": "filename p.X-Y" }, "completed_lectures": [{ "title": "string", "citation": "filename p.X-Y" }], "phases": [{ "phase": "Phase 1|2|3", "title": "string", "goal": "string", "status": "done|active|upcoming" }] }'
+    );
+    fields.push(
+      '  "comparisons": [{ "a": "string", "b": "string", "rows": [["Aspect", "A", "B"], ["...", "...", "..."]] }]'
+    );
+  }
 
   return {
     system: [
@@ -832,21 +833,15 @@ function buildStudyPlanPrompt(content, examTopicHint = "", options = {}) {
         ? "The learner uploaded study files (PPT/PDF/DOCX). Enable progress tracking: tag concepts with importance (core|secondary|peripheral), include PPT/page citations, and add comparison tables for any A vs B topics."
         : "",
       "session_name must be a short descriptive title (max 60 chars). Never use ellipsis (...).",
+      "Always output session_name, subject, topics, plan, and summary first. Optional fields can follow. Keep JSON compact.",
       "Return a JSON object with this exact structure:",
-      "{",
-      '  "session_name": "descriptive title without ellipsis",',
-      '  "subject": "string",',
-      '  "topics": ["topic strings"],',
-      conceptFields,
-      comparisonBlock,
-      '  "plan": [{ "title": "string", "why": "string", "estimated_minutes": number, "importance": "core|secondary|peripheral" }],',
-      progressBlock,
-      '  "summary": "one plain sentence; if progress enabled, start with current topic + overall_percent%"',
-      "}",
+      `{`,
+      fields.join(",\n"),
+      `}`,
     ]
       .filter(Boolean)
       .join("\n"),
-    user: content,
+    user: String(content || "").slice(0, STUDY_PLAN_CONTENT_MAX),
   };
 }
 
@@ -880,6 +875,73 @@ function buildNotePrompt(content, studyPlan, rounds = []) {
       "=== QUIZ ROUNDS ===",
       roundsText || "No round details provided.",
     ].join("\n"),
+  };
+}
+
+function asTopicList(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (item && typeof item === "object") return String(item.title || item.name || item.topic || "").trim();
+        return String(item || "").trim();
+      })
+      .filter(Boolean);
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value
+      .split(/[,;\n]/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function asPlanSteps(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((step) => {
+      if (typeof step === "string") {
+        const title = step.trim();
+        return title ? { title, why: "", estimated_minutes: 10, importance: "core" } : null;
+      }
+      if (!step || typeof step !== "object") return null;
+      const title = String(step.title || step.name || step.step || "").trim();
+      if (!title) return null;
+      const minutes = Number(step.estimated_minutes || step.minutes || 10);
+      return {
+        title,
+        why: String(step.why || step.reason || step.description || "").trim(),
+        estimated_minutes: Number.isFinite(minutes) && minutes > 0 ? minutes : 10,
+        importance: String(step.importance || "core"),
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeStudyPlan(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const subject = String(raw.subject || raw.session_name || raw.title || "").trim();
+  let topics = asTopicList(raw.topics || raw.topic_list || raw.key_topics);
+  let plan = asPlanSteps(raw.plan || raw.steps || raw.study_plan || raw.schedule);
+  if (!topics.length && plan.length) topics = plan.map((step) => step.title).slice(0, 8);
+  if (!plan.length && topics.length) {
+    plan = topics.slice(0, 4).map((topic, index) => ({
+      title: `Learn ${topic}`,
+      why: "This shows up in your materials.",
+      estimated_minutes: 5 + index * 3,
+      importance: index === 0 ? "core" : "secondary",
+    }));
+  }
+  if (!subject || !topics.length || !plan.length) return null;
+  return {
+    ...raw,
+    session_name: sanitizeSessionName(raw.session_name || subject),
+    subject,
+    topics,
+    plan,
+    summary: String(raw.summary || `This material is mainly about ${subject}.`).trim(),
+    key_concepts: Array.isArray(raw.key_concepts) ? raw.key_concepts : [],
   };
 }
 
@@ -2213,15 +2275,15 @@ quizRouter.post("/projects/:id/study-plan", requireAuth, async (req, res) => {
       system: prompt.system,
       user: prompt.user,
       model: AI_MODEL,
-      maxTokens: 2048,
+      maxTokens: hasUploadedMaterial ? 6144 : 4096,
       temperature: 0.25,
     });
     const duration = Date.now() - start;
     await logApiCall(userId, "study-plan", result.usage, duration);
 
-    const plan = result.data;
-    if (!plan || !plan.subject || !Array.isArray(plan.topics) || !Array.isArray(plan.plan)) {
-      console.error("[quizall] study-plan unexpected format:", JSON.stringify(plan).slice(0, 220));
+    const plan = normalizeStudyPlan(result.data);
+    if (!plan) {
+      console.error("[quizall] study-plan unexpected format:", JSON.stringify(result.data).slice(0, 220));
       return res.status(502).json({ ok: false, error: "AI returned an unexpected study plan format. Please try again." });
     }
 

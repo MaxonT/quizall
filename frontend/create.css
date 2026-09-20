@@ -1056,6 +1056,16 @@ body.sidebar-collapsed .sidebar-toggle-btn .icon-panel {
   font-size: 0.88rem;
 }
 
+.msg.user .user-paste-preview {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.msg.user .msg-bubble .meta-line + .user-paste-preview {
+  margin-top: 8px;
+}
+
 /* Plan steps */
 .plan-steps {
   list-style: none;

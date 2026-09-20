@@ -730,14 +730,21 @@
       `<p>${escapeHtml(display)}</p>` +
       `<button type="button" class="btn-round retry-btn" data-retry="${escapeHtml(retryAction)}">Try again</button>`;
     const msg = appendMessage("ai", html);
-    const btn = msg.querySelector(".retry-btn");
-    if (btn) {
-      btn.addEventListener("click", async (e) => {
-        e.currentTarget.disabled = true;
-        await handleRetry(retryAction);
-      });
-    }
+    bindRetryButton(msg.querySelector(".retry-btn"), retryAction);
     return msg;
+  }
+
+  function bindRetryButton(btn, retryAction) {
+    if (!btn || btn.dataset.bound) return;
+    btn.dataset.bound = "1";
+    const action = retryAction || btn.getAttribute("data-retry");
+    btn.addEventListener("click", async (e) => {
+      if (state.isProcessing) return;
+      e.currentTarget.disabled = true;
+      const wrap = e.currentTarget.closest(".msg");
+      if (wrap) wrap.remove();
+      await handleRetry(action);
+    });
   }
 
   async function handleRetry(action) {
@@ -2280,10 +2287,32 @@
     setProcessing(false);
   }
 
-  function respondNeedMoreMaterial(userPreview) {
+  function formatUserMaterialMessage(text, fileCount) {
+    const parts = [];
+    const count = Number(fileCount) || 0;
+    if (count > 0) {
+      parts.push(`<p class="meta-line">Uploaded ${count} file${count === 1 ? "" : "s"}</p>`);
+    }
+    const trimmed = String(text || "").trim();
+    if (trimmed) {
+      const preview = trimmed.slice(0, 600) + (trimmed.length > 600 ? "…" : "");
+      parts.push(`<p class="user-paste-preview">${escapeHtml(preview)}</p>`);
+    }
+    return parts.join("");
+  }
+
+  function appendUserMaterialMessage(text, fileCount) {
+    const html = formatUserMaterialMessage(text, fileCount);
+    if (!html) return null;
+    const msg = appendMessage("user", html);
+    if (String(text || "").trim()) msg.dataset.rawText = String(text).trim();
+    return msg;
+  }
+
+  function respondNeedMoreMaterial(text, fileCount) {
     setConversationActive(true);
     setActiveNav("navHome");
-    appendMessage("user", `<p>${escapeHtml(userPreview)}</p>`);
+    appendUserMaterialMessage(text, fileCount);
     els.composerInput.value = "";
     autosizeComposer();
     state.pendingFiles = [];
@@ -2318,19 +2347,19 @@
     }
 
     const filesToCheck = state.pendingFiles.slice();
+    setProcessing(true);
     const combinedContent = await buildMaterialContent(text, filesToCheck);
     const continuing = !!(state.resumedSession && state.projectId);
     const shortContent = combinedContent.length < CONTENT_MIN_LENGTH;
 
     if (!continuing && shortContent) {
-      const userPreview = hasFiles
-        ? `Uploaded ${filesToCheck.length} file(s)${text ? " + pasted text" : ""}`
-        : text;
-      respondNeedMoreMaterial(userPreview);
+      setProcessing(false);
+      respondNeedMoreMaterial(text, filesToCheck.length);
       return;
     }
 
     if (continuing && shortContent && !hasFiles) {
+      setProcessing(false);
       els.composerInput.value = "";
       autosizeComposer();
       state.pendingFiles = [];
@@ -2357,10 +2386,7 @@
     }
     if (combinedContent) state.materialPreview = combinedContent;
 
-    const userPreview = hasFiles
-      ? `Uploaded ${state.pendingFiles.length} file(s)${text ? ` + pasted text` : ""}`
-      : text.slice(0, 600) + (text.length > 600 ? "…" : "");
-    if (userPreview) appendMessage("user", `<p>${escapeHtml(userPreview)}</p>`);
+    appendUserMaterialMessage(text, filesToCheck.length);
 
     els.composerInput.value = "";
     autosizeComposer();
@@ -2477,6 +2503,7 @@
       if (btn.dataset.bound) return;
       btn.dataset.bound = "1";
     });
+    els.chatInner.querySelectorAll(".retry-btn").forEach((btn) => bindRetryButton(btn));
   }
 
   async function openProject(projectId) {
