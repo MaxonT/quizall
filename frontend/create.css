@@ -1073,30 +1073,24 @@ body.sidebar-collapsed .sidebar-toggle-btn .icon-panel {
   margin: 14px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  counter-reset: none;
 }
 
 .plan-steps li {
-  padding: 14px 16px;
+  padding: 12px 14px;
   border: 1px solid var(--c-border);
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.04) 0%, transparent 55%);
+  background: rgba(255, 255, 255, 0.02);
   font-size: 0.9rem;
-  line-height: 1.55;
-  transition: border-color 0.2s var(--ease), background 0.2s var(--ease), transform 0.2s var(--ease);
-}
-
-.plan-steps li:hover {
-  border-color: rgba(139, 92, 246, 0.25);
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, var(--c-panel-hover) 100%);
-  transform: translateX(2px);
+  line-height: 1.5;
 }
 
 .plan-steps .step-title {
   display: block;
   font-weight: 600;
   color: var(--c-text);
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 .plan-steps .step-why {
@@ -1106,6 +1100,117 @@ body.sidebar-collapsed .sidebar-toggle-btn .icon-panel {
 .plan-steps .step-min {
   color: var(--c-text-faint);
   font-size: 0.8rem;
+}
+
+.study-plan-card .plan-subject {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: var(--c-text-dim);
+}
+
+.study-plan-card .plan-summary {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.imp-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+
+.imp-badge.imp-core {
+  color: var(--c-text);
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+}
+
+.imp-badge.imp-secondary,
+.imp-badge.imp-edge {
+  color: var(--c-text-dim);
+  background: var(--c-panel-hover);
+  border: 1px solid var(--c-border);
+}
+
+.plan-fold {
+  margin-top: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  background: var(--c-panel);
+  padding: 0 12px;
+}
+
+.plan-fold > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--c-text-dim);
+}
+
+.plan-fold > summary::-webkit-details-marker,
+.plan-fold > summary::marker {
+  display: none;
+  content: "";
+}
+
+.plan-fold > summary::after {
+  content: "Show";
+  font-weight: 400;
+  color: var(--c-text-faint);
+  flex-shrink: 0;
+}
+
+.plan-fold[open] > summary::after {
+  content: "Hide";
+}
+
+.plan-fold > summary:hover {
+  color: var(--c-text);
+}
+
+.plan-fold-body,
+.plan-fold .plan-concepts {
+  padding-bottom: 12px;
+}
+
+.plan-progress {
+  margin-top: 14px;
+}
+
+.plan-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--c-border);
+  overflow: hidden;
+}
+
+.plan-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--g1), var(--g3));
+}
+
+.plan-progress-meta {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--c-text-dim);
+}
+
+.plan-progress .plan-fold {
+  margin-top: 8px;
 }
 
 .topic-tags {
@@ -1454,9 +1559,24 @@ body.sidebar-collapsed .sidebar-toggle-btn .icon-panel {
 }
 
 .plan-concepts {
-  margin: 10px 0;
-  padding-left: 18px;
+  margin: 0;
+  padding: 0 0 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   font-size: 0.84rem;
+}
+
+.plan-concepts li {
+  padding: 0;
+}
+
+.plan-concepts .concept-detail {
+  display: block;
+  margin-top: 2px;
+  color: var(--c-text-dim);
+  font-weight: 400;
 }
 
 .fill-input,
@@ -3395,17 +3515,19 @@ a.projects-session-row:hover {
 
 .mindmap-tree {
   margin: 12px 0;
-  padding: 12px;
+  padding: 10px 12px;
   border-radius: 12px;
   background: var(--c-panel);
   border: 1px solid var(--c-border);
+  max-height: 360px;
+  overflow: auto;
 }
 
 .mind-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .mind-topic-btn {
@@ -3430,14 +3552,41 @@ a.projects-session-row:hover {
 
 .mind-label {
   flex: 1;
-  font-size: 0.9rem;
+  min-width: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
   padding: 4px 6px;
   border-radius: 6px;
   outline: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .mind-label:focus {
   background: var(--c-panel-hover);
+  -webkit-line-clamp: unset;
+  overflow: auto;
+  max-height: 120px;
+}
+
+.mind-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.mind-row:hover .mind-actions,
+.mind-row:focus-within .mind-actions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .mind-actions {
+    opacity: 1;
+  }
 }
 
 .mind-node-btn {
@@ -3449,6 +3598,28 @@ a.projects-session-row:hover {
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.85rem;
+}
+
+.mind-children {
+  margin: 0 0 8px 22px;
+}
+
+.mind-children-toggle {
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.75rem;
+  color: var(--c-text-faint);
+  padding: 2px 0 6px;
+}
+
+.mind-children-toggle::-webkit-details-marker,
+.mind-children-toggle::marker {
+  display: none;
+  content: "";
+}
+
+.mind-children-toggle:hover {
+  color: var(--c-text-dim);
 }
 
 .mindmap-actions {

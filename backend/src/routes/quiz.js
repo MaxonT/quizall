@@ -516,6 +516,24 @@ function buildOutlineCandidates(files) {
     .slice(0, 6);
 }
 
+function isLikelyTopicTitle(text) {
+  const t = normalizeWhitespace(text);
+  if (t.length < 3 || t.length > 80) return false;
+  if (/\b(pts|points awarded|total points|graded quiz|partial credit|question\s*\d|fitb|t\/f)\b/i.test(t)) return false;
+  if (/\d+\s*\/\s*\d+\s*(pts|points)/i.test(t)) return false;
+  if ((t.match(/\d/g) || []).length > Math.max(6, t.length / 3)) return false;
+  return true;
+}
+
+function compactMapLabel(text, max = 64) {
+  const cleaned = normalizeWhitespace(String(text || ""));
+  if (!cleaned) return "Key detail";
+  const sentence = (cleaned.match(/^[^.!?]+[.!?]*/) || [cleaned])[0].trim();
+  const base = sentence.length >= 12 && sentence.length <= max ? sentence : cleaned;
+  if (base.length <= max) return base;
+  return `${base.slice(0, max).replace(/\s+\S*$/, "")}…`;
+}
+
 function extractTopics(rawTopicsText, fallbackFileContent = "") {
   const lines = String(rawTopicsText || "")
     .split(/\n|;|；|,|，|\||、/)
@@ -526,7 +544,7 @@ function extractTopics(rawTopicsText, fallbackFileContent = "") {
   const seen = new Set();
   for (const line of lines) {
     const normalized = normalizeWhitespace(line);
-    if (!normalized) continue;
+    if (!normalized || !isLikelyTopicTitle(normalized)) continue;
     const key = normalized.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -1394,9 +1412,9 @@ function buildMindmap(project, topics, ragByTopic, topicAccuracyMap) {
   const nodes = topics.map((topic) => {
     const accuracyEntry = topicAccuracyMap.get(topic.toLowerCase());
     const snippets = ragByTopic[topic] || [];
-    const children = snippets.map((snippet) => ({
+    const children = snippets.slice(0, 2).map((snippet) => ({
       id: nanoid(8),
-      text: normalizeWhitespace(snippet.text.slice(0, 110)),
+      text: compactMapLabel(snippet.text, 72),
       source: snippet.source,
       status: statusFromAccuracy(accuracyEntry),
       children: [],
@@ -1414,7 +1432,7 @@ function buildMindmap(project, topics, ragByTopic, topicAccuracyMap) {
 
     return {
       id: nanoid(8),
-      text: topic,
+      text: compactMapLabel(topic, 72),
       status: statusFromAccuracy(accuracyEntry),
       accuracy: accuracyEntry?.accuracy ?? null,
       children,

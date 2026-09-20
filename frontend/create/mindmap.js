@@ -31,15 +31,16 @@
   function renderMindNode(node, depth, escapeHtml) {
     const wrapper = document.createElement("div");
     wrapper.className = `mind-node status-${node.status || "gray"}`;
-    if (depth > 0) wrapper.style.marginLeft = `${Math.min(depth * 14, 70)}px`;
+    if (depth > 0) wrapper.style.marginLeft = `${Math.min(depth * 10, 40)}px`;
 
+    const fullText = String(node.text || "");
     const row = document.createElement("div");
     row.className = "mind-row";
     row.innerHTML =
-      `<button type="button" class="mind-topic-btn" data-topic="${escapeHtml(node.text || "")}" title="Practice this topic">` +
+      `<button type="button" class="mind-topic-btn" data-topic="${escapeHtml(fullText)}" title="Practice this topic">` +
       `<span class="mind-status-dot"></span>` +
       `</button>` +
-      `<div class="mind-label" contenteditable="true" data-node-id="${escapeHtml(node.id)}">${escapeHtml(node.text || "")}</div>` +
+      `<div class="mind-label" contenteditable="true" data-node-id="${escapeHtml(node.id)}" title="${escapeHtml(fullText)}">${escapeHtml(fullText)}</div>` +
       `<div class="mind-actions">` +
       `<button class="mind-node-btn" type="button" data-node-action="add" data-node-id="${escapeHtml(node.id)}">+</button>` +
       `<button class="mind-node-btn" type="button" data-node-action="delete" data-node-id="${escapeHtml(node.id)}">−</button>` +
@@ -47,10 +48,18 @@
     wrapper.appendChild(row);
 
     if (Array.isArray(node.children) && node.children.length) {
-      const children = document.createElement("div");
-      children.className = "mind-children";
-      node.children.forEach((child) => children.appendChild(renderMindNode(child, depth + 1, escapeHtml)));
-      wrapper.appendChild(children);
+      const childrenWrap = document.createElement("details");
+      childrenWrap.className = "mind-children";
+      const toggle = document.createElement("summary");
+      toggle.className = "mind-children-toggle";
+      const n = node.children.length;
+      toggle.textContent = `${n} note${n === 1 ? "" : "s"}`;
+      childrenWrap.appendChild(toggle);
+      const list = document.createElement("div");
+      list.className = "mind-children-list";
+      node.children.forEach((child) => list.appendChild(renderMindNode(child, depth + 1, escapeHtml)));
+      childrenWrap.appendChild(list);
+      wrapper.appendChild(childrenWrap);
     }
     return wrapper;
   }
@@ -138,7 +147,9 @@
   function createMindmapArtifact(mindmap, handlers) {
     const { escapeHtml, icon, onSave, onStartQuiz, onTopicSelect } = handlers;
     const cardId = `mindmap-${Date.now()}`;
-    const dateText = mindmap.generatedAt ? new Date(mindmap.generatedAt).toLocaleString() : "just now";
+    const dateText = mindmap.generatedAt
+      ? new Date(mindmap.generatedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+      : "just now";
 
     const wrap = document.createElement("div");
     wrap.className = "mindmap-artifact";

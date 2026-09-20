@@ -323,11 +323,12 @@
     updateMixPanelUi();
   }
 
-  function importanceTag(importance) {
+  function importanceTag(importance, { always = false } = {}) {
     const raw = String(importance || "").toLowerCase();
-    if (raw === "secondary" || raw === "minor") return "【次要】";
-    if (raw === "peripheral" || raw === "edge") return "【边角】";
-    return "【核心】";
+    if (raw === "secondary" || raw === "minor") return `<span class="imp-badge imp-secondary">Extra</span>`;
+    if (raw === "peripheral" || raw === "edge") return `<span class="imp-badge imp-edge">Later</span>`;
+    if (!always) return "";
+    return `<span class="imp-badge imp-core">Focus</span>`;
   }
 
   function sanitizeSessionName(name) {
@@ -776,47 +777,51 @@
   function formatSessionFooter(plan) {
     if (!state.hasUploadedMaterial || !plan?.progress) return "";
     const p = plan.progress;
+    const pct = p.overall_percent != null ? Math.round(Number(p.overall_percent)) : null;
+    const currentTitle = p.current_lecture?.title || "";
+    const bar =
+      pct != null
+        ? `<div class="plan-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span class="plan-progress-fill" style="width:${Math.max(0, Math.min(100, pct))}%"></span></div>`
+        : "";
+    const metaBits = [];
+    if (pct != null) metaBits.push(`${pct}% complete`);
+    if (currentTitle) metaBits.push(`Now: ${escapeHtml(currentTitle)}`);
+    const meta = metaBits.length ? `<p class="plan-progress-meta">${metaBits.join(" · ")}</p>` : "";
     const completed = (p.completed_lectures || [])
-      .map((lec) => `<li>✅ ${escapeHtml(lec.title)} <span class="citation">${escapeHtml(lec.citation || "")}</span></li>`)
+      .map((lec) => `<li>${escapeHtml(lec.title)}${lec.citation ? ` <span class="citation">${escapeHtml(lec.citation)}</span>` : ""}</li>`)
       .join("");
-    const current = p.current_lecture
-      ? `<p>🔄 <strong>${escapeHtml(p.current_lecture.title)}</strong>` +
-        (p.current_lecture.section ? ` · ${escapeHtml(p.current_lecture.section)}` : "") +
-        (p.current_lecture.pages ? ` · ${escapeHtml(p.current_lecture.pages)}` : "") +
-        (p.current_lecture.citation ? ` <span class="citation">(${escapeHtml(p.current_lecture.citation)})</span>` : "") +
-        `</p>`
-      : "";
-    const percent = p.overall_percent != null ? `<p>📈 Overall progress: <strong>${Math.round(p.overall_percent)}%</strong></p>` : "";
     const phases = (p.phases || [])
-      .map(
-        (ph) =>
+      .map((ph) => {
+        const status = ph.status === "active" ? "Now" : ph.status === "done" ? "Done" : "Next";
+        return (
           `<tr class="phase-${escapeHtml(ph.status || "upcoming")}">` +
           `<td>${escapeHtml(ph.phase || "")}</td>` +
           `<td>${escapeHtml(ph.title || "")}</td>` +
           `<td>${escapeHtml(ph.goal || "")}</td>` +
-          `<td>${ph.status === "active" ? "We are currently working on" : escapeHtml(ph.status || "")}</td>` +
+          `<td>${status}</td>` +
           `</tr>`
-      )
+        );
+      })
       .join("");
-    const phaseTable = phases
-      ? `<table class="plan-phase-table"><thead><tr><th>Phase</th><th>Topic</th><th>Goal</th><th>Status</th></tr></thead><tbody>${phases}</tbody></table>`
+    const extraInner =
+      (completed ? `<div class="session-footer-label">Done</div><ul>${completed}</ul>` : "") +
+      (phases
+        ? `<table class="plan-phase-table"><thead><tr><th>Phase</th><th>Topic</th><th>Goal</th><th></th></tr></thead><tbody>${phases}</tbody></table>`
+        : "");
+    const extra = extraInner
+      ? `<details class="plan-fold"><summary>Progress details</summary><div class="plan-fold-body">${extraInner}</div></details>`
       : "";
-    return (
-      `<div class="session-footer">` +
-      (completed ? `<div class="session-footer-block"><div class="session-footer-label">Completed</div><ul>${completed}</ul></div>` : "") +
-      (current ? `<div class="session-footer-block">${current}</div>` : "") +
-      (percent ? `<div class="session-footer-block">${percent}</div>` : "") +
-      (phaseTable ? `<div class="session-footer-block">${phaseTable}</div>` : "") +
-      `</div>`
-    );
+    if (!bar && !meta && !extra) return "";
+    return `<div class="plan-progress">${bar}${meta}${extra}</div>`;
   }
 
   function formatComparisonTables(plan) {
-    const rows = plan.comparisons || [];
+    const rows = (plan.comparisons || []).slice(0, 3);
     if (!rows.length) return "";
     return rows
       .map((cmp) => {
         const tableRows = (cmp.rows || [])
+          .slice(0, 7)
           .map(
             (row, ri) =>
               `<tr>${(Array.isArray(row) ? row : []).map((cell) => (ri === 0 ? `<th>${escapeHtml(cell)}</th>` : `<td>${escapeHtml(cell)}</td>`)).join("")}</tr>`
@@ -832,26 +837,25 @@
       .join("");
   }
 
-  function formatStudyPlanHtml(plan, options) {
-    const opts = options || {};
-    const steps = (plan.plan || [])
+  function formatStudyPlanHtml(plan) {
+    const stepItems = plan.plan || [];
+    const steps = stepItems
       .map(
         (step, i) =>
           `<li>` +
-          `<span class="step-title">${i + 1}. ${importanceTag(step.importance)} ${escapeHtml(step.title)}</span>` +
+          `<span class="step-title">${i + 1}. ${importanceTag(step.importance)}${escapeHtml(step.title)}</span>` +
           `<span class="step-why">${escapeHtml(step.why || "")}</span>` +
-          (step.estimated_minutes ? ` <span class="step-min">~${step.estimated_minutes} min</span>` : "") +
+          (step.estimated_minutes ? ` <span class="step-min">${step.estimated_minutes} min</span>` : "") +
           `</li>`
       )
       .join("");
-    const concepts = (plan.key_concepts || [])
-      .slice(0, 6)
+    const conceptItems = (plan.key_concepts || []).slice(0, 6);
+    const concepts = conceptItems
       .map(
         (k) =>
           `<li>` +
-          `<strong>${importanceTag(k.importance)} ${escapeHtml(k.concept)}</strong>: ${escapeHtml(k.detail || "")}` +
-          (k.scenario1 ? `<div class="concept-scenario">[落地场景1] ${escapeHtml(k.scenario1)}</div>` : "") +
-          (k.scenario2 ? `<div class="concept-scenario">[落地场景2] ${escapeHtml(k.scenario2)}</div>` : "") +
+          `<strong>${importanceTag(k.importance)}${escapeHtml(k.concept)}</strong>` +
+          (k.detail ? `<span class="concept-detail">${escapeHtml(k.detail)}</span>` : "") +
           `</li>`
       )
       .join("");
@@ -859,20 +863,25 @@
       .slice(0, 8)
       .map((t) => `<span class="topic-tag">${escapeHtml(t)}</span>`)
       .join("");
-    const modeNext =
-      loadQuizMode() === "training"
-        ? `<p class="meta-line" style="margin-top:14px;">Starting <strong>training mode</strong> — one MCQ at a time.</p>`
-        : `<p class="meta-line" style="margin-top:14px;">Starting <strong>testing mode</strong> — mixed quiz round.</p>`;
+    const comparisons = formatComparisonTables(plan);
+    const conceptFold = concepts
+      ? `<details class="plan-fold"><summary>Key ideas · ${conceptItems.length}</summary><ul class="plan-concepts">${concepts}</ul></details>`
+      : "";
+    const compareCount = (plan.comparisons || []).length;
+    const compareFold = comparisons
+      ? `<details class="plan-fold"><summary>Compare · ${Math.min(3, compareCount)}</summary><div class="plan-fold-body">${comparisons}</div></details>`
+      : "";
     return (
+      `<div class="study-plan-card">` +
       `<h3>Your study plan</h3>` +
-      `<p class="meta-line">Subject: <strong>${escapeHtml(plan.subject || "General")}</strong></p>` +
-      `<p>${escapeHtml(plan.summary || "Here is a simple plan based on your material.")}</p>` +
+      `<p class="plan-subject">${escapeHtml(plan.subject || "General")}</p>` +
+      `<p class="plan-summary">${escapeHtml(plan.summary || "Here is a simple plan based on your material.")}</p>` +
       (topics ? `<div class="topic-tags">${topics}</div>` : "") +
-      (concepts ? `<ul class="plan-concepts">${concepts}</ul>` : "") +
-      formatComparisonTables(plan) +
-      (steps ? `<ul class="plan-steps">${steps}</ul>` : "") +
+      (steps ? `<ol class="plan-steps">${steps}</ol>` : "") +
+      conceptFold +
+      compareFold +
       formatSessionFooter(plan) +
-      (opts.includeNextStep === false ? "" : modeNext)
+      `</div>`
     );
   }
 
@@ -1662,10 +1671,11 @@
       state.selectedOutlineFileId = outline.recommendedFileId || candidates[0]?.id || null;
 
       const typing = appendTyping("Building your exam map…");
+      const planTopics = (state.studyPlan?.topics || []).map((t) => String(t || "").trim()).filter(Boolean);
       const prep = await generateExamPrep(projectId, {
-        selectedFileId: state.selectedOutlineFileId,
-        sourceMode: state.selectedOutlineFileId ? "auto" : "typed",
-        topicsInput: state.materialPreview?.slice(0, 2000) || "",
+        selectedFileId: planTopics.length ? null : state.selectedOutlineFileId,
+        sourceMode: planTopics.length ? "typed" : state.selectedOutlineFileId ? "auto" : "typed",
+        topicsInput: planTopics.length ? planTopics.join("\n") : "",
       });
       removeTyping(typing);
       if (prep.mindmap) {
@@ -1953,7 +1963,7 @@
 
     activeEl.innerHTML =
       `<div class="training-head">` +
-      `<span class="training-round">MCQ ${imp}</span>` +
+      `<span class="training-round">MCQ${imp ? ` ${imp}` : ""}</span>` +
       `<span class="training-topic">${escapeHtml(topic)}</span>` +
       `<span class="training-qnum">Q${qNum}</span>` +
       `</div>` +
