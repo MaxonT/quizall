@@ -16,7 +16,7 @@ import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import { requireAuth, TOKEN_SECRET, JWT_VERIFY_OPTIONS } from "./auth.js";
-import { dbGet, dbRun, DB_TRUE } from "../lib/dbHelpers.js";
+import { dbGet, dbRun, DB_TRUE, dbBool } from "../lib/dbHelpers.js";
 import { stripeService } from "../lib/stripeService.js";
 import { tokenLedger } from "../lib/tokenLedger.js";
 import { trialAntiAbuse } from "../lib/trialAntiAbuse.js";
@@ -600,13 +600,11 @@ billingRouter.post("/redeem-coupon", requireAuth, async (req, res) => {
 
     const normalizedCode = code.trim().toUpperCase();
 
-    // Look up the coupon — use DB_TRUE so boolean comparison works on both SQLite and PostgreSQL
-    const coupon = await dbGet(
-      "SELECT * FROM coupons WHERE code = ? AND active = ?",
-      [normalizedCode, DB_TRUE]
-    );
+    // Look up by code first, then interpret active with dbBool (PG boolean / SQLite 0|1).
+    // Avoid `active = 1` which never matches PostgreSQL boolean columns.
+    const coupon = await dbGet("SELECT * FROM coupons WHERE code = ?", [normalizedCode]);
 
-    if (!coupon) {
+    if (!coupon || !dbBool(coupon.active)) {
       return res.status(404).json({ ok: false, error: "Invalid or expired coupon code" });
     }
 
