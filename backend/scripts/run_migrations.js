@@ -42,6 +42,7 @@ if (USE_POSTGRES) {
   runMigration('migrations/002_analytics.js', ' up');
   // 006_annual_coupon seeds the annual coupon code for PostgreSQL
   runMigration('migrations/006_annual_coupon.js');
+  runMigration('migrations/007_tester_coupon.js');
 } else {
   // SQLite: run all migrations
   runMigration('migrations/000_init.js');
@@ -51,6 +52,7 @@ if (USE_POSTGRES) {
   runMigration('migrations/003_stripe_events.js', ' up');
   runMigration('migrations/005_coupons.js', ' up');
   runMigration('migrations/006_annual_coupon.js');
+  runMigration('migrations/007_tester_coupon.js');
 }
 
 console.log('[QuizAll] ✅ Migrations complete.');

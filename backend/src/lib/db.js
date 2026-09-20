@@ -477,6 +477,17 @@ CREATE INDEX IF NOT EXISTS idx_oauth_pkce_expires ON oauth_pkce_states(expires_a
     console.error("[quizall] Failed to seed annual coupon:", err);
   }
 
+  // Seed the tester Pro coupon
+  try {
+    sqliteDb.prepare(`
+      INSERT OR IGNORE INTO coupons (code, plan, max_redemptions, duration_days, active)
+      VALUES ('QUIZALL-TESTER-PRO', 'monthly', 20, 30, 1)
+    `).run();
+    console.log("[quizall] Tester Pro coupon ensured");
+  } catch (err) {
+    console.error("[quizall] Failed to seed tester coupon:", err);
+  }
+
   // SQLite ensureUser function
   dbModule.ensureUser = function(userId, email = null) {
     try {

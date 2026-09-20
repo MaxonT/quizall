@@ -720,6 +720,12 @@ END $$`);
        ON CONFLICT (code) DO NOTHING`,
       ["QUIZALL-YEAR-F3C8A201"]
     );
+    await db.run(
+      `INSERT INTO coupons (code, plan, max_redemptions, duration_days, active)
+       VALUES (?, 'monthly', 20, 30, true)
+       ON CONFLICT (code) DO NOTHING`,
+      ["QUIZALL-TESTER-PRO"]
+    );
     // Ensure pending_quiz_rounds exists on pre-existing databases
     await db.exec(`
       CREATE TABLE IF NOT EXISTS pending_quiz_rounds (
