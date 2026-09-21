@@ -1821,10 +1821,9 @@
   }
 
   function isQuizUiActive() {
-    return !!(
-      document.querySelector("#trainingLoopActive .q-text") ||
-      document.querySelector(".quiz-card .q-text")
-    );
+    if (document.querySelector("#trainingLoopActive .q-text")) return true;
+    // Testing cards only — training artifacts also use .quiz-card
+    return !!document.querySelector(".quiz-card:not(.training-loop-artifact) .q-text");
   }
 
   function appendStartQuizCta({ reason } = {}) {
@@ -2131,7 +2130,24 @@
     return document.getElementById("training-loop");
   }
 
-  function ensureTrainingArtifact() {
+  /** Retire the live training loop so a fresh one can mount at the bottom of chat. */
+  function archiveActiveTrainingLoop() {
+    const loop = getTrainingLoopEl();
+    if (!loop) return;
+    const stamp = Date.now();
+    const active = document.getElementById("trainingLoopActive");
+    const history = document.getElementById("trainingLoopHistory");
+    if (active) active.id = `trainingLoopActive-archived-${stamp}`;
+    if (history) history.id = `trainingLoopHistory-archived-${stamp}`;
+    loop.id = `training-loop-archived-${stamp}`;
+    loop.classList.add("training-loop-archived");
+    loop.querySelectorAll(".training-finish, .option-btn").forEach((btn) => {
+      btn.disabled = true;
+    });
+  }
+
+  function ensureTrainingArtifact({ forceNew = false } = {}) {
+    if (forceNew) archiveActiveTrainingLoop();
     let loop = getTrainingLoopEl();
     if (loop) return loop.closest(".msg");
 
@@ -2154,6 +2170,7 @@
       e.currentTarget.disabled = true;
       await finishTrainingAndNote();
     });
+    msg.scrollIntoView({ behavior: "smooth", block: "nearest" });
     return msg;
   }
 
@@ -2304,15 +2321,17 @@
   }
 
   async function startTrainingLoop() {
+    clearTrainingReviewGate();
     state.training = { correct: 0, total: 0, history: [], queue: [] };
     state.roundIndex = 0;
-    ensureTrainingArtifact();
+    ensureTrainingArtifact({ forceNew: true });
     setProcessing(true);
     const typing = appendTyping("Loading training questions…");
     try {
       await refillTrainingQueue();
       removeTyping(typing);
       await showNextTrainingFromQueue();
+      document.getElementById("training-loop")?.closest(".msg")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (err) {
       removeTyping(typing);
       appendErrorWithRetry(`Sorry, training failed: ${err.message}`, "retry-quiz");
