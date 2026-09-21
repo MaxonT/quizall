@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="theme.css" />
-  <link rel="stylesheet" href="create.css?v=14" />
+  <link rel="stylesheet" href="create.css?v=15" />
   <script src="config.js"></script>
   <script src="lib/authGuard.js"></script>
 </head>
@@ -163,6 +163,17 @@
         <div class="composer-dock">
         <div class="composer-wrap">
           <div class="composer-attachments" id="attachmentsBar"></div>
+          <div class="quiz-mode-switch" id="quizModeSwitch" role="radiogroup" aria-label="Quiz mode">
+            <button type="button" class="quiz-mode-opt" data-mode="training" role="radio" aria-checked="false">
+              <span class="quiz-mode-opt-title">Training</span>
+              <span class="quiz-mode-opt-sub">One MCQ at a time</span>
+            </button>
+            <button type="button" class="quiz-mode-opt is-active" data-mode="testing" role="radio" aria-checked="true">
+              <span class="quiz-mode-opt-title">Testing</span>
+              <span class="quiz-mode-opt-sub">Full round, then submit</span>
+            </button>
+          </div>
+          <p class="quiz-mode-live-hint" id="quizModeHint">Testing: full mixed quiz round, then submit.</p>
           <div class="composer" id="composer">
             <textarea id="composerInput" rows="1" placeholder="Paste study material, a YouTube link, or attach files…"></textarea>
             <div class="composer-actions">
@@ -180,27 +191,26 @@
           <div class="mix-panel hidden" id="mixPanel">
             <button type="button" class="mix-summary" id="mixSummaryBtn" aria-expanded="false">
               <span class="mix-summary-text">
-                <span class="mix-summary-label">Quiz shape</span>
-                <span class="mix-preview" id="mixPreview">Balanced · 7 MCQ · 4 Fill · 2 FRQ</span>
+                <span class="mix-summary-label">Quiz setup</span>
+                <span class="mix-preview" id="mixPreview">Testing · Balanced · 7 MCQ · 4 Fill · 2 FRQ</span>
               </span>
               <svg class="icon mix-chevron" aria-hidden="true"><use href="#i-chevron-down"></use></svg>
             </button>
             <div class="mix-details" id="mixDetails">
-              <div class="mix-mode" id="mixMode" role="radiogroup" aria-label="Quiz mode">
-                <button type="button" class="mix-mode-btn" data-mode="training">Training</button>
-                <button type="button" class="mix-mode-btn is-active" data-mode="testing">Testing</button>
+              <div class="mix-section mix-exam-section">
+                <div class="mix-section-label">Exam focus</div>
+                <p class="mix-section-hint">Shapes how hard questions feel — not the subject.</p>
+                <div class="mix-exam-presets" id="mixExamPresets" role="radiogroup" aria-label="Exam focus">
+                  <button type="button" class="mix-exam-preset is-active" data-exam="general">Everyday</button>
+                  <button type="button" class="mix-exam-preset" data-exam="finals">Finals</button>
+                  <button type="button" class="mix-exam-preset" data-exam="ap">AP / SAT</button>
+                </div>
               </div>
-              <p class="mix-mode-hint" id="mixModeHint">Training: one MCQ at a time with live accuracy. Testing: full mixed quiz.</p>
               <div class="mix-presets" id="mixPresets" role="radiogroup" aria-label="Question mix">
                 <button type="button" class="mix-preset is-active" data-preset="balanced">Balanced</button>
                 <button type="button" class="mix-preset" data-preset="quiz">MCQ+</button>
                 <button type="button" class="mix-preset" data-preset="recall">Fill+</button>
                 <button type="button" class="mix-preset" data-preset="essay">FRQ+</button>
-              </div>
-              <div class="mix-exam-presets" id="mixExamPresets" aria-label="Exam scenario">
-                <button type="button" class="mix-exam-preset is-active" data-exam="general">General</button>
-                <button type="button" class="mix-exam-preset" data-exam="finals">Finals week</button>
-                <button type="button" class="mix-exam-preset" data-exam="ap">AP / SAT</button>
               </div>
               <div class="mix-total">
                 <span class="mix-total-label">Questions</span>
@@ -283,7 +293,7 @@
   <script src="create/errors.js?v=1"></script>
   <script src="create/api.js?v=2"></script>
   <script src="create/transcript.js?v=1"></script>
-  <script src="create/mindmap.js?v=2"></script>
-  <script src="create.js?v=21"></script>
+  <script src="create/mindmap.js?v=3"></script>
+  <script src="create.js?v=22"></script>
 </body>
 </html>

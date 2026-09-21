@@ -145,11 +145,12 @@
   }
 
   function createMindmapArtifact(mindmap, handlers) {
-    const { escapeHtml, icon, onSave, onStartQuiz, onTopicSelect } = handlers;
+    const { escapeHtml, icon, onSave, onStartQuiz, onTopicSelect, startLabel } = handlers;
     const cardId = `mindmap-${Date.now()}`;
     const dateText = mindmap.generatedAt
       ? new Date(mindmap.generatedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
       : "just now";
+    const quizBtnLabel = startLabel || "Start quiz";
 
     const wrap = document.createElement("div");
     wrap.className = "mindmap-artifact";
@@ -160,7 +161,7 @@
       `<div class="mindmap-tree"></div>` +
       `<div class="mindmap-actions">` +
       `<button type="button" class="btn-text mindmap-save">Save map</button>` +
-      `<button type="button" class="btn-round mindmap-quiz">Start quiz ${icon("i-arrow-right")}</button>` +
+      `<button type="button" class="btn-round mindmap-quiz">${escapeHtml(quizBtnLabel)} ${icon("i-arrow-right")}</button>` +
       `</div>`;
 
     const tree = wrap.querySelector(".mindmap-tree");

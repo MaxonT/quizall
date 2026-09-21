@@ -5,9 +5,13 @@
   const CONTENT_MIN_LENGTH = 30;
   const TYPE_MIX_KEY = "quizall.typeMix";
   const QUIZ_MODE_KEY = "quizall.quizMode";
+  const EXAM_PRESET_KEY = "quizall.examPreset";
+  const TRAINING_REVIEW_KEY = "quizall.trainingReviewSec";
   const SIDEBAR_PREF_KEY = "quizall.sidebar.open";
   const CHAT_SKIN_KEY = "quizall.chatSkin";
   const CHAT_SKINS = ["clean", "arena", "grid"];
+  const REVIEW_SEC_PRESETS = [5, 10, 15, 20, 30, 60];
+  const DEFAULT_TRAINING_REVIEW_SEC = 20;
   const SIDEBAR_BP_MOBILE = 768;
   const SIDEBAR_BP_TABLET = 1024;
   const DEFAULT_TYPE_MIX = { mcq: 54, fib: 31, frq: 15, totalQuestions: 13, preset: "balanced" };
@@ -71,8 +75,9 @@
     mixTotalDisplay: document.getElementById("mixTotalDisplay"),
     mixTotalDown: document.getElementById("mixTotalDown"),
     mixTotalUp: document.getElementById("mixTotalUp"),
-    mixMode: document.getElementById("mixMode"),
-    mixModeHint: document.getElementById("mixModeHint"),
+    quizModeSwitch: document.getElementById("quizModeSwitch"),
+    quizModeHint: document.getElementById("quizModeHint"),
+    mixExamPresets: document.getElementById("mixExamPresets"),
     composerHint: document.getElementById("composerHint"),
     attachBtn: document.getElementById("attachBtn"),
     sendBtn: document.getElementById("sendBtn"),
@@ -311,20 +316,157 @@
     }
   }
 
+  function startQuizLabel() {
+    return loadQuizMode() === "training" ? "Start Training" : "Start Quiz";
+  }
+
+  function loadExamPreset() {
+    try {
+      const raw = localStorage.getItem(EXAM_PRESET_KEY);
+      if (raw === "finals" || raw === "ap" || raw === "general") return raw;
+    } catch {
+      /* ignore */
+    }
+    return "general";
+  }
+
+  function saveExamPreset(preset) {
+    const next = preset === "finals" || preset === "ap" ? preset : "general";
+    try {
+      localStorage.setItem(EXAM_PRESET_KEY, next);
+    } catch {
+      /* ignore */
+    }
+    return next;
+  }
+
+  function examPresetLabel(preset) {
+    if (preset === "finals") return "Finals";
+    if (preset === "ap") return "AP / SAT";
+    return "Everyday";
+  }
+
+  function setExamPreset(preset) {
+    const next = saveExamPreset(preset);
+    state.examPreset = next;
+    els.mixExamPresets?.querySelectorAll(".mix-exam-preset").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-exam") === next);
+    });
+    updateMixPanelUi();
+  }
+
+  function loadTrainingReviewSec() {
+    try {
+      const n = Number.parseInt(localStorage.getItem(TRAINING_REVIEW_KEY) || "", 10);
+      if (Number.isFinite(n)) return Math.min(300, Math.max(3, n));
+    } catch {
+      /* ignore */
+    }
+    return DEFAULT_TRAINING_REVIEW_SEC;
+  }
+
+  function saveTrainingReviewSec(sec) {
+    const n = Math.min(300, Math.max(3, Math.round(Number(sec) || DEFAULT_TRAINING_REVIEW_SEC)));
+    try {
+      localStorage.setItem(TRAINING_REVIEW_KEY, String(n));
+    } catch {
+      /* ignore */
+    }
+    return n;
+  }
+
+  let trainingReviewTimer = null;
+
+  function clearTrainingReviewGate() {
+    if (trainingReviewTimer) {
+      clearInterval(trainingReviewTimer);
+      trainingReviewTimer = null;
+    }
+  }
+
+  function startTrainingReviewGate(feedbackEl, onDone) {
+    clearTrainingReviewGate();
+    if (!feedbackEl) {
+      onDone();
+      return;
+    }
+
+    let durationMs = loadTrainingReviewSec() * 1000;
+    let remainingMs = durationMs;
+    let finished = false;
+
+    const actions = document.createElement("div");
+    actions.className = "training-review-actions";
+    actions.innerHTML =
+      `<button type="button" class="training-next-btn" aria-label="Next question">` +
+      `<span class="training-clock" aria-hidden="true"><span class="training-clock-num">20</span></span>` +
+      `<span class="training-next-text">Next question</span>` +
+      `</button>` +
+      `<button type="button" class="training-extend-btn" aria-label="Add 5 seconds">+5s</button>`;
+    feedbackEl.appendChild(actions);
+
+    const clockEl = actions.querySelector(".training-clock");
+    const numEl = actions.querySelector(".training-clock-num");
+    const nextBtn = actions.querySelector(".training-next-btn");
+    const extendBtn = actions.querySelector(".training-extend-btn");
+
+    const paint = () => {
+      const sec = Math.max(0, Math.ceil(remainingMs / 1000));
+      if (numEl) numEl.textContent = String(sec);
+      const pct = durationMs > 0 ? Math.max(0, Math.min(100, (remainingMs / durationMs) * 100)) : 0;
+      if (clockEl) clockEl.style.setProperty("--p", `${pct}%`);
+    };
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTrainingReviewGate();
+      if (nextBtn) nextBtn.disabled = true;
+      if (extendBtn) extendBtn.disabled = true;
+      onDone();
+    };
+
+    nextBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      finish();
+    });
+    extendBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      remainingMs += 5000;
+      durationMs += 5000;
+      paint();
+    });
+
+    paint();
+    trainingReviewTimer = setInterval(() => {
+      remainingMs -= 250;
+      if (remainingMs <= 0) {
+        remainingMs = 0;
+        paint();
+        finish();
+        return;
+      }
+      paint();
+    }, 250);
+  }
+
   function setQuizMode(mode) {
     const next = mode === "testing" ? "testing" : "training";
     saveQuizMode(next);
-    els.mixMode?.querySelectorAll(".mix-mode-btn").forEach((btn) => {
-      btn.classList.toggle("is-active", btn.getAttribute("data-mode") === next);
+    els.quizModeSwitch?.querySelectorAll(".quiz-mode-opt").forEach((btn) => {
+      const active = btn.getAttribute("data-mode") === next;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-checked", active ? "true" : "false");
     });
     if (els.mixDetails) {
       els.mixDetails.classList.toggle("mix-details--testing-only", next === "testing");
     }
-    if (els.mixModeHint) {
-      els.mixModeHint.textContent =
+    if (els.quizModeHint) {
+      els.quizModeHint.textContent =
         next === "training"
-          ? "Training: one MCQ at a time with live accuracy."
-          : "Testing: full mixed quiz round, then submit.";
+          ? "Training: one MCQ at a time with live accuracy — great for drilling."
+          : "Testing: full mixed quiz round, then submit — closer to exam day.";
     }
     updateMixPanelUi();
   }
@@ -486,11 +628,17 @@
     const quizMode = loadQuizMode();
     const presetId = mix.preset || inferPresetId(mix);
     const presetLabel = MIX_PRESETS[presetId]?.label || "Balanced";
+    const exam = state.examPreset || loadExamPreset();
     els.mixPresets?.querySelectorAll(".mix-preset").forEach((btn) => {
       btn.classList.toggle("is-active", btn.getAttribute("data-preset") === presetId);
     });
-    els.mixMode?.querySelectorAll(".mix-mode-btn").forEach((btn) => {
-      btn.classList.toggle("is-active", btn.getAttribute("data-mode") === quizMode);
+    els.quizModeSwitch?.querySelectorAll(".quiz-mode-opt").forEach((btn) => {
+      const active = btn.getAttribute("data-mode") === quizMode;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-checked", active ? "true" : "false");
+    });
+    els.mixExamPresets?.querySelectorAll(".mix-exam-preset").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-exam") === exam);
     });
     if (els.mixDetails) {
       els.mixDetails.classList.toggle("mix-details--testing-only", quizMode === "testing");
@@ -498,8 +646,11 @@
     if (els.mixTotalDisplay) els.mixTotalDisplay.textContent = String(mix.totalQuestions);
     const counts = getMixedRoundConfig();
     const modeLabel = quizMode === "training" ? "Training" : "Testing";
+    const examBit = exam !== "general" ? ` · ${examPresetLabel(exam)}` : "";
     const preview =
-      quizMode === "training" ? `${modeLabel} · MCQ loop` : `${modeLabel} · ${presetLabel} · ${counts.preview}`;
+      quizMode === "training"
+        ? `${modeLabel}${examBit} · MCQ loop`
+        : `${modeLabel}${examBit} · ${presetLabel} · ${counts.preview}`;
     if (els.mixPreview) els.mixPreview.textContent = preview;
     if (els.mixBtn) els.mixBtn.title = `Mode: ${preview}`;
   }
@@ -1578,20 +1729,22 @@
         await tryBuildExamMap(projectId);
       }
       if (skipQuiz) {
-        appendMessage(
-          "ai",
-          `<p class="meta-line">Material updated. Keep chatting below, or tap <strong>Quiz me again</strong> when you want another round.</p>`
-        );
+        appendStartQuizCta({ reason: "updated" });
         setProcessing(false);
         return;
       }
       if (!skipQuiz) {
         const allowed = await checkUsageGate();
         if (!allowed) {
+          appendStartQuizCta({ reason: "ready" });
           setProcessing(false);
           return;
         }
         await startQuizFlow();
+        if (!isQuizUiActive()) {
+          appendStartQuizCta({ reason: "ready" });
+          setProcessing(false);
+        }
       }
     } catch (err) {
       removeTyping(typing);
@@ -1633,6 +1786,7 @@
     const handlers = {
       escapeHtml,
       icon,
+      startLabel: startQuizLabel(),
       onSave: (map) => saveMindmapToServer(map),
       onStartQuiz: async () => {
         if (state.isProcessing) return;
@@ -1648,6 +1802,44 @@
     els.chatInner.appendChild(wrap);
     scrollToBottom();
     scheduleChatSave();
+  }
+
+  function isQuizUiActive() {
+    return !!(
+      document.querySelector("#trainingLoopActive .q-text") ||
+      document.querySelector(".quiz-card .q-text")
+    );
+  }
+
+  function appendStartQuizCta({ reason } = {}) {
+    const label = startQuizLabel();
+    const blurb =
+      reason === "updated"
+        ? "Material updated. Ready when you are."
+        : "Your study plan is ready.";
+    const msg = appendMessage(
+      "ai",
+      `<p class="meta-line">${blurb}</p>` +
+        `<button type="button" class="btn-round start-quiz-cta">${escapeHtml(label)} ${icon("i-arrow-right")}</button>`
+    );
+    const btn = msg.querySelector(".start-quiz-cta");
+    btn?.addEventListener("click", async (e) => {
+      const target = e.currentTarget;
+      if (state.isProcessing) return;
+      target.disabled = true;
+      const allowed = await checkUsageGate();
+      if (!allowed) {
+        target.disabled = false;
+        return;
+      }
+      setProcessing(true);
+      await startQuizFlow();
+      if (!isQuizUiActive()) {
+        target.disabled = false;
+        setProcessing(false);
+      }
+    });
+    return msg;
   }
 
   async function appendMindmapWithMastery(mindmap, projectId) {
@@ -1991,6 +2183,11 @@
     };
     document.addEventListener("keydown", onKey);
 
+    const advance = async () => {
+      appendTrainingHistoryItem(state.training.history[state.training.history.length - 1], state.training.total);
+      await showNextTrainingFromQueue();
+    };
+
     activeEl.querySelectorAll(".option-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (answered) return;
@@ -2015,14 +2212,18 @@
             (isCorrect ? `<p class="training-ok">Correct!</p>` : `<p class="training-miss">Not quite.</p>`) +
             (nq.explanation ? `<p>${escapeHtml(nq.explanation)}</p>` : "");
         }
-        await new Promise((r) => setTimeout(r, 900));
-        appendTrainingHistoryItem(state.training.history[state.training.history.length - 1], state.training.total);
-        await showNextTrainingFromQueue();
+        if (isCorrect) {
+          await new Promise((r) => setTimeout(r, 900));
+          await advance();
+          return;
+        }
+        startTrainingReviewGate(feedback, advance);
       });
     });
   }
 
   function renderActiveTrainingQuestion(question) {
+    clearTrainingReviewGate();
     const activeEl = document.getElementById("trainingLoopActive");
     if (!activeEl) return;
     const nq = normalizeQuestion(question);
@@ -2150,6 +2351,7 @@
   }
 
   async function finishTrainingAndNote() {
+    clearTrainingReviewGate();
     if (state.training?.history?.length) {
       const results = state.training.history.map((h) => ({
         type: h.question.type,
@@ -2587,6 +2789,7 @@
 
   async function openProject(projectId) {
     if (!projectId) return;
+    clearTrainingReviewGate();
     setProcessing(false);
     state.training = null;
     state.projectId = projectId;
@@ -2786,7 +2989,7 @@
           const msg = appendMessage(
             "ai",
             `<p>Your study plan is ready, but quiz rounds weren't finished.</p>` +
-              `<button type="button" class="btn-round continue-quiz-btn">Start quiz</button>`
+              `<button type="button" class="btn-round continue-quiz-btn">${escapeHtml(startQuizLabel())}</button>`
           );
           msg.querySelector(".continue-quiz-btn")?.addEventListener("click", async (e) => {
             e.currentTarget.disabled = true;
@@ -2880,6 +3083,7 @@
   }
 
   function resetNewChat() {
+    clearTrainingReviewGate();
     // "Start new session" must always let the user escape a stuck run.
     setProcessing(false);
     state.projectId = null;
@@ -2966,6 +3170,8 @@
   function renderAppearanceTab() {
     const current = window.themeManager?.getPreference?.() || localStorage.getItem("theme") || "auto";
     const skin = loadChatSkin();
+    const reviewSec = loadTrainingReviewSec();
+    const isPreset = REVIEW_SEC_PRESETS.includes(reviewSec);
     els.settingsBody.innerHTML =
       `<div class="theme-options">` +
       ["dark", "light", "auto"]
@@ -2988,6 +3194,19 @@
           `<span class="skin-swatch ${id}"></span>${label}</button>`
         );
       }).join("") +
+      `</div>` +
+      `<p class="set-note" style="margin-top:18px;margin-bottom:8px;">Training review</p>` +
+      `<p class="set-note" style="margin-top:0;margin-bottom:4px;">Seconds to read a wrong-answer explanation before the next question.</p>` +
+      `<div class="review-sec-options" id="reviewSecOptions">` +
+      REVIEW_SEC_PRESETS.map(
+        (sec) =>
+          `<button type="button" class="review-sec-chip${isPreset && reviewSec === sec ? " is-active" : ""}" data-sec="${sec}">${sec}</button>`
+      ).join("") +
+      `<button type="button" class="review-sec-chip${!isPreset ? " is-active" : ""}" data-sec="custom">Custom</button>` +
+      `</div>` +
+      `<div class="review-sec-custom${isPreset ? " hidden" : ""}" id="reviewSecCustom">` +
+      `<input type="number" id="reviewSecInput" min="3" max="300" step="1" value="${reviewSec}" aria-label="Custom review seconds" />` +
+      `<span>seconds (3–300)</span>` +
       `</div>` +
       `<p class="set-note">Language and other preferences live in <a href="settings.html" target="_blank" rel="noopener">all settings</a>.</p>`;
 
@@ -3013,6 +3232,47 @@
       btn.addEventListener("click", () => {
         setChatSkin(btn.getAttribute("data-skin"));
       });
+    });
+
+    const customWrap = document.getElementById("reviewSecCustom");
+    const customInput = document.getElementById("reviewSecInput");
+    const syncReviewChips = (sec) => {
+      const preset = REVIEW_SEC_PRESETS.includes(sec);
+      els.settingsBody.querySelectorAll(".review-sec-chip").forEach((b) => {
+        const key = b.getAttribute("data-sec");
+        b.classList.toggle("is-active", preset ? key === String(sec) : key === "custom");
+      });
+      customWrap?.classList.toggle("hidden", preset);
+      if (customInput) customInput.value = String(sec);
+    };
+
+    els.settingsBody.querySelectorAll(".review-sec-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-sec");
+        if (key === "custom") {
+          customWrap?.classList.remove("hidden");
+          els.settingsBody.querySelectorAll(".review-sec-chip").forEach((b) =>
+            b.classList.toggle("is-active", b.getAttribute("data-sec") === "custom")
+          );
+          customInput?.focus();
+          return;
+        }
+        const sec = saveTrainingReviewSec(Number(key));
+        syncReviewChips(sec);
+      });
+    });
+
+    const commitCustom = () => {
+      if (!customInput) return;
+      const sec = saveTrainingReviewSec(customInput.value);
+      syncReviewChips(sec);
+    };
+    customInput?.addEventListener("change", commitCustom);
+    customInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        commitCustom();
+      }
     });
   }
 
@@ -3267,7 +3527,7 @@
         closeMixPanel();
       });
       els.mixPanel.addEventListener("click", (e) => e.stopPropagation());
-      els.mixMode?.querySelectorAll(".mix-mode-btn").forEach((btn) => {
+      els.quizModeSwitch?.querySelectorAll(".quiz-mode-opt").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           setQuizMode(btn.getAttribute("data-mode"));
@@ -3287,11 +3547,10 @@
         e.stopPropagation();
         adjustMixTotal(1);
       });
-      document.getElementById("mixExamPresets")?.querySelectorAll(".mix-exam-preset").forEach((btn) => {
+      els.mixExamPresets?.querySelectorAll(".mix-exam-preset").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
-          state.examPreset = btn.getAttribute("data-exam") || "general";
-          document.querySelectorAll(".mix-exam-preset").forEach((b) => b.classList.toggle("is-active", b === btn));
+          setExamPreset(btn.getAttribute("data-exam") || "general");
         });
       });
     }
@@ -3393,6 +3652,7 @@
     bindEvents();
     renderWelcome();
     setQuizMode(loadQuizMode());
+    setExamPreset(loadExamPreset());
     updateMixPanelUi();
     updateComposerPlaceholder();
     loadHistorySidebar();
