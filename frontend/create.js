@@ -487,6 +487,22 @@
       .slice(0, 48);
   }
 
+  /** Keep ?project=<id> in the URL so refresh / share restores the same chat. */
+  function syncProjectUrl(projectId) {
+    try {
+      const url = new URL(window.location.href);
+      const current = url.searchParams.get("project");
+      const next = projectId ? String(projectId) : null;
+      if ((current || null) === next) return;
+      if (next) url.searchParams.set("project", next);
+      else url.searchParams.delete("project");
+      const path = `${url.pathname}${url.search}${url.hash}`;
+      window.history.replaceState({ projectId: next }, "", path);
+    } catch {
+      /* ignore */
+    }
+  }
+
   function formatPlanLabel(plan) {
     const raw = String(plan || "free").toLowerCase().trim();
     if (raw === "monthly" || raw === "yearly" || raw === "pro") return "Pro plan";
@@ -2681,6 +2697,7 @@
         state.projectId = project.id;
         state.projectName = project.name;
         state.resumedSession = false;
+        syncProjectUrl(project.id);
         await loadHistorySidebar();
       }
 
@@ -2751,6 +2768,7 @@
         state.projectId = project.id;
         state.projectName = project.name;
         state.resumedSession = false;
+        syncProjectUrl(project.id);
         await loadHistorySidebar();
       }
       await runStudyPlan(state.projectId, combinedContent);
@@ -2797,6 +2815,7 @@
     state.analysis = null;
     state.studyPlan = null;
     setResumedSession(true);
+    syncProjectUrl(projectId);
     setActiveNav("navHistory");
     setConversationActive(true);
     if (window.innerWidth < SIDEBAR_BP_MOBILE) closeSidebarIfMobile();
@@ -3098,6 +3117,7 @@
     state.mindmap = null;
     state.activeTopicHint = "";
     setResumedSession(false);
+    syncProjectUrl(null);
     setActiveNav("navHome");
     updateComposerPlaceholder();
     els.composerInput.value = "";
