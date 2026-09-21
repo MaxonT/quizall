@@ -1947,6 +1947,110 @@
     appendMindmapMessage(map);
   }
 
+  function scienceStepContinue(step, rec = {}) {
+    const n = Math.max(1, Math.min(6, Number(step) || 1));
+    const padded = String(n).padStart(2, "0");
+    const byStep = {
+      1: {
+        prompt: "Start Step 01 — build my study plan",
+        mode: null,
+        label: "Continue · Step 01",
+      },
+      2: {
+        prompt: "Start Step 02 — organize my exam map",
+        mode: null,
+        label: "Continue · Step 02",
+      },
+      3: {
+        prompt: "Start Step 03 — quiz me again",
+        mode: "testing",
+        label: "Continue · Step 03",
+      },
+      4: {
+        prompt: "Start Step 04 — train my weak spots",
+        mode: "training",
+        label: "Continue · Step 04",
+      },
+      5: {
+        prompt: "Start Step 05 — vary my practice",
+        mode: "training",
+        label: "Continue · Step 05",
+      },
+      6: {
+        prompt: "Start Step 06 — spaced review quiz",
+        mode: "testing",
+        label: "Continue · Step 06",
+      },
+    };
+    const base = byStep[n] || byStep[3];
+    return {
+      step: n,
+      padded,
+      prompt: base.prompt,
+      mode: base.mode,
+      label: base.label,
+      topic: rec.topic || "",
+    };
+  }
+
+  function setComposerStepHint(prompt) {
+    if (!els.composerInput || !prompt) return;
+    const current = els.composerInput.value.trim();
+    const wasAuto = els.composerInput.dataset.autoStepHint === "1";
+    if (current && !wasAuto) return;
+    els.composerInput.value = prompt;
+    els.composerInput.dataset.autoStepHint = "1";
+    autosizeComposer();
+    clearComposerError();
+  }
+
+  function clearComposerStepHintFlag() {
+    if (els.composerInput) delete els.composerInput.dataset.autoStepHint;
+  }
+
+  async function runCoachContinue(cont) {
+    if (state.isProcessing) return;
+    if (cont.mode) setQuizMode(cont.mode);
+    setComposerStepHint(cont.prompt);
+    if (!state.projectId || !state.studyPlan) {
+      els.composerInput?.focus();
+      return;
+    }
+    const allowed = await checkUsageGate({ allowSoft: true });
+    if (!allowed) return;
+    setProcessing(true);
+    setResumedSession(true);
+    try {
+      await startQuizFlow();
+    } catch (err) {
+      appendMessage("ai", `<p>Could not continue: ${escapeHtml(formatUserError(err))}</p>`);
+      setProcessing(false);
+    }
+  }
+
+  function bindCoachContinueButtons(root = els.chatInner) {
+    if (!root) return;
+    root.querySelectorAll(".coach-continue-btn").forEach((btn) => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = "1";
+      btn.addEventListener("click", async (e) => {
+        const target = e.currentTarget;
+        if (target.disabled) return;
+        const step = Number(target.getAttribute("data-step") || 3);
+        const mode = target.getAttribute("data-mode") || "";
+        const prompt = target.getAttribute("data-prompt") || `Start Step ${String(step).padStart(2, "0")}`;
+        target.disabled = true;
+        await runCoachContinue({
+          step,
+          mode: mode === "training" || mode === "testing" ? mode : null,
+          prompt,
+          label: target.textContent,
+        });
+        target.disabled = false;
+      });
+    });
+  }
+
   async function showAnalyticsCoach(projectId) {
     if (!projectId) return;
     try {
@@ -1954,16 +2058,28 @@
       const rec = data.recommendations?.[0];
       if (!rec) return;
       const science = window.quizallScience?.renderSciencePrescription?.({ lastSession: "quiz" });
-      const scienceHref = science?.href || "/science/index.html";
-      appendMessage(
+      const step = Number(rec.scienceStep || science?.step || 1) || 1;
+      const cont = scienceStepContinue(step, rec);
+      const scienceHref =
+        science?.href ||
+        (window.quizallScience?.toScienceUrl
+          ? window.quizallScience.toScienceUrl(`step${cont.padded}`)
+          : `/science/index.html#step${cont.padded}`);
+      const msg = appendMessage(
         "ai",
         `<div class="analytics-coach-card science-inline-tip">` +
           `<strong>Next action</strong>` +
           `<p>${escapeHtml(rec.action)}</p>` +
-          `<a href="${escapeHtml(scienceHref)}" class="meta-line">Science · Step ${rec.scienceStep || science?.step || 1}</a>` +
+          `<div class="coach-actions">` +
+          `<a href="${escapeHtml(scienceHref)}" class="science-step-badge" target="_blank" rel="noopener noreferrer">Science · Step ${cont.padded}</a>` +
+          `<button type="button" class="btn-round coach-continue-btn" data-step="${cont.step}" data-mode="${escapeHtml(cont.mode || "")}" data-prompt="${escapeHtml(cont.prompt)}">${escapeHtml(cont.label)} ${icon("i-arrow-right")}</button>` +
+          `</div>` +
           `</div>`,
         "coach"
       );
+      bindCoachContinueButtons(msg);
+      setComposerStepHint(cont.prompt);
+      els.composerInput?.focus();
     } catch {
       /* optional */
     }
@@ -2997,6 +3113,7 @@
     });
     els.chatInner.querySelectorAll(".retry-btn").forEach((btn) => bindRetryButton(btn));
     bindShareSessionButtons(els.chatInner);
+    bindCoachContinueButtons(els.chatInner);
   }
 
   async function openProject(projectId) {
@@ -3057,7 +3174,8 @@
                                "table", "thead", "tbody", "tr", "th", "td",
                                "a", "details", "summary", "svg", "use"],
                 ALLOWED_ATTR: ["class", "id", "type", "data-q", "data-o", "data-submit",
-                               "data-retry", "placeholder", "rows", "maxlength",
+                               "data-retry", "data-step", "data-mode", "data-prompt", "data-bound",
+                               "placeholder", "rows", "maxlength",
                                "href", "target", "rel", "aria-label", "aria-live",
                                "tabindex", "viewBox", "fill", "stroke", "stroke-width",
                                "stroke-linecap", "stroke-linejoin", "d"],
@@ -3865,6 +3983,7 @@
     els.composerInput.addEventListener("input", () => {
       autosizeComposer();
       clearComposerError();
+      clearComposerStepHintFlag();
     });
     els.composerInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
