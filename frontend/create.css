@@ -106,6 +106,147 @@ body.chat-app {
   background-size: 24px 24px, 100% 100%, 100% 100%, 100% 100%;
   overflow: hidden;
   letter-spacing: -0.011em;
+  position: relative;
+}
+
+/* ── Chat skins: Arena (weak LED + micro texture) ── */
+body.chat-app[data-chat-skin="arena"] {
+  --c-bg: #060608;
+  background-color: var(--c-bg);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.012) 2px,
+      rgba(255, 255, 255, 0.012) 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.008) 2px,
+      rgba(255, 255, 255, 0.008) 3px
+    ),
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(239, 68, 68, 0.1), transparent 60%),
+    radial-gradient(ellipse 45% 40% at 100% 30%, rgba(34, 211, 238, 0.1), transparent 55%),
+    radial-gradient(ellipse 40% 35% at 0% 70%, rgba(168, 85, 247, 0.09), transparent 50%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+}
+
+body.chat-app[data-chat-skin="arena"]::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 0 40px rgba(239, 68, 68, 0.08),
+    inset 0 0 80px rgba(34, 211, 238, 0.06),
+    inset 0 0 120px rgba(168, 85, 247, 0.05);
+  animation: arena-edge-pulse 8s ease-in-out infinite;
+}
+
+body.chat-app[data-chat-skin="arena"] .app-shell {
+  position: relative;
+  z-index: 1;
+}
+
+body.chat-app[data-chat-skin="arena"] .sidebar {
+  background: linear-gradient(180deg, rgba(10, 10, 14, 0.96) 0%, rgba(4, 4, 8, 0.94) 100%);
+}
+
+@keyframes arena-edge-pulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.chat-app[data-chat-skin="arena"]::before {
+    animation: none;
+  }
+}
+
+html[data-theme="light"] body.chat-app[data-chat-skin="arena"] {
+  --c-bg: #f4f5f8;
+  background-color: var(--c-bg);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.015) 2px,
+      rgba(0, 0, 0, 0.015) 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.01) 2px,
+      rgba(0, 0, 0, 0.01) 3px
+    ),
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(239, 68, 68, 0.06), transparent 60%),
+    radial-gradient(ellipse 45% 40% at 100% 30%, rgba(6, 182, 212, 0.07), transparent 55%),
+    radial-gradient(ellipse 40% 35% at 0% 70%, rgba(139, 92, 246, 0.06), transparent 50%);
+}
+
+html[data-theme="light"] body.chat-app[data-chat-skin="arena"]::before {
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04),
+    inset 0 0 36px rgba(239, 68, 68, 0.05),
+    inset 0 0 72px rgba(6, 182, 212, 0.05),
+    inset 0 0 100px rgba(139, 92, 246, 0.04);
+}
+
+html[data-theme="light"] body.chat-app[data-chat-skin="arena"] .sidebar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(246, 247, 250, 0.96) 100%);
+}
+
+/* ── Chat skins: Grid (index-style lattice + stars) ── */
+body.chat-app[data-chat-skin="grid"] {
+  --skin-grid-size: 72px;
+  --skin-grid-line: rgba(118, 145, 183, 0.18);
+  --skin-star-a: rgba(186, 230, 253, 0.45);
+  --skin-star-b: rgba(125, 211, 252, 0.35);
+  --skin-star-c: rgba(167, 139, 250, 0.32);
+  background-color: var(--c-bg);
+  background-image:
+    radial-gradient(ellipse 80% 55% at 50% -15%, var(--glow-violet), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 85% 15%, var(--glow-cyan), transparent 55%),
+    linear-gradient(var(--skin-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--skin-grid-line) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, var(--skin-grid-size) var(--skin-grid-size), var(--skin-grid-size) var(--skin-grid-size);
+}
+
+body.chat-app[data-chat-skin="grid"]::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, var(--skin-star-a), transparent),
+    radial-gradient(1.5px 1.5px at 28% 62%, var(--skin-star-b), transparent),
+    radial-gradient(1px 1px at 48% 28%, var(--skin-star-c), transparent),
+    radial-gradient(1.5px 1.5px at 72% 14%, var(--skin-star-a), transparent),
+    radial-gradient(1px 1px at 86% 48%, var(--skin-star-b), transparent),
+    radial-gradient(1.5px 1.5px at 64% 78%, var(--skin-star-c), transparent),
+    radial-gradient(1px 1px at 18% 88%, var(--skin-star-a), transparent);
+  opacity: 0.85;
+}
+
+body.chat-app[data-chat-skin="grid"] .app-shell {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme="light"] body.chat-app[data-chat-skin="grid"] {
+  --skin-grid-line: rgba(100, 120, 150, 0.16);
+  --skin-star-a: rgba(56, 120, 180, 0.28);
+  --skin-star-b: rgba(34, 160, 180, 0.22);
+  --skin-star-c: rgba(120, 90, 200, 0.2);
 }
 
 .app-shell {
@@ -873,6 +1014,171 @@ body.sidebar-collapsed .sidebar-toggle-btn .icon-menu {
 
 body.sidebar-collapsed .sidebar-toggle-btn .icon-panel {
   display: block;
+}
+
+/* Chat skin picker (discreet, next to sidebar toggle) */
+.chat-skin-menu {
+  position: absolute;
+  top: 14px;
+  left: 60px;
+  z-index: 10;
+}
+
+.chat-skin-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  border: 1px solid var(--c-border);
+  background: var(--c-panel);
+  backdrop-filter: blur(12px);
+  color: var(--c-text-dim);
+  cursor: pointer;
+  transition: background 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease), opacity 0.2s var(--ease);
+  opacity: 0.55;
+}
+
+.chat-skin-btn:hover,
+.chat-skin-menu.is-open .chat-skin-btn {
+  opacity: 1;
+  color: var(--c-text);
+  background: var(--c-panel-hover);
+  border-color: var(--c-border-strong);
+}
+
+.chat-skin-btn .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.chat-skin-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 128px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg-elevated);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-skin-option {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--c-text-dim);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.chat-skin-option:hover {
+  background: var(--c-panel-hover);
+  color: var(--c-text);
+}
+
+.chat-skin-option.is-active {
+  background: var(--c-panel-active);
+  color: var(--c-text);
+}
+
+html[data-theme="light"] .chat-skin-dropdown {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+}
+
+.skin-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.skin-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-panel);
+  color: var(--c-text-dim);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.skin-option:hover {
+  border-color: var(--c-border-strong);
+  color: var(--c-text);
+}
+
+.skin-option.is-active {
+  border-color: rgba(139, 92, 246, 0.45);
+  color: var(--c-text);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.skin-swatch {
+  width: 100%;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+}
+
+.skin-swatch.clean {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.2) 1px, transparent 0) 0 0 / 8px 8px,
+    #101014;
+}
+
+.skin-swatch.arena {
+  background:
+    linear-gradient(135deg, rgba(239, 68, 68, 0.35), transparent 40%),
+    linear-gradient(225deg, rgba(34, 211, 238, 0.3), transparent 45%),
+    #0a0a0e;
+  box-shadow: inset 0 0 0 1px rgba(255, 80, 80, 0.25);
+}
+
+.skin-swatch.grid {
+  background:
+    linear-gradient(rgba(118, 145, 183, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(118, 145, 183, 0.35) 1px, transparent 1px),
+    #0b1020;
+  background-size: 10px 10px, 10px 10px, auto;
+}
+
+html[data-theme="light"] .skin-swatch.clean {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.08) 1px, transparent 0) 0 0 / 8px 8px,
+    #f4f4f6;
+}
+
+html[data-theme="light"] .skin-swatch.arena {
+  background:
+    linear-gradient(135deg, rgba(239, 68, 68, 0.18), transparent 40%),
+    linear-gradient(225deg, rgba(6, 182, 212, 0.16), transparent 45%),
+    #f0f1f5;
+}
+
+html[data-theme="light"] .skin-swatch.grid {
+  background:
+    linear-gradient(rgba(100, 120, 150, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100, 120, 150, 0.28) 1px, transparent 1px),
+    #eef1f6;
+  background-size: 10px 10px, 10px 10px, auto;
 }
 
 /* ────────────────────────── Messages ────────────────────────── */

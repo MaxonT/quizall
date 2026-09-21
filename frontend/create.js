@@ -6,6 +6,8 @@
   const TYPE_MIX_KEY = "quizall.typeMix";
   const QUIZ_MODE_KEY = "quizall.quizMode";
   const SIDEBAR_PREF_KEY = "quizall.sidebar.open";
+  const CHAT_SKIN_KEY = "quizall.chatSkin";
+  const CHAT_SKINS = ["clean", "arena", "grid"];
   const SIDEBAR_BP_MOBILE = 768;
   const SIDEBAR_BP_TABLET = 1024;
   const DEFAULT_TYPE_MIX = { mcq: 54, fib: 31, frq: 15, totalQuestions: 13, preset: "balanced" };
@@ -102,6 +104,10 @@
     settingsBody: document.getElementById("settingsBody"),
     settingsTabTitle: document.getElementById("settingsTabTitle"),
     settingsClose: document.getElementById("settingsClose"),
+    avatarPlan: document.getElementById("avatarPlan"),
+    chatSkinMenu: document.getElementById("chatSkinMenu"),
+    chatSkinBtn: document.getElementById("chatSkinBtn"),
+    chatSkinDropdown: document.getElementById("chatSkinDropdown"),
   };
 
   function isMobileSidebar() {
@@ -335,7 +341,68 @@
     return String(name || "")
       .replace(/\.\.\./g, "")
       .replace(/\s+/g, " ")
-      .trim();
+      .trim()
+      .slice(0, 48);
+  }
+
+  function formatPlanLabel(plan) {
+    const raw = String(plan || "free").toLowerCase().trim();
+    if (raw === "monthly" || raw === "yearly" || raw === "pro") return "Pro plan";
+    if (raw === "teacher") return "Teacher";
+    if (raw === "trial" || raw === "trialing") return "Trial";
+    return "Free plan";
+  }
+
+  function loadChatSkin() {
+    try {
+      const stored = localStorage.getItem(CHAT_SKIN_KEY);
+      if (CHAT_SKINS.includes(stored)) return stored;
+    } catch {
+      /* ignore */
+    }
+    return "clean";
+  }
+
+  function setChatSkin(skin, { persist = true } = {}) {
+    const next = CHAT_SKINS.includes(skin) ? skin : "clean";
+    document.body.dataset.chatSkin = next;
+    if (persist) {
+      try {
+        localStorage.setItem(CHAT_SKIN_KEY, next);
+      } catch {
+        /* ignore */
+      }
+    }
+    syncChatSkinUi(next);
+  }
+
+  function syncChatSkinUi(skin) {
+    const active = skin || loadChatSkin();
+    els.chatSkinDropdown?.querySelectorAll(".chat-skin-option").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-skin") === active);
+    });
+    document.querySelectorAll(".skin-option").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-skin") === active);
+    });
+  }
+
+  function closeChatSkinMenu() {
+    els.chatSkinMenu?.classList.remove("is-open");
+    els.chatSkinDropdown?.classList.add("hidden");
+    if (els.chatSkinBtn) els.chatSkinBtn.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleChatSkinMenu() {
+    if (!els.chatSkinMenu || !els.chatSkinDropdown) return;
+    const open = !els.chatSkinMenu.classList.contains("is-open");
+    els.chatSkinMenu.classList.toggle("is-open", open);
+    els.chatSkinDropdown.classList.toggle("hidden", !open);
+    els.chatSkinBtn?.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) syncChatSkinUi(loadChatSkin());
+  }
+
+  function updateAvatarPlan(plan) {
+    if (els.avatarPlan) els.avatarPlan.textContent = formatPlanLabel(plan);
   }
 
   function formatSessionDate(iso) {
@@ -556,6 +623,8 @@
     window.QuizAllCreateApi?.invalidateUsageCache?.();
     try {
       const status = await api("/api/billing/status");
+      const plan = status.subscription?.plan || status.plan || "free";
+      updateAvatarPlan(plan);
       const c = status.credits;
       if (!c) {
         const tokens = status.tokens?.total ?? 0;
@@ -2867,7 +2936,7 @@
       const tier = user.subscription?.tier || "free";
       els.settingsBody.innerHTML =
         `<div class="set-row"><span class="set-k">Email</span><span class="set-v">${escapeHtml(user.email || "—")}</span></div>` +
-        `<div class="set-row"><span class="set-k">Plan</span><span class="set-v"><span class="badge">${escapeHtml(tier)}</span></span></div>` +
+        `<div class="set-row"><span class="set-k">Plan</span><span class="set-v"><span class="badge">${escapeHtml(formatPlanLabel(tier))}</span></span></div>` +
         `<div class="set-row"><span class="set-k">Timezone</span><span class="set-v">${escapeHtml(user.timezone || "UTC")}</span></div>` +
         `<div class="set-actions"><button type="button" class="set-btn danger" id="setLogout">Log out</button></div>`;
       document.getElementById("setLogout").addEventListener("click", () => {
@@ -2896,6 +2965,7 @@
 
   function renderAppearanceTab() {
     const current = window.themeManager?.getPreference?.() || localStorage.getItem("theme") || "auto";
+    const skin = loadChatSkin();
     els.settingsBody.innerHTML =
       `<div class="theme-options">` +
       ["dark", "light", "auto"]
@@ -2908,6 +2978,16 @@
           );
         })
         .join("") +
+      `</div>` +
+      `<p class="set-note" style="margin-top:18px;margin-bottom:8px;">Chat background</p>` +
+      `<div class="skin-options">` +
+      CHAT_SKINS.map((id) => {
+        const label = id.charAt(0).toUpperCase() + id.slice(1);
+        return (
+          `<button type="button" class="skin-option${skin === id ? " is-active" : ""}" data-skin="${id}">` +
+          `<span class="skin-swatch ${id}"></span>${label}</button>`
+        );
+      }).join("") +
       `</div>` +
       `<p class="set-note">Language and other preferences live in <a href="settings.html" target="_blank" rel="noopener">all settings</a>.</p>`;
 
@@ -2928,6 +3008,12 @@
         els.settingsBody.querySelectorAll(".theme-option").forEach((b) => b.classList.toggle("is-active", b === btn));
       });
     });
+
+    els.settingsBody.querySelectorAll(".skin-option").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setChatSkin(btn.getAttribute("data-skin"));
+      });
+    });
   }
 
   async function renderBillingTab() {
@@ -2935,7 +3021,7 @@
     try {
       const data = await api("/api/billing/status");
       const sub = data.subscription || {};
-      const planLabel = sub.plan || data.plan || "free";
+      const planLabel = formatPlanLabel(sub.plan || data.plan || "free");
       const periodEnd = sub.periodEnd || sub.currentPeriodEnd || sub.current_period_end;
       const stripeConfigured = !!data.stripeConfigured;
 
@@ -3265,7 +3351,10 @@
       if (e.key === "Escape") {
         if (!els.nameDialog?.classList.contains("hidden")) closeNameDialog(null);
         else if (!els.settingsOverlay.classList.contains("hidden")) closeSettings();
-        else closeProjectMenu();
+        else {
+          closeChatSkinMenu();
+          closeProjectMenu();
+        }
       }
     });
 
@@ -3273,6 +3362,19 @@
       e.stopPropagation();
       toggleSidebar();
     });
+
+    els.chatSkinBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleChatSkinMenu();
+    });
+    els.chatSkinDropdown?.addEventListener("click", (e) => e.stopPropagation());
+    els.chatSkinDropdown?.querySelectorAll(".chat-skin-option").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setChatSkin(btn.getAttribute("data-skin"));
+        closeChatSkinMenu();
+      });
+    });
+    document.addEventListener("click", () => closeChatSkinMenu());
   }
 
   function initAuth() {
@@ -3286,6 +3388,7 @@
 
   function init() {
     if (!initAuth()) return;
+    setChatSkin(loadChatSkin(), { persist: false });
     initSidebar();
     bindEvents();
     renderWelcome();

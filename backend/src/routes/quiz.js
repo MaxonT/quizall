@@ -808,7 +808,40 @@ function sanitizeSessionName(name) {
     .replace(/\.\.\./g, "")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 80);
+    .slice(0, 48);
+}
+
+function isWeakSessionName(name) {
+  const n = String(name || "").trim();
+  if (n.length < 4 || n.length > 48) return true;
+  if (/\.\.\.|…/.test(n)) return true;
+  if (/^study\s*·/i.test(n) || /^study\s+session/i.test(n)) return true;
+  if (/^\d{1,2}[\/\-]\d{1,2}/.test(n)) return true;
+  if (/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(n) && /\d{4}|\d{1,2}:\d{2}/.test(n)) return true;
+  if (/\.(pdf|docx?|pptx?|txt)$/i.test(n)) return true;
+  if (/^graded\s+quiz/i.test(n) || /^quiz\s*\d+\s*$/i.test(n)) return true;
+  return false;
+}
+
+function punchySessionName(subject, topics = []) {
+  const subj = sanitizeSessionName(subject).replace(/\s+fundamentals$/i, "").replace(/\s+basics$/i, "");
+  const keys = (Array.isArray(topics) ? topics : [])
+    .map((t) => sanitizeSessionName(t))
+    .filter((t) => t && t.toLowerCase() !== subj.toLowerCase())
+    .slice(0, 2);
+  if (!subj && !keys.length) return "Study session";
+  if (!keys.length) return sanitizeSessionName(subj || "Study focus").slice(0, 48);
+  const phrase = keys.join(" & ");
+  const combined = `${subj} · ${phrase}`;
+  if (combined.length <= 48) return combined;
+  const shortPhrase = keys[0].slice(0, Math.max(8, 48 - subj.length - 3));
+  return sanitizeSessionName(`${subj} · ${shortPhrase}`);
+}
+
+function resolveSessionName(rawName, subject, topics) {
+  const cleaned = sanitizeSessionName(rawName);
+  if (!isWeakSessionName(cleaned)) return cleaned;
+  return punchySessionName(subject, topics);
 }
 
 function importanceLabel(importance) {
@@ -823,7 +856,7 @@ function buildStudyPlanPrompt(content, examTopicHint = "", options = {}) {
   const fileHint = fileNames.length ? `Uploaded files: ${fileNames.join(", ")}` : "";
 
   const fields = [
-    '  "session_name": "descriptive title without ellipsis"',
+    '  "session_name": "Subject · key phrase (4-48 chars)"',
     '  "subject": "string"',
     '  "topics": ["topic strings"]',
     '  "plan": [{ "title": "string", "why": "string", "estimated_minutes": number, "importance": "core|secondary|peripheral" }]',
@@ -850,7 +883,8 @@ function buildStudyPlanPrompt(content, examTopicHint = "", options = {}) {
       hasUploadedMaterial
         ? "The learner uploaded study files (PPT/PDF/DOCX). Enable progress tracking: tag concepts with importance (core|secondary|peripheral), include PPT/page citations, and add comparison tables for any A vs B topics."
         : "",
-      "session_name must be a short descriptive title (max 60 chars). Never use ellipsis (...).",
+      "session_name rules (critical): 4-48 characters. Prefer format \"Subject · key phrase\" using the subject plus 1-2 punchy keywords from weak spots or core topics (example: \"C++ · Copy ctor & shallow copy\").",
+      "Never use ellipsis (...), dates, clock times, \"Study ·\", generic \"review\", or raw filenames in session_name.",
       "Always output session_name, subject, topics, plan, and summary first. Optional fields can follow. Keep JSON compact.",
       "Return a JSON object with this exact structure:",
       `{`,
@@ -954,7 +988,7 @@ function normalizeStudyPlan(raw) {
   if (!subject || !topics.length || !plan.length) return null;
   return {
     ...raw,
-    session_name: sanitizeSessionName(raw.session_name || subject),
+    session_name: resolveSessionName(raw.session_name, subject, topics),
     subject,
     topics,
     plan,
@@ -971,7 +1005,7 @@ function buildMockStudyPlan(content, projectName = "", options = {}) {
   const firstFile = fileNames[0] || "materials";
   const plan = {
     ...analysis,
-    session_name: sanitizeSessionName(`${subject} review`),
+    session_name: punchySessionName(subject, topics),
     plan: topics.slice(0, 4).map((topic, index) => ({
       title: `Learn ${topic}`,
       why: `This shows up in your materials. Spend a few minutes on it.`,
