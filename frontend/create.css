@@ -2123,57 +2123,86 @@ html[data-theme="light"] .skin-swatch.grid {
   height: 16px;
 }
 
-.btn-text,
-.btn-text-sm {
+/* Secondary chat actions — force theme paint (Safari ignores transparent UA buttons) */
+.chat-app button.btn-text,
+.chat-app button.btn-text-sm,
+.chat-app button.mindmap-save,
+.chat-app button.discard-pending-btn,
+.chat-app button.history-toggle,
+.chat-app button.training-retry,
+.chat-app button.wrongbook-refresh,
+.chat-app button.share-session-btn {
+  -webkit-appearance: none;
+  appearance: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   margin: 0;
   padding: 7px 12px;
-  border: 1px solid var(--c-border);
+  border: 1px solid var(--c-border-strong);
   border-radius: 999px;
-  background: transparent;
+  background-color: var(--c-panel);
+  background-image: none;
   color: var(--c-text-dim);
   font-family: inherit;
   font-size: 0.8rem;
   font-weight: 560;
   line-height: 1.2;
   cursor: pointer;
-  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), color 0.15s var(--ease);
+  box-shadow: none;
+  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease), color 0.15s var(--ease);
 }
 
-.btn-text:hover,
-.btn-text-sm:hover {
+.chat-app button.btn-text:hover,
+.chat-app button.btn-text-sm:hover,
+.chat-app button.mindmap-save:hover,
+.chat-app button.discard-pending-btn:hover,
+.chat-app button.history-toggle:hover,
+.chat-app button.training-retry:hover,
+.chat-app button.wrongbook-refresh:hover,
+.chat-app button.share-session-btn:hover {
   color: var(--c-text);
-  background: var(--c-panel-hover);
+  background-color: var(--c-panel-hover);
   border-color: var(--c-border-strong);
 }
 
-.btn-text:disabled,
-.btn-text-sm:disabled {
+.chat-app button.btn-text:disabled,
+.chat-app button.btn-text-sm:disabled,
+.chat-app button.mindmap-save:disabled,
+.chat-app button.share-session-btn:disabled {
   opacity: 0.55;
   cursor: default;
 }
 
-.btn-text-sm {
-  padding: 4px 8px;
+.chat-app button.btn-text-sm,
+.chat-app button.discard-pending-btn {
+  padding: 5px 10px;
   font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--c-text-faint);
+  background-color: transparent;
+  border-color: var(--c-border);
+}
+
+.chat-app button.btn-text-sm:hover,
+.chat-app button.discard-pending-btn:hover {
+  color: var(--c-text-dim);
+  background-color: var(--c-panel);
+  text-decoration: none;
+}
+
+.chat-app button.wrongbook-refresh {
+  padding: 4px 8px;
+  min-width: 28px;
   border: none;
-  background: transparent;
+  background-color: transparent;
   color: var(--c-text-faint);
 }
 
-.btn-text-sm:hover {
-  background: transparent;
-  border: none;
-  color: var(--c-text-dim);
-  text-decoration: underline;
-}
-
-.msg-bubble button:not([class]),
-.msg-bubble button.btn-text {
-  appearance: none;
-  -webkit-appearance: none;
+.chat-app button.wrongbook-refresh:hover {
+  color: var(--c-text);
+  background-color: var(--c-panel-hover);
 }
 
 .share-session-btn {
@@ -4347,8 +4376,17 @@ a.projects-session-row:hover {
 .mindmap-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.mindmap-actions .mindmap-save {
+  margin-right: 0;
+}
+
+.discard-pending-btn {
+  margin-left: 8px;
 }
 
 .material-summary {

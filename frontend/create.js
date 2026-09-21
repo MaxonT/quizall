@@ -3005,7 +3005,7 @@
               "ai",
               `<p class="meta-line">⚡ You have a quiz ready from your last session — pick up where you left off.</p>` +
                 `<button type="button" class="btn-round requiz-btn">Resume quiz ${icon("i-arrow-right")}</button>` +
-                `<button type="button" class="btn-text-sm discard-pending-btn" style="margin-left:8px;font-size:0.78rem;color:var(--c-text-dim);background:none;border:none;cursor:pointer;">Discard</button>`
+                `<button type="button" class="btn-text-sm discard-pending-btn">Discard</button>`
             );
             resumeMsg.querySelector(".requiz-btn").addEventListener("click", async (e) => {
               e.currentTarget.disabled = true;
