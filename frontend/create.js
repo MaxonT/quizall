@@ -3376,12 +3376,72 @@
     );
   }
 
+  const CREDIT_COST_LABELS = {
+    fileUpload: "File upload",
+    studyPlan: "Study plan",
+    examMap: "Exam map",
+    quizTesting: "Quiz round",
+    trainingBatch: "Training pack",
+    trainingRefill: "Training refill",
+    studyNote: "Study note",
+  };
+
+  function cleanUsageReason(reason) {
+    const cleaned = String(reason || "Usage")
+      .replace(/\s*[(\[]\s*[−\-–]?\s*\d+\s*credits?\s*[)\]]\s*$/i, "")
+      .trim();
+    return cleaned || "Usage";
+  }
+
+  function formatUsageWhen(iso) {
+    if (!iso) return "Time unknown";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "Time unknown";
+    return d.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  function usageCreditsAbs(item) {
+    const n = Number(item?.credits);
+    if (!Number.isFinite(n)) return 0;
+    return Math.abs(n);
+  }
+
+  function exportUsageExcel(items) {
+    const rows = [["When", "Action", "Credits"]];
+    (items || []).forEach((item) => {
+      rows.push([
+        formatUsageWhen(item.createdAt),
+        cleanUsageReason(item.reason),
+        String(-usageCreditsAbs(item)),
+      ]);
+    });
+    const csv = rows
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const stamp = new Date().toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\//g, "-");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `quizall-usage-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   async function renderUsageTab() {
     els.settingsBody.innerHTML = '<div class="settings-loading">Loading usage…</div>';
     try {
       const [statusData, historyItems, streakData] = await Promise.all([
         api("/api/billing/status").catch(() => null),
-        window.QuizAllCreateApi?.fetchCreditHistory?.(api, 12) || Promise.resolve([]),
+        window.QuizAllCreateApi?.fetchCreditHistory?.(api, 50) || Promise.resolve([]),
         api("/api/quiz/study-streak?days=7").catch(() => null),
       ]);
 
@@ -3389,24 +3449,49 @@
 
       if (statusData?.credits) {
         const c = statusData.credits;
-        html += usageMeter("Credits remaining", c.balance ?? 0, c.dailyAllowance ?? 80);
+        const remaining = c.balance ?? 0;
+        const allowance = c.dailyAllowance ?? 80;
+        html += usageMeter("Credits remaining today", remaining, allowance);
         html += `<p class="set-note">Daily allowance resets at midnight in your timezone.</p>`;
       }
 
+      html +=
+        `<div class="usage-section-head">` +
+        `<h3 class="set-subhead">Recent usage</h3>` +
+        `<button type="button" class="set-btn usage-export-btn" id="usageExportBtn"${historyItems.length ? "" : " disabled"}>Export Excel</button>` +
+        `</div>`;
+
       if (historyItems.length) {
-        html += `<div class="credit-history"><h3 class="set-subhead">Recent usage</h3><ul class="credit-history-list">`;
+        html += `<div class="usage-history" role="list">`;
         historyItems.forEach((item) => {
-          html += `<li><span>−${item.credits}</span> ${escapeHtml(item.reason || "Usage")}</li>`;
+          const credits = usageCreditsAbs(item);
+          const action = cleanUsageReason(item.reason);
+          const when = formatUsageWhen(item.createdAt);
+          html +=
+            `<div class="usage-row" role="listitem">` +
+            `<div class="usage-row-main">` +
+            `<span class="usage-row-action">${escapeHtml(action)}</span>` +
+            `<span class="usage-row-credits">−${credits}</span>` +
+            `</div>` +
+            `<time class="usage-row-time" datetime="${escapeHtml(String(item.createdAt || ""))}">${escapeHtml(when)}</time>` +
+            `</div>`;
         });
-        html += `</ul></div>`;
+        html += `</div>`;
+      } else {
+        html += `<p class="set-note usage-empty">No credit spend yet. Start a study plan or quiz to see history here.</p>`;
       }
 
       if (statusData?.creditCosts) {
-        html += `<div class="credit-costs-ref"><h3 class="set-subhead">Action costs</h3><ul>`;
+        html += `<h3 class="set-subhead">Action costs</h3><div class="usage-costs">`;
         Object.entries(statusData.creditCosts).forEach(([key, val]) => {
-          html += `<li>${escapeHtml(key)}: ${val} credits</li>`;
+          const label = CREDIT_COST_LABELS[key] || key;
+          html +=
+            `<div class="usage-cost-row">` +
+            `<span class="usage-cost-label">${escapeHtml(label)}</span>` +
+            `<span class="usage-cost-val">${val} credits</span>` +
+            `</div>`;
         });
-        html += `</ul></div>`;
+        html += `</div>`;
       }
 
       if (streakData && Array.isArray(streakData.heatmap)) {
@@ -3423,6 +3508,12 @@
       }
 
       els.settingsBody.innerHTML = html || '<div class="settings-loading">No usage data yet.</div>';
+
+      const exportBtn = document.getElementById("usageExportBtn");
+      exportBtn?.addEventListener("click", () => {
+        if (!historyItems.length) return;
+        exportUsageExcel(historyItems);
+      });
     } catch (err) {
       els.settingsBody.innerHTML = `<div class="settings-loading">Could not load usage: ${escapeHtml(err.message)}</div>`;
     }
