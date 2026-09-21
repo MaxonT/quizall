@@ -702,8 +702,8 @@
     if (els.mixPreview) els.mixPreview.textContent = preview;
     if (els.mixBtn) els.mixBtn.title = `Quiz setup · ${preview}`;
     if (els.composerPlusBtn) {
-      els.composerPlusBtn.title = `Add · ${modeLabel}`;
-      els.composerPlusBtn.setAttribute("aria-label", `Add · ${modeLabel}`);
+      els.composerPlusBtn.title = `Mode · ${modeLabel}`;
+      els.composerPlusBtn.setAttribute("aria-label", `Mode · ${modeLabel}`);
     }
   }
 
@@ -3982,6 +3982,7 @@
     if (els.mixBtn && els.mixPanel) {
       els.mixBtn.addEventListener("click", (e) => {
         e.stopPropagation();
+        closePlusMenu();
         const wasHidden = els.mixPanel.classList.contains("hidden");
         if (wasHidden) openMixPanel();
         else closeMixPanel();
@@ -3991,9 +3992,7 @@
         setMixPanelExpanded(!els.mixPanel.classList.contains("is-expanded"));
       });
       document.addEventListener("click", (e) => {
-        if (els.mixPanel?.contains(e.target) || els.mixBtn?.contains(e.target) || els.composerPlus?.contains(e.target)) {
-          return;
-        }
+        if (els.mixPanel?.contains(e.target) || els.mixBtn?.contains(e.target)) return;
         closeMixPanel();
       });
       els.mixPanel.addEventListener("click", (e) => e.stopPropagation());
@@ -4001,13 +4000,13 @@
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           setQuizMode(btn.getAttribute("data-mode"));
+          closePlusMenu();
         });
       });
       els.mixPresets?.querySelectorAll(".mix-preset").forEach((btn) => {
         btn.addEventListener("click", () => {
           applyMixPreset(btn.getAttribute("data-preset"));
           setMixPanelExpanded(false);
-          closeMixPanel();
         });
       });
       els.mixTotalDown?.addEventListener("click", (e) => {
@@ -4039,10 +4038,7 @@
     });
 
     const fileInput = ensureFileInput();
-    els.attachBtn.addEventListener("click", () => {
-      closePlusMenu();
-      fileInput.click();
-    });
+    els.attachBtn.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", () => {
       const files = Array.from(fileInput.files || []);
       state.pendingFiles = state.pendingFiles.concat(files);

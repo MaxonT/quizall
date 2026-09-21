@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="theme.css" />
-  <link rel="stylesheet" href="create.css?v=22" />
+  <link rel="stylesheet" href="create.css?v=23" />
   <script src="config.js"></script>
   <script src="lib/authGuard.js?v=3"></script>
 </head>
@@ -175,19 +175,10 @@
           <p class="sr-only" id="quizModeHint">Testing: full mixed quiz round, then submit.</p>
           <div class="composer" id="composer">
             <div class="composer-plus" id="composerPlus">
-              <button type="button" class="btn-icon btn-composer-plus" id="composerPlusBtn" title="Add" aria-label="Add" aria-haspopup="menu" aria-expanded="false">
+              <button type="button" class="btn-icon btn-composer-plus" id="composerPlusBtn" title="Mode" aria-label="Mode" aria-haspopup="menu" aria-expanded="false">
                 <svg class="icon"><use href="#i-plus"></use></svg>
               </button>
-              <div class="composer-plus-menu hidden" id="composerPlusMenu" role="menu" aria-label="Composer tools">
-                <button type="button" class="plus-menu-item" id="attachBtn" role="menuitem">
-                  <svg class="icon"><use href="#i-paperclip"></use></svg>
-                  <span>Attach files</span>
-                </button>
-                <button type="button" class="plus-menu-item" id="mixBtn" role="menuitem" aria-expanded="false">
-                  <svg class="icon"><use href="#i-layers"></use></svg>
-                  <span>Quiz setup</span>
-                </button>
-                <div class="plus-menu-sep" role="separator"></div>
+              <div class="composer-plus-menu hidden" id="composerPlusMenu" role="menu" aria-label="Quiz mode">
                 <div class="plus-menu-label" id="quizModeSwitchLabel">Mode</div>
                 <div class="plus-mode-switch" id="quizModeSwitch" role="radiogroup" aria-labelledby="quizModeSwitchLabel">
                   <button type="button" class="plus-mode-btn" data-mode="training" role="radio" aria-checked="false" title="One MCQ at a time">
@@ -203,6 +194,12 @@
             </div>
             <textarea id="composerInput" rows="1" placeholder="Paste study material, a YouTube link, or attach files…"></textarea>
             <div class="composer-actions">
+              <button type="button" class="btn-icon btn-mix" id="mixBtn" title="Question mix" aria-label="Question mix">
+                <svg class="icon"><use href="#i-layers"></use></svg>
+              </button>
+              <button type="button" class="btn-icon" id="attachBtn" title="Attach files" aria-label="Attach files">
+                <svg class="icon"><use href="#i-paperclip"></use></svg>
+              </button>
               <button type="button" class="btn-send" id="sendBtn" title="Send" aria-label="Send">
                 <svg class="icon"><use href="#i-arrow-up"></use></svg>
               </button>
@@ -314,6 +311,6 @@
   <script src="create/api.js?v=2"></script>
   <script src="create/transcript.js?v=1"></script>
   <script src="create/mindmap.js?v=3"></script>
-  <script src="create.js?v=31"></script>
+  <script src="create.js?v=32"></script>
 </body>
 </html>
