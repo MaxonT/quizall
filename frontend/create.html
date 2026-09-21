@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="theme.css" />
-  <link rel="stylesheet" href="create.css?v=19" />
+  <link rel="stylesheet" href="create.css?v=20" />
   <script src="config.js"></script>
-  <script src="lib/authGuard.js"></script>
+  <script src="lib/authGuard.js?v=3"></script>
 </head>
 <body class="chat-app">
   <!-- Icon sprite (Lucide-style, stroke) -->
@@ -87,9 +87,18 @@
       <div class="sidebar-credits" id="sidebarCredits" aria-label="Credits balance">
         <div class="credits-head">
           <span class="credits-label">Credits</span>
-          <span class="credits-value" id="creditsValue">— / —</span>
         </div>
-        <div class="credits-bar" aria-hidden="true"><div class="credits-bar-fill" id="creditsBarFill"></div></div>
+        <div class="credits-breakdown" id="creditsBreakdown">
+          <div class="credits-row">
+            <span class="credits-row-k" id="creditsDailyLabel">Daily</span>
+            <span class="credits-row-v" id="creditsDailyValue">— / —</span>
+          </div>
+          <div class="credits-bar" aria-hidden="true"><div class="credits-bar-fill" id="creditsBarFill"></div></div>
+          <div class="credits-row credits-row-pool hidden" id="creditsPoolRow">
+            <span class="credits-row-k" id="creditsPoolLabel">Pro pool</span>
+            <span class="credits-row-v" id="creditsPoolValue">—</span>
+          </div>
+        </div>
         <p class="credits-reset" id="creditsResetNote"></p>
       </div>
 
@@ -288,6 +297,6 @@
   <script src="create/api.js?v=2"></script>
   <script src="create/transcript.js?v=1"></script>
   <script src="create/mindmap.js?v=3"></script>
-  <script src="create.js?v=28"></script>
+  <script src="create.js?v=29"></script>
 </body>
 </html>

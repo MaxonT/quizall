@@ -102,7 +102,11 @@
     wrongbookList: document.getElementById("wrongbookList"),
     wrongbookRefresh: document.getElementById("wrongbookRefresh"),
     sidebarCredits: document.getElementById("sidebarCredits"),
-    creditsValue: document.getElementById("creditsValue"),
+    creditsDailyLabel: document.getElementById("creditsDailyLabel"),
+    creditsDailyValue: document.getElementById("creditsDailyValue"),
+    creditsPoolRow: document.getElementById("creditsPoolRow"),
+    creditsPoolLabel: document.getElementById("creditsPoolLabel"),
+    creditsPoolValue: document.getElementById("creditsPoolValue"),
     creditsBarFill: document.getElementById("creditsBarFill"),
     creditsResetNote: document.getElementById("creditsResetNote"),
     settingsOverlay: document.getElementById("settingsOverlay"),
@@ -785,37 +789,103 @@
     window.QuizAllTranscript.scheduleTranscriptSave(api, state.projectId, els.chatInner, state.training);
   }
 
+  function detectedTimeZone() {
+    try {
+      return (
+        localStorage.getItem("quizall.timezone") ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        "UTC"
+      );
+    } catch {
+      return "UTC";
+    }
+  }
+
+  function formatCreditsResetNote(iso, timeZone) {
+    const dt = new Date(iso);
+    if (Number.isNaN(dt.getTime())) return "";
+    const tz = timeZone || detectedTimeZone();
+    const opts = { hour: "numeric", minute: "2-digit", hour12: true };
+    try {
+      opts.timeZone = tz;
+    } catch {
+      /* ignore invalid tz */
+    }
+    const time = dt.toLocaleTimeString("en-US", opts);
+    let tzName = "";
+    try {
+      tzName =
+        new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" })
+          .formatToParts(dt)
+          .find((p) => p.type === "timeZoneName")?.value || "";
+    } catch {
+      tzName = "";
+    }
+    return tzName ? `Resets ${time} ${tzName}` : `Resets ${time}`;
+  }
+
+  function poolLabelForPlan(plan) {
+    const raw = String(plan || "free").toLowerCase();
+    if (raw === "monthly" || raw === "yearly" || raw === "pro") return "Pro pool";
+    if (raw === "trial" || raw === "trialing") return "Trial pool";
+    if (raw === "teacher") return "Teacher pool";
+    return "Plan pool";
+  }
+
   async function refreshCredits() {
-    if (!els.creditsValue) return;
+    if (!els.creditsDailyValue) return;
     window.QuizAllCreateApi?.invalidateUsageCache?.();
     try {
       const status = await api("/api/billing/status");
       const plan = status.subscription?.plan || status.plan || "free";
       updateAvatarPlan(plan);
       const c = status.credits;
+      const tz = status.timezone || detectedTimeZone();
+
       if (!c) {
         const tokens = status.tokens?.total ?? 0;
-        els.creditsValue.textContent = `${Math.floor(tokens / 1000)} cr`;
+        els.creditsDailyLabel.textContent = "Balance";
+        els.creditsDailyValue.textContent = `${Math.floor(tokens / 1000)} cr`;
+        els.creditsPoolRow?.classList.add("hidden");
         return;
       }
-      const balance = c.balance ?? 0;
-      const allowance = c.dailyAllowance ?? 80;
-      els.creditsValue.textContent = `${balance} / ${allowance}`;
-      const pct = allowance > 0 ? Math.min(100, Math.round((balance / allowance) * 100)) : 0;
+
+      const dailyRemaining = Math.max(0, Math.round(c.dailyRemaining ?? 0));
+      const dailyAllowance = Math.max(0, Math.round(c.dailyAllowance ?? 80));
+      const poolRemaining = Math.max(0, Math.round(c.poolRemaining ?? 0));
+      const totalBalance = Math.max(0, Math.round(c.balance ?? dailyRemaining + poolRemaining));
+
+      els.creditsDailyLabel.textContent = "Daily";
+      els.creditsDailyValue.textContent = `${dailyRemaining} / ${dailyAllowance}`;
+
+      const pct = dailyAllowance > 0 ? Math.min(100, Math.round((dailyRemaining / dailyAllowance) * 100)) : 0;
       if (els.creditsBarFill) {
         els.creditsBarFill.style.width = `${pct}%`;
-        els.creditsBarFill.classList.toggle("is-low", balance < 10);
+        els.creditsBarFill.classList.toggle("is-low", dailyRemaining < 10);
       }
-      if (els.creditsResetNote && (c.nextResetAt || status.nextResetAt)) {
-        const dt = new Date(c.nextResetAt || status.nextResetAt);
-        els.creditsResetNote.textContent = `Resets ${dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+
+      if (els.creditsPoolRow && els.creditsPoolValue && els.creditsPoolLabel) {
+        if (poolRemaining > 0) {
+          els.creditsPoolRow.classList.remove("hidden");
+          els.creditsPoolLabel.textContent = poolLabelForPlan(plan);
+          els.creditsPoolValue.textContent = String(poolRemaining);
+        } else {
+          els.creditsPoolRow.classList.add("hidden");
+        }
       }
-      els.sidebarCredits?.classList.toggle("is-empty", balance <= 0);
-      if (balance <= 0 && els.composerInput) {
+
+      const resetAt = c.nextResetAt || status.nextResetAt;
+      if (els.creditsResetNote && resetAt) {
+        els.creditsResetNote.textContent = formatCreditsResetNote(resetAt, tz);
+      }
+
+      els.sidebarCredits?.classList.toggle("is-empty", totalBalance <= 0);
+      if (totalBalance <= 0 && els.composerInput) {
         els.composerInput.placeholder = "No credits left — upgrade or wait for daily refresh";
       }
     } catch {
-      els.creditsValue.textContent = "— / —";
+      if (els.creditsDailyValue) els.creditsDailyValue.textContent = "— / —";
+      els.creditsPoolRow?.classList.add("hidden");
     }
   }
 
@@ -837,6 +907,7 @@
   async function handleCreditResponse(data, label) {
     if (data?.creditsDebited) showCreditToast(data.creditsDebited, label);
     await refreshCredits();
+    loadSidebarStreak();
   }
 
   function appendMessage(role, html, msgType = "message") {
@@ -2044,12 +2115,20 @@
       const data = await api("/api/quiz/study-streak?days=7");
       const streak = data.currentStreak || 0;
       const heatmap = (data.heatmap || []).slice(-7);
+      const todayKey = heatmap.length ? heatmap[heatmap.length - 1]?.date : null;
+      const todayOn = todayKey ? (heatmap[heatmap.length - 1]?.intensity || 0) > 0 : false;
       const dots = heatmap
-        .map((d) => `<span class="streak-dot lvl-${Math.max(0, Math.min(3, d.intensity || 0))}"></span>`)
+        .map((d, i) => {
+          const lvl = Math.max(0, Math.min(3, d.intensity || 0));
+          const isToday = i === heatmap.length - 1;
+          return `<span class="streak-dot lvl-${lvl}${isToday ? " is-today" : ""}" title="${escapeHtml(d.date || "")}"></span>`;
+        })
         .join("");
+      const title =
+        streak > 0 ? `${streak}-day streak` : todayOn ? "Active today" : "Study streak";
       els.sidebarStreak.innerHTML =
         `<div class="streak-card sidebar-streak-card">` +
-        `<div class="streak-head">${icon("i-flame")} ${streak > 0 ? `${streak}-day streak` : "Study streak"}` +
+        `<div class="streak-head">${icon("i-flame")} ${title}` +
         `<span class="streak-sub">7 days</span></div>` +
         `<div class="streak-dots">${dots}</div></div>`;
       els.sidebarStreak.classList.remove("hidden");
@@ -2640,6 +2719,8 @@
       setProcessing(false);
       await loadHistorySidebar();
       await loadWrongbook();
+      loadSidebarStreak();
+      await refreshCredits();
     } catch (err) {
       removeTyping(typing);
       appendErrorWithRetry(`Sorry, I couldn't write the note: ${err.message}`, "retry-note");
@@ -3882,10 +3963,15 @@
     updateMixPanelUi();
     updateComposerPlaceholder();
     loadHistorySidebar();
-    loadSidebarStreak();
     loadWrongbook();
-    refreshCredits();
     els.wrongbookRefresh?.addEventListener("click", () => loadWrongbook());
+    // Auto-detect browser timezone first, then load streak/credits in that zone.
+    Promise.resolve(window.authGuard?.syncTimezone?.({ force: true }))
+      .catch(() => {})
+      .finally(() => {
+        loadSidebarStreak();
+        refreshCredits();
+      });
     api("/api/settings")
       .then((data) => {
         if (data?.settings?.features) {

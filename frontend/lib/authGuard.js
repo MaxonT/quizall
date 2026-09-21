@@ -111,24 +111,28 @@
     return res;
   }
 
-  async function syncTimezone() {
+  async function syncTimezone(options = {}) {
+    const force = !!options.force;
     const token = getToken();
     if (!token) return;
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!tz || typeof tz !== "string") return;
 
+    const stored = localStorage.getItem("quizall.timezone") || "";
     const lastAttemptAt = Number(localStorage.getItem("quizall.tz.sync_at") || "0");
-    if (Number.isFinite(lastAttemptAt) && Date.now() - lastAttemptAt < 12 * 60 * 60 * 1000) {
-      return;
-    }
+    const recentlySynced =
+      Number.isFinite(lastAttemptAt) && Date.now() - lastAttemptAt < 12 * 60 * 60 * 1000;
+    // Skip only when we already synced this exact TZ recently (unless forced).
+    if (!force && stored === tz && recentlySynced) return;
+
     localStorage.setItem("quizall.tz.sync_at", String(Date.now()));
 
     try {
       const res = await fetchWithAuth(`${API_BASE}/api/auth/timezone`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ timezone: tz })
+        body: JSON.stringify({ timezone: tz, source: "auto" })
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.timezone) {

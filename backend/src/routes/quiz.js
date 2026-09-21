@@ -2188,34 +2188,26 @@ quizRouter.get("/study-streak", requireAuth, async (req, res) => {
     const days = Math.min(STREAK_MAX_DAYS, Math.max(14, Number.parseInt(req.query.days, 10) || 140));
     const timezone = await getUserTimezoneSafe(userId);
 
-    const fileRows = await dbAll(
-      `SELECT created_at
-       FROM project_files
-       WHERE user_id = ?`,
-      [userId]
-    );
-
-    const quizRows = await dbAll(
-      `SELECT score, total, created_at
-       FROM quiz_results
-       WHERE user_id = ?`,
-      [userId]
-    );
+    const [fileRows, quizRows, planRows, noteRows] = await Promise.all([
+      dbAll(`SELECT created_at FROM project_files WHERE user_id = ?`, [userId]),
+      dbAll(`SELECT score, total, created_at FROM quiz_results WHERE user_id = ?`, [userId]),
+      dbAll(`SELECT created_at FROM study_plans WHERE user_id = ?`, [userId]),
+      dbAll(`SELECT created_at FROM study_notes WHERE user_id = ?`, [userId]),
+    ]);
 
     const intensityByDate = new Map();
-
-    for (const row of fileRows) {
-      const key = toDateKey(row.created_at, timezone);
-      if (!key) continue;
-      intensityByDate.set(key, Math.max(intensityByDate.get(key) || 0, 1));
-    }
-
-    for (const row of quizRows) {
-      const key = toDateKey(row.created_at, timezone);
-      if (!key) continue;
-      const accuracy = computeAccuracyPercent(row.score, row.total);
-      const intensity = accuracy >= 80 ? 3 : 2;
+    const bump = (createdAt, intensity) => {
+      const key = toDateKey(createdAt, timezone);
+      if (!key) return;
       intensityByDate.set(key, Math.max(intensityByDate.get(key) || 0, intensity));
+    };
+
+    for (const row of fileRows) bump(row.created_at, 1);
+    for (const row of planRows) bump(row.created_at, 1);
+    for (const row of noteRows) bump(row.created_at, 1);
+    for (const row of quizRows) {
+      const accuracy = computeAccuracyPercent(row.score, row.total);
+      bump(row.created_at, accuracy >= 80 ? 3 : 2);
     }
 
     const dateKeys = buildRecentDateKeys(days, timezone);

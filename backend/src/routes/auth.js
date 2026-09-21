@@ -161,6 +161,7 @@ authRouter.get("/me", requireAuth, async (req, res) => {
 authRouter.put("/timezone", requireAuth, async (req, res) => {
   const userId = req.user.sub;
   const requested = req.body?.timezone;
+  const source = req.body?.source === "auto" ? "auto" : "manual";
   const tz = normalizeTimeZone(requested);
   if (!requested || typeof requested !== "string" || (tz === "UTC" && requested.trim() !== "UTC")) {
     return res.status(400).json({ ok: false, error: "Invalid timezone" });
@@ -173,10 +174,14 @@ authRouter.put("/timezone", requireAuth, async (req, res) => {
       return res.json({ ok: true, timezone: currentTz, nextResetAt: getNextLocalMidnightIso(currentTz) });
     }
     const now = Date.now();
-    const lastUpdatedAt = row?.timezone_updated_at ? new Date(row.timezone_updated_at).getTime() : null;
-    const CHANGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
-    if (lastUpdatedAt && now - lastUpdatedAt < CHANGE_WINDOW_MS) {
-      return res.status(429).json({ ok: false, error: "Timezone can only be changed every 30 days" });
+    // Auto-detect from the browser may correct UTC/default anytime.
+    // Manual changes stay rate-limited to avoid gaming daily resets.
+    if (source !== "auto") {
+      const lastUpdatedAt = row?.timezone_updated_at ? new Date(row.timezone_updated_at).getTime() : null;
+      const CHANGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+      if (lastUpdatedAt && now - lastUpdatedAt < CHANGE_WINDOW_MS) {
+        return res.status(429).json({ ok: false, error: "Timezone can only be changed every 30 days" });
+      }
     }
     const nowIso = new Date(now).toISOString();
     await dbRun(

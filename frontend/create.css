@@ -711,6 +711,7 @@ a.sidebar-home-link:hover .brand-home-hint {
 .streak-dot.lvl-1 { background: rgba(124, 58, 237, 0.35); border-color: transparent; }
 .streak-dot.lvl-2 { background: rgba(124, 58, 237, 0.6); border-color: transparent; }
 .streak-dot.lvl-3 { background: linear-gradient(135deg, var(--g1), var(--g3)); border-color: transparent; }
+.streak-dot.is-today { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35); }
 
 .sidebar-footer {
   margin-top: auto;
@@ -4408,7 +4409,21 @@ a.projects-session-row:hover {
 .sidebar-credits.is-empty { border-color: rgba(248, 113, 113, 0.45); }
 .credits-head { display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 8px; }
 .credits-label { font-weight: 600; color: var(--c-text-dim); }
-.credits-value { font-variant-numeric: tabular-nums; }
+.credits-breakdown { display: flex; flex-direction: column; gap: 6px; }
+.credits-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+}
+.credits-row-k { color: var(--c-text-faint); font-weight: 500; }
+.credits-row-v {
+  color: var(--c-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.credits-row-pool .credits-row-v { color: var(--c-text-dim); font-weight: 560; }
 .credits-bar { height: 4px; border-radius: 999px; background: var(--c-panel-active); overflow: hidden; }
 .credits-bar-fill { height: 100%; background: linear-gradient(90deg, var(--g1), var(--g3)); transition: width 0.3s var(--ease); }
 .credits-bar-fill.is-low { background: var(--bad); }
