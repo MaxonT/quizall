@@ -2540,7 +2540,7 @@ html[data-theme="light"] .skin-swatch.grid {
 .composer {
   position: relative;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
   padding: 10px 10px 10px 10px;
   border-radius: var(--radius-xl);
@@ -2606,7 +2606,9 @@ html[data-theme="light"] .composer {
   display: flex;
   gap: 6px;
   align-items: center;
+  align-self: center;
   flex-shrink: 0;
+  min-height: 42px;
 }
 
 .btn-icon {
@@ -2640,18 +2642,27 @@ html[data-theme="light"] .composer {
 .composer-plus {
   position: relative;
   flex-shrink: 0;
-  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  height: 42px;
 }
 
 .btn-composer-plus {
   width: 36px;
   height: 36px;
   border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 0;
 }
 
 .btn-composer-plus .icon {
   width: 18px;
   height: 18px;
+  display: block;
   transition: transform 0.2s var(--ease);
 }
 
