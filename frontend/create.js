@@ -1989,18 +1989,53 @@
   }
 
   async function createShareLink() {
-    if (!state.projectId) return;
+    if (!state.projectId) throw new Error("No session to share yet");
     const data = await api("/api/quiz/share", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId: state.projectId }),
     });
-    if (data.url && navigator.clipboard?.writeText) {
+    if (!data?.url) throw new Error("Share link was not returned");
+    if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(data.url);
-      appendMessage("ai", `<p class="meta-line">Share link copied to clipboard.</p>`);
-    } else if (data.url) {
-      appendMessage("ai", `<p class="meta-line">Share link: <a href="${escapeHtml(data.url)}" target="_blank" rel="noopener">${escapeHtml(data.url)}</a></p>`);
+      appendMessage(
+        "ai",
+        `<p class="meta-line">Share link copied. Anyone with the link can view this session’s results.</p>`
+      );
+    } else {
+      appendMessage(
+        "ai",
+        `<p class="meta-line">Share link: <a href="${escapeHtml(data.url)}" target="_blank" rel="noopener">${escapeHtml(data.url)}</a></p>`
+      );
     }
+    return data.url;
+  }
+
+  function bindShareSessionButtons(root = els.chatInner) {
+    if (!root) return;
+    root.querySelectorAll(".share-session-btn").forEach((btn) => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = "1";
+      btn.addEventListener("click", async (e) => {
+        const target = e.currentTarget;
+        if (target.disabled) return;
+        const original = target.textContent;
+        target.disabled = true;
+        target.textContent = "Creating link…";
+        try {
+          await createShareLink();
+          target.textContent = "Link copied";
+          setTimeout(() => {
+            target.textContent = original;
+            target.disabled = false;
+          }, 2200);
+        } catch (err) {
+          target.textContent = original;
+          target.disabled = false;
+          appendMessage("ai", `<p>Could not create share link: ${escapeHtml(formatUserError(err))}</p>`);
+        }
+      });
+    });
   }
 
   async function loadSidebarStreak() {
@@ -2600,14 +2635,7 @@
       });
       removeTyping(typing);
       const noteMsg = appendMessage("ai", formatNoteHtml(data.note));
-      noteMsg.querySelector(".share-session-btn")?.addEventListener("click", async (e) => {
-        e.currentTarget.disabled = true;
-        try {
-          await createShareLink();
-        } catch (err) {
-          appendMessage("ai", `<p>Could not create share link: ${escapeHtml(formatUserError(err))}</p>`);
-        }
-      });
+      bindShareSessionButtons(noteMsg);
       appendMessage("ai", `<p class="meta-line">Session complete. Start a new study session anytime from the left.</p>`);
       setProcessing(false);
       await loadHistorySidebar();
@@ -2887,6 +2915,7 @@
       btn.dataset.bound = "1";
     });
     els.chatInner.querySelectorAll(".retry-btn").forEach((btn) => bindRetryButton(btn));
+    bindShareSessionButtons(els.chatInner);
   }
 
   async function openProject(projectId) {
@@ -3085,6 +3114,7 @@
         const noteRes = await api(`/api/quiz/projects/${encodeURIComponent(projectId)}/note`);
         if (noteRes.note) {
           appendMessage("ai", formatNoteHtml(noteRes.note));
+          bindShareSessionButtons();
           noteLoaded = true;
         }
       } catch {

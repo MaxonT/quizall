@@ -2123,6 +2123,63 @@ html[data-theme="light"] .skin-swatch.grid {
   height: 16px;
 }
 
+.btn-text,
+.btn-text-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 7px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--c-text-dim);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 560;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.btn-text:hover,
+.btn-text-sm:hover {
+  color: var(--c-text);
+  background: var(--c-panel-hover);
+  border-color: var(--c-border-strong);
+}
+
+.btn-text:disabled,
+.btn-text-sm:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn-text-sm {
+  padding: 4px 8px;
+  font-size: 0.74rem;
+  border: none;
+  background: transparent;
+  color: var(--c-text-faint);
+}
+
+.btn-text-sm:hover {
+  background: transparent;
+  border: none;
+  color: var(--c-text-dim);
+  text-decoration: underline;
+}
+
+.msg-bubble button:not([class]),
+.msg-bubble button.btn-text {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.share-session-btn {
+  margin-top: 4px;
+}
+
 /* ────────────────────────── Round review ────────────────────────── */
 .review-score {
   display: inline-flex;
