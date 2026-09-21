@@ -2132,6 +2132,7 @@
 
   /** Retire the live training loop so a fresh one can mount at the bottom of chat. */
   function archiveActiveTrainingLoop() {
+    stopTrainingLiveTimer();
     const loop = getTrainingLoopEl();
     if (!loop) return;
     const stamp = Date.now();
@@ -2158,6 +2159,7 @@
       `<div class="training-loop-head">` +
       `<span class="training-accuracy">0% accuracy</span>` +
       `<span class="training-done">0 done</span>` +
+      `<span class="training-avg">— avg</span>` +
       `</div>` +
       `<div class="training-loop-history" id="trainingLoopHistory"></div>` +
       `<div class="training-loop-active" id="trainingLoopActive"></div>` +
@@ -2179,20 +2181,69 @@
     if (!loop || !state.training) return;
     const accEl = loop.querySelector(".training-accuracy");
     const doneEl = loop.querySelector(".training-done");
+    const avgEl = loop.querySelector(".training-avg");
     if (accEl) accEl.textContent = `${trainingAccuracy()}% accuracy`;
     if (doneEl) doneEl.textContent = `${state.training.total} done`;
+    if (avgEl) {
+      const avg = trainingAvgMs();
+      avgEl.textContent = avg == null ? "— avg" : `${formatDurationMs(avg)} avg`;
+    }
+  }
+
+  function formatDurationMs(ms) {
+    const sec = Math.max(0, Math.round(Number(ms) / 1000));
+    if (sec < 60) return `${sec}s`;
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}m ${String(s).padStart(2, "0")}s`;
+  }
+
+  function trainingAvgMs() {
+    const times = (state.training?.history || [])
+      .map((h) => h.elapsedMs)
+      .filter((n) => Number.isFinite(n) && n >= 0);
+    if (!times.length) return null;
+    return times.reduce((a, b) => a + b, 0) / times.length;
+  }
+
+  let trainingQuestionStartedAt = 0;
+  let trainingLiveTimer = null;
+
+  function stopTrainingLiveTimer() {
+    if (trainingLiveTimer) {
+      clearInterval(trainingLiveTimer);
+      trainingLiveTimer = null;
+    }
+  }
+
+  function startTrainingLiveTimer(activeEl) {
+    stopTrainingLiveTimer();
+    trainingQuestionStartedAt = Date.now();
+    const el = activeEl?.querySelector(".training-timer");
+    const tick = () => {
+      if (el) el.textContent = formatDurationMs(Date.now() - trainingQuestionStartedAt);
+    };
+    tick();
+    trainingLiveTimer = setInterval(tick, 250);
   }
 
   function appendTrainingHistoryItem(entry, qNum) {
     const historyEl = document.getElementById("trainingLoopHistory");
     if (!historyEl) return;
     const nq = entry.question;
+    const timeBit =
+      entry.elapsedMs != null
+        ? ` · <span class="training-history-time">${escapeHtml(formatDurationMs(entry.elapsedMs))}</span>`
+        : "";
     const details = document.createElement("details");
     details.className = "training-history-item";
     details.innerHTML =
-      `<summary>Q${qNum} · ${entry.isCorrect ? "✓" : "✗"} ${escapeHtml(String(nq.question).slice(0, 72))}${nq.question.length > 72 ? "…" : ""}</summary>` +
+      `<summary>Q${qNum} · ${entry.isCorrect ? "✓" : "✗"} ${escapeHtml(String(nq.question).slice(0, 72))}${nq.question.length > 72 ? "…" : ""}${timeBit}</summary>` +
       `<p class="q-text">${escapeHtml(nq.question)}</p>` +
       `<p class="meta-line">Your answer: ${escapeHtml(displayAnswer(nq, entry.userAnswer))}</p>` +
+      (entry.elapsedMs != null
+        ? `<p class="meta-line">Time: ${escapeHtml(formatDurationMs(entry.elapsedMs))}</p>`
+        : "") +
       (entry.isCorrect ? `<p class="training-ok">Correct</p>` : `<p class="training-miss">Correct: ${escapeHtml(displayAnswer(nq, nq.correct_answer))}</p>`) +
       (nq.explanation ? `<p>${escapeHtml(nq.explanation)}</p>` : "");
     historyEl.appendChild(details);
@@ -2226,6 +2277,8 @@
         if (answered) return;
         answered = true;
         document.removeEventListener("keydown", onKey);
+        stopTrainingLiveTimer();
+        const elapsedMs = Math.max(0, Date.now() - (trainingQuestionStartedAt || Date.now()));
         const selected = Number(btn.getAttribute("data-o"));
         const isCorrect = selected === Number(nq.correct_answer);
         activeEl.querySelectorAll(".option-btn").forEach((b) => {
@@ -2237,12 +2290,19 @@
         if (!state.training) state.training = { correct: 0, total: 0, history: [], queue: [] };
         state.training.total += 1;
         if (isCorrect) state.training.correct += 1;
-        state.training.history.push({ question: nq, raw: question, userAnswer: selected, isCorrect });
+        state.training.history.push({
+          question: nq,
+          raw: question,
+          userAnswer: selected,
+          isCorrect,
+          elapsedMs,
+        });
         updateTrainingLoopStats();
         if (feedback) {
           feedback.classList.remove("hidden");
           feedback.innerHTML =
             (isCorrect ? `<p class="training-ok">Correct!</p>` : `<p class="training-miss">Not quite.</p>`) +
+            `<p class="meta-line">Answered in ${escapeHtml(formatDurationMs(elapsedMs))}</p>` +
             (nq.explanation ? `<p>${escapeHtml(nq.explanation)}</p>` : "");
         }
         if (isCorrect) {
@@ -2257,6 +2317,7 @@
 
   function renderActiveTrainingQuestion(question) {
     clearTrainingReviewGate();
+    stopTrainingLiveTimer();
     const activeEl = document.getElementById("trainingLoopActive");
     if (!activeEl) return;
     const nq = normalizeQuestion(question);
@@ -2269,6 +2330,7 @@
       `<span class="training-round">MCQ${imp ? ` ${imp}` : ""}</span>` +
       `<span class="training-topic">${escapeHtml(topic)}</span>` +
       `<span class="training-qnum">Q${qNum}</span>` +
+      `<span class="training-timer" aria-live="off">0s</span>` +
       `</div>` +
       `<div class="quiz-question" data-qi="0">` +
       `<p class="q-text">${escapeHtml(nq.question)}</p>` +
@@ -2277,10 +2339,12 @@
       `<div class="training-feedback hidden"></div>`;
 
     bindTrainingQuestionOptions(activeEl, question, nq);
+    startTrainingLiveTimer(activeEl);
     scheduleChatSave();
   }
 
   function renderTrainingLoading() {
+    stopTrainingLiveTimer();
     const activeEl = document.getElementById("trainingLoopActive");
     if (!activeEl) return;
     activeEl.innerHTML = `<div class="training-loading"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
@@ -2387,6 +2451,7 @@
 
   async function finishTrainingAndNote() {
     clearTrainingReviewGate();
+    stopTrainingLiveTimer();
     if (state.training?.history?.length) {
       const results = state.training.history.map((h) => ({
         type: h.question.type,
@@ -3122,6 +3187,7 @@
 
   function resetNewChat() {
     clearTrainingReviewGate();
+    stopTrainingLiveTimer();
     // "Start new session" must always let the user escape a stuck run.
     setProcessing(false);
     state.projectId = null;
