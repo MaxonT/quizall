@@ -78,6 +78,9 @@
     quizModeSwitch: document.getElementById("quizModeSwitch"),
     quizModeHint: document.getElementById("quizModeHint"),
     mixExamPresets: document.getElementById("mixExamPresets"),
+    composerPlus: document.getElementById("composerPlus"),
+    composerPlusBtn: document.getElementById("composerPlusBtn"),
+    composerPlusMenu: document.getElementById("composerPlusMenu"),
     composerHint: document.getElementById("composerHint"),
     attachBtn: document.getElementById("attachBtn"),
     sendBtn: document.getElementById("sendBtn"),
@@ -458,7 +461,7 @@
   function setQuizMode(mode) {
     const next = mode === "testing" ? "testing" : "training";
     saveQuizMode(next);
-    els.quizModeSwitch?.querySelectorAll(".quiz-mode-opt").forEach((btn) => {
+    els.quizModeSwitch?.querySelectorAll(".plus-mode-btn").forEach((btn) => {
       const active = btn.getAttribute("data-mode") === next;
       btn.classList.toggle("is-active", active);
       btn.setAttribute("aria-checked", active ? "true" : "false");
@@ -635,12 +638,37 @@
     els.mixSummaryBtn?.setAttribute("aria-expanded", expanded ? "true" : "false");
   }
 
+  function closePlusMenu() {
+    els.composerPlusMenu?.classList.add("hidden");
+    els.composerPlus?.classList.remove("is-open");
+    els.composerPlusBtn?.setAttribute("aria-expanded", "false");
+  }
+
+  function openPlusMenu() {
+    els.composerPlusMenu?.classList.remove("hidden");
+    els.composerPlus?.classList.add("is-open");
+    els.composerPlusBtn?.setAttribute("aria-expanded", "true");
+  }
+
+  function togglePlusMenu() {
+    if (els.composerPlusMenu?.classList.contains("hidden")) openPlusMenu();
+    else closePlusMenu();
+  }
+
   function closeMixPanel() {
     els.mixPanel?.classList.add("hidden");
     els.mixPanel?.classList.remove("is-expanded");
     els.mixBtn?.classList.remove("is-active");
     els.mixBtn?.setAttribute("aria-expanded", "false");
     els.mixSummaryBtn?.setAttribute("aria-expanded", "false");
+  }
+
+  function openMixPanel() {
+    closePlusMenu();
+    els.mixPanel?.classList.remove("hidden");
+    setMixPanelExpanded(true);
+    els.mixBtn?.classList.add("is-active");
+    els.mixBtn?.setAttribute("aria-expanded", "true");
   }
 
   function updateMixPanelUi() {
@@ -652,7 +680,7 @@
     els.mixPresets?.querySelectorAll(".mix-preset").forEach((btn) => {
       btn.classList.toggle("is-active", btn.getAttribute("data-preset") === presetId);
     });
-    els.quizModeSwitch?.querySelectorAll(".quiz-mode-opt").forEach((btn) => {
+    els.quizModeSwitch?.querySelectorAll(".plus-mode-btn").forEach((btn) => {
       const active = btn.getAttribute("data-mode") === quizMode;
       btn.classList.toggle("is-active", active);
       btn.setAttribute("aria-checked", active ? "true" : "false");
@@ -672,7 +700,11 @@
         ? `${modeLabel}${examBit} · MCQ loop`
         : `${modeLabel}${examBit} · ${presetLabel} · ${counts.preview}`;
     if (els.mixPreview) els.mixPreview.textContent = preview;
-    if (els.mixBtn) els.mixBtn.title = `Mode: ${preview}`;
+    if (els.mixBtn) els.mixBtn.title = `Quiz setup · ${preview}`;
+    if (els.composerPlusBtn) {
+      els.composerPlusBtn.title = `Add · ${modeLabel}`;
+      els.composerPlusBtn.setAttribute("aria-label", `Add · ${modeLabel}`);
+    }
   }
 
   function clearComposerError() {
@@ -746,7 +778,8 @@
     els.attachBtn.disabled = disabled;
     els.composerInput.disabled = disabled;
     els.composerInput.readOnly = disabled;
-    // Mix panel stays usable while a run is in flight (settings are pre-send choices).
+    if (els.composerPlusBtn) els.composerPlusBtn.disabled = disabled;
+    // Mix / mode stay usable as pre-send choices while a run is in flight.
     if (els.mixBtn) els.mixBtn.disabled = false;
   }
 
@@ -756,6 +789,7 @@
     els.composerInput.readOnly = false;
     els.attachBtn.disabled = false;
     els.sendBtn.disabled = false;
+    if (els.composerPlusBtn) els.composerPlusBtn.disabled = false;
     if (els.mixBtn) els.mixBtn.disabled = false;
   }
 
@@ -769,7 +803,10 @@
   function setProcessing(on) {
     state.isProcessing = !!on;
     refreshComposerDisabled();
-    if (on) closeMixPanel();
+    if (on) {
+      closeMixPanel();
+      closePlusMenu();
+    }
   }
 
   function setResumedSession(on) {
@@ -3930,29 +3967,37 @@
       });
     }
 
+    if (els.composerPlusBtn && els.composerPlusMenu) {
+      els.composerPlusBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePlusMenu();
+      });
+      els.composerPlusMenu.addEventListener("click", (e) => e.stopPropagation());
+      document.addEventListener("click", (e) => {
+        if (els.composerPlus?.contains(e.target)) return;
+        closePlusMenu();
+      });
+    }
+
     if (els.mixBtn && els.mixPanel) {
       els.mixBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         const wasHidden = els.mixPanel.classList.contains("hidden");
-        if (wasHidden) {
-          els.mixPanel.classList.remove("hidden");
-          setMixPanelExpanded(true);
-          els.mixBtn.classList.add("is-active");
-          els.mixBtn.setAttribute("aria-expanded", "true");
-        } else {
-          closeMixPanel();
-        }
+        if (wasHidden) openMixPanel();
+        else closeMixPanel();
       });
       els.mixSummaryBtn?.addEventListener("click", (e) => {
         e.stopPropagation();
         setMixPanelExpanded(!els.mixPanel.classList.contains("is-expanded"));
       });
       document.addEventListener("click", (e) => {
-        if (els.mixPanel?.contains(e.target) || els.mixBtn?.contains(e.target)) return;
+        if (els.mixPanel?.contains(e.target) || els.mixBtn?.contains(e.target) || els.composerPlus?.contains(e.target)) {
+          return;
+        }
         closeMixPanel();
       });
       els.mixPanel.addEventListener("click", (e) => e.stopPropagation());
-      els.quizModeSwitch?.querySelectorAll(".quiz-mode-opt").forEach((btn) => {
+      els.quizModeSwitch?.querySelectorAll(".plus-mode-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           setQuizMode(btn.getAttribute("data-mode"));
@@ -3962,6 +4007,7 @@
         btn.addEventListener("click", () => {
           applyMixPreset(btn.getAttribute("data-preset"));
           setMixPanelExpanded(false);
+          closeMixPanel();
         });
       });
       els.mixTotalDown?.addEventListener("click", (e) => {
@@ -3993,7 +4039,10 @@
     });
 
     const fileInput = ensureFileInput();
-    els.attachBtn.addEventListener("click", () => fileInput.click());
+    els.attachBtn.addEventListener("click", () => {
+      closePlusMenu();
+      fileInput.click();
+    });
     fileInput.addEventListener("change", () => {
       const files = Array.from(fileInput.files || []);
       state.pendingFiles = state.pendingFiles.concat(files);
