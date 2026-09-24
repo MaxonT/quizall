@@ -4,6 +4,14 @@ AI-powered study sessions: turn notes, files, or YouTube into a **study plan →
 
 Paste text, upload PDF/DOCX, or drop a YouTube URL. QuizAll builds a structured plan, runs retrieval practice (Training) or mixed exams (Testing), then writes a study note you can share or revisit.
 
+### Try the hosted app (no API key setup)
+
+If you just want to use QuizAll, open the live site — no local install, no Anthropic API key required:
+
+**https://quiz-all.com/**
+
+The sections below are for running or developing the project yourself.
+
 ---
 
 ## Quick start (local)
