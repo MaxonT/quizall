@@ -1,3 +1,4 @@
+import "./env.js";
 /**
  * Database Adapter - Supports both SQLite and PostgreSQL
  * Automatically selects based on environment variables:
@@ -371,6 +372,15 @@ CREATE TABLE IF NOT EXISTS coupon_redemptions (
 );
 CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_user ON coupon_redemptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_coupon ON coupon_redemptions(coupon_id);
+
+CREATE TABLE IF NOT EXISTS oauth_pkce_states (
+  state TEXT PRIMARY KEY,
+  code_verifier TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  return_origin TEXT,
+  expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_oauth_pkce_expires ON oauth_pkce_states(expires_at);
 `);
 
   // SQLite helper functions
@@ -446,16 +456,8 @@ CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_coupon ON coupon_redemptions(c
     console.error("[quizall] Failed to ensure demo user:", err);
   }
 
-  // Seed the friends & family coupon
-  try {
-    sqliteDb.prepare(`
-      INSERT OR IGNORE INTO coupons (code, plan, max_redemptions, duration_days, active)
-      VALUES ('QUIZALL-DEE1636310A6', 'monthly', 10, 30, 1)
-    `).run();
-    console.log("[quizall] Friends & family coupon ensured");
-  } catch (err) {
-    console.error("[quizall] Failed to seed coupon:", err);
-  }
+  // Public sample codes must not grant paid access on an operator's instance.
+  sqliteDb.prepare("UPDATE coupons SET active = 0 WHERE code IN ('QUIZALL-DEE1636310A6', 'QUIZALL-YEAR-F3C8A201', 'QUIZALL-TESTER-PRO')").run();
 
   // SQLite ensureUser function
   dbModule.ensureUser = function(userId, email = null) {

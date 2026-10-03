@@ -6,6 +6,8 @@
 
 import { Router } from "express";
 import { db } from "../lib/db.js";
+import { requireAuth } from "./auth.js";
+import { requireAdmin } from "../middleware/adminAuth.js";
 
 export const analyticsRouter = Router();
 
@@ -48,9 +50,9 @@ analyticsRouter.post("/track", (req, res) => {
 
 /**
  * GET /api/analytics/funnel
- * Returns subscription funnel metrics (for internal dashboards)
+ * Returns subscription funnel metrics (admin only)
  */
-analyticsRouter.get("/funnel", (req, res) => {
+analyticsRouter.get("/funnel", requireAuth, requireAdmin, (req, res) => {
   try {
     const timeframe = req.query.timeframe || '24h';
     const hours = timeframe === '7d' ? 168 : timeframe === '30d' ? 720 : 24;

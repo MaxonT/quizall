@@ -3,6 +3,7 @@
   if (!data) return;
 
   const DISMISSED_BADGES_KEY = "quizall.science.dismissedBadges";
+  const DISABLE_ALL_BADGES_KEY = "quizall.science.disableAllBadges";
   const PROJECT_FLAGS_KEY = "quizall.science.projectFlags";
   const PENDING_BADGE_KEY = "quizall.science.pendingBadge";
 
@@ -37,6 +38,33 @@
     }
   };
 
+  const SEMANTIC_CATEGORIES = {
+    mechanism: { id: "mechanism", label: "Mechanism" },
+    action: { id: "action", label: "Action" },
+    evidence: { id: "evidence", label: "Evidence" },
+    outcome: { id: "outcome", label: "Outcome" },
+    reference: { id: "reference", label: "Reference" }
+  };
+
+  const SEMANTIC_RULES = {
+    mechanism: [
+      /schema|cognitive|memory|encoding|retrieval|zpd|flow|forgetting|spacing|transfer|calibration|iteration|boundary|model|mechanism|gradient|workload|load/gi,
+      /认知|记忆|编码|提取|检索|图式|负荷|遗忘|间隔|迁移|边界|模型|机制/gi
+    ],
+    action: [
+      /upload|generate|practice|review|activate|track|test|explain|quiz|mindmap|apply|operational|workflow|session|output/gi,
+      /上传|生成|练习|复习|激活|追踪|测试|解释|测验|思维导图|工作流|输出/gi
+    ],
+    evidence: [
+      /study|studies|research|effect|finding|evidence|meta|experiment|replicated|paper|journal|result/gi,
+      /研究|证据|效应|发现|实验|论文|期刊|结果|元分析/gi
+    ],
+    outcome: [
+      /retention|durable|improve|improves|performance|mastery|accuracy|generalization|stability|long-term|better/gi,
+      /保持|长期|提升|效果|表现|掌握|准确|泛化|稳定/gi
+    ]
+  };
+
   function safeJsonParse(value, fallback) {
     try {
       if (!value) return fallback;
@@ -67,6 +95,18 @@
     const dismissed = getDismissedBadges();
     dismissed[badgeId] = true;
     writeStore(DISMISSED_BADGES_KEY, dismissed);
+  }
+
+  function areAllBadgesDisabled() {
+    return localStorage.getItem(DISABLE_ALL_BADGES_KEY) === "1";
+  }
+
+  function setAllBadgesDisabled(disabled) {
+    if (disabled) {
+      localStorage.setItem(DISABLE_ALL_BADGES_KEY, "1");
+      return;
+    }
+    localStorage.removeItem(DISABLE_ALL_BADGES_KEY);
   }
 
   function getProjectFlags(projectId) {
@@ -111,7 +151,7 @@
 
   function toScienceUrl(stepId) {
     const hash = stepId ? "#" + stepId : "";
-    return "/science" + hash;
+    return "/science/index.html" + hash;
   }
 
   function ensureModalStyles() {
@@ -163,6 +203,69 @@
         margin: 10px 0;
         line-height: 1.6;
         color: rgba(226, 232, 240, 0.95);
+      }
+      .qa-science-modal-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 10px 0 2px;
+      }
+      .qa-sem-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        border: 1px solid var(--sem-line, rgba(148, 163, 184, 0.4));
+        background: var(--sem-bg, rgba(15, 23, 42, 0.46));
+        color: var(--sem-color, #cbd5e1);
+        padding: 3px 9px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        line-height: 1;
+      }
+      .qa-sem-chip::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: currentColor;
+        opacity: 0.94;
+      }
+      .qa-sem-chip.qa-cat-mechanism {
+        --sem-bg: rgba(167, 139, 250, 0.18);
+        --sem-line: rgba(167, 139, 250, 0.42);
+        --sem-color: #c4b5fd;
+      }
+      .qa-sem-chip.qa-cat-action {
+        --sem-bg: rgba(34, 211, 238, 0.16);
+        --sem-line: rgba(34, 211, 238, 0.38);
+        --sem-color: #67e8f9;
+      }
+      .qa-sem-chip.qa-cat-evidence {
+        --sem-bg: rgba(251, 191, 36, 0.16);
+        --sem-line: rgba(251, 191, 36, 0.4);
+        --sem-color: #fcd34d;
+      }
+      .qa-sem-chip.qa-cat-outcome {
+        --sem-bg: rgba(52, 211, 153, 0.16);
+        --sem-line: rgba(52, 211, 153, 0.38);
+        --sem-color: #6ee7b7;
+      }
+      .qa-sem-chip.qa-cat-reference {
+        --sem-bg: rgba(251, 113, 133, 0.16);
+        --sem-line: rgba(251, 113, 133, 0.36);
+        --sem-color: #fda4af;
+      }
+      .qa-science-anno {
+        display: inline-flex;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .qa-science-anno .qa-science-anno-text {
+        flex: 1 1 auto;
+        min-width: 0;
       }
       .qa-science-modal ul {
         margin: 12px 0 0;
@@ -231,6 +334,20 @@
         justify-content: space-between;
         gap: 10px;
         align-items: center;
+      }
+      .qa-science-badge-optout {
+        margin-top: 8px;
+        font-size: 0.78rem;
+        color: rgba(203, 213, 225, 0.88);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        user-select: none;
+      }
+      .qa-science-badge-optout input {
+        width: 14px;
+        height: 14px;
+        accent-color: #22d3ee;
       }
       .qa-science-badge-link {
         color: #67e8f9;
@@ -324,6 +441,7 @@
       '</div>' +
       '<p id="qaScienceModalTagline"></p>' +
       '<p id="qaScienceModalDescription"></p>' +
+      '<div id="qaScienceModalLegend" class="qa-science-modal-legend" aria-label="Semantic categories"></div>' +
       '<ul id="qaScienceModalFindings"></ul>' +
       '<div class="qa-science-citations">' +
       '<strong>Top citations</strong>' +
@@ -358,32 +476,94 @@
     const stepEl = modal.querySelector("#qaScienceModalStep");
     const taglineEl = modal.querySelector("#qaScienceModalTagline");
     const descEl = modal.querySelector("#qaScienceModalDescription");
+    const legendEl = modal.querySelector("#qaScienceModalLegend");
     const findingsEl = modal.querySelector("#qaScienceModalFindings");
     const citationsEl = modal.querySelector("#qaScienceModalCitations");
 
-    if (!titleEl || !stepEl || !taglineEl || !descEl || !findingsEl || !citationsEl) return;
+    if (!titleEl || !stepEl || !taglineEl || !descEl || !legendEl || !findingsEl || !citationsEl) return;
 
     stepEl.textContent = "STEP " + step.number;
     stepEl.style.color = step.color.accent;
     titleEl.textContent = step.title;
-    taglineEl.textContent = step.tagline;
-    descEl.textContent = step.description;
+    taglineEl.innerHTML = renderSemanticLine(step.tagline, "action");
+    descEl.innerHTML = renderSemanticLine(step.description, "mechanism");
+    legendEl.innerHTML = buildSemanticLegend();
 
     findingsEl.innerHTML = "";
     step.keyFindings.forEach(function (finding) {
       const li = document.createElement("li");
-      li.textContent = finding;
+      li.innerHTML = renderSemanticLine(finding, "evidence");
       findingsEl.appendChild(li);
     });
 
     citationsEl.innerHTML = "";
     step.citations.slice(0, 3).forEach(function (citation) {
       const li = document.createElement("li");
-      li.textContent = citation;
+      li.innerHTML = renderSemanticLine(citation, "reference");
       citationsEl.appendChild(li);
     });
 
     modal.classList.add("open");
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function scoreCategory(textValue, categoryId) {
+    const rules = SEMANTIC_RULES[categoryId] || [];
+    const input = String(textValue || "");
+    let score = 0;
+    rules.forEach(function (rule) {
+      const matches = input.match(rule);
+      if (matches && matches.length) score += matches.length;
+    });
+    return score;
+  }
+
+  function resolveSemanticCategory(textValue, fallbackId) {
+    const normalizedFallback = SEMANTIC_CATEGORIES[fallbackId] ? fallbackId : "mechanism";
+    if (normalizedFallback === "reference") return SEMANTIC_CATEGORIES.reference;
+    let bestId = normalizedFallback;
+    let bestScore = 0;
+    ["mechanism", "action", "evidence", "outcome"].forEach(function (categoryId) {
+      const score = scoreCategory(textValue, categoryId);
+      if (score > bestScore) {
+        bestScore = score;
+        bestId = categoryId;
+      }
+    });
+    return SEMANTIC_CATEGORIES[bestScore > 0 ? bestId : normalizedFallback];
+  }
+
+  function renderSemanticChip(categoryId) {
+    const category = SEMANTIC_CATEGORIES[categoryId] || SEMANTIC_CATEGORIES.mechanism;
+    return '<span class="qa-sem-chip qa-cat-' + category.id + '">' + category.label + '</span>';
+  }
+
+  function buildSemanticLegend() {
+    return [
+      renderSemanticChip("mechanism"),
+      renderSemanticChip("action"),
+      renderSemanticChip("evidence"),
+      renderSemanticChip("outcome"),
+      renderSemanticChip("reference")
+    ].join("");
+  }
+
+  function renderSemanticLine(textValue, fallbackId) {
+    const category = resolveSemanticCategory(textValue, fallbackId);
+    return (
+      '<span class="qa-science-anno">' +
+        renderSemanticChip(category.id) +
+        '<span class="qa-science-anno-text">' + escapeHtml(textValue) + '</span>' +
+      '</span>'
+    );
   }
 
   function renderStepGrid(container, options) {
@@ -446,6 +626,7 @@
   function showBadge(badgeId, options) {
     const badge = BADGES[badgeId];
     if (!badge) return false;
+    if (areAllBadgesDisabled()) return false;
     if (isBadgeDismissed(badgeId)) return false;
 
     const opts = options || {};
@@ -463,13 +644,18 @@
       '<div class="qa-science-badge-actions">' +
       '<a class="qa-science-badge-link" href="' + stepLink + '">Read the full research -></a>' +
       '<button type="button" class="qa-science-badge-dismiss" data-dismiss="1">Dismiss</button>' +
-      '</div>';
+      '</div>' +
+      '<label class="qa-science-badge-optout"><input type="checkbox" data-disable-all="1" />Do not show this again</label>';
 
     host.appendChild(card);
 
     const dismissBtn = card.querySelector("[data-dismiss='1']");
     if (dismissBtn) {
       dismissBtn.addEventListener("click", function () {
+        const disableAllInput = card.querySelector("[data-disable-all='1']");
+        if (disableAllInput && disableAllInput.checked) {
+          setAllBadgesDisabled(true);
+        }
         dismissBadge(badgeId);
         host.innerHTML = "";
       });
@@ -495,6 +681,36 @@
     return pending;
   }
 
+  function renderSciencePrescription({ weakTopics, dueReviews, lastSession } = {}) {
+    const due = Number(dueReviews) || 0;
+    if (due > 0) {
+      return {
+        step: 6,
+        text: `You have ${due} topics due for spaced review. Open your wrong-answer queue before they decay.`,
+        href: toScienceUrl("step06"),
+      };
+    }
+    if (weakTopics?.length) {
+      return {
+        step: 4,
+        text: `Weak on ${weakTopics.slice(0, 2).join(", ")} — use Training mode for variable practice (Step 04).`,
+        href: toScienceUrl("step04"),
+      };
+    }
+    if (lastSession === "quiz") {
+      return {
+        step: 3,
+        text: "Great retrieval session. Schedule a follow-up quiz within 48 hours (Step 03).",
+        href: toScienceUrl("step03"),
+      };
+    }
+    return {
+      step: 1,
+      text: "Start with structure: upload materials and build a study plan (Step 01).",
+      href: toScienceUrl("step01"),
+    };
+  }
+
   window.quizallScience = {
     BADGES: BADGES,
     toScienceUrl: toScienceUrl,
@@ -503,10 +719,13 @@
     showBadge: showBadge,
     isBadgeDismissed: isBadgeDismissed,
     dismissBadge: dismissBadge,
+    areAllBadgesDisabled: areAllBadgesDisabled,
+    setAllBadgesDisabled: setAllBadgesDisabled,
     markProjectFlags: markProjectFlags,
     getProjectFlags: getProjectFlags,
     deriveProjectActivations: deriveProjectActivations,
     queuePendingBadge: queuePendingBadge,
-    consumePendingBadge: consumePendingBadge
+    consumePendingBadge: consumePendingBadge,
+    renderSciencePrescription: renderSciencePrescription,
   };
 })();

@@ -1,22 +1,11 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const checks = [];
-
-checks.push(() => fs.existsSync(path.join(__dirname, "..", "package.json")));
-checks.push(() => fs.existsSync(path.join(__dirname, "..", ".env.example")));
-checks.push(() => fs.existsSync(path.join(__dirname, "..", "src", "server.js")));
-checks.push(() => true);
-checks.push(() => fs.existsSync(path.join(__dirname, "..", "src", "routes", "auth.js")));
-checks.push(() => fs.existsSync(path.join(__dirname, "..", "Dockerfile")));
-checks.push(() => fs.existsSync(path.join(__dirname, "..", "migrations")));
-checks.push(() => fs.existsSync(path.join(__dirname, "..", "scripts")));
-checks.push(() => true);
-checks.push(() => true);
-
-const passed = checks.map(fn => fn()).every(Boolean);
-console.log(JSON.stringify({ ok: passed, total: checks.length }));
-process.exit(passed ? 0 : 1);
+import "../src/lib/env.js";
+const base = process.env.SELFTEST_BASE_URL || `http://localhost:${process.env.PORT || 8080}`;
+try {
+  const response = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(5000) });
+  const body = await response.json();
+  if (!response.ok || body.ok !== true) throw new Error(`HTTP ${response.status}`);
+  console.log("Backend health check passed.");
+} catch (error) {
+  console.error(`Backend health check failed: ${error.message}`);
+  process.exitCode = 1;
+}

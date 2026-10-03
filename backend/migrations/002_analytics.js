@@ -27,6 +27,39 @@ async function dbRun(sql, params = []) {
   db.prepare(sql).run(...params);
 }
 
+async function ensurePgColumn(table, column, definition) {
+  if (!USE_POSTGRES) return;
+  await dbExec(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column} ${definition};`);
+}
+
+async function ensurePgSchemaCompatibility() {
+  if (!USE_POSTGRES) return;
+  // Backfill legacy PostgreSQL schemas where tables exist but columns are missing.
+  await ensurePgColumn('analytics_users', 'email', 'TEXT');
+  await ensurePgColumn('analytics_users', 'source', "TEXT DEFAULT 'organic'");
+  await ensurePgColumn('analytics_users', 'timezone', "TEXT DEFAULT 'America/New_York'");
+  await ensurePgColumn('analytics_users', 'country', "TEXT DEFAULT 'US'");
+  await ensurePgColumn('analytics_users', 'device_type', "TEXT DEFAULT 'desktop'");
+  await ensurePgColumn('analytics_users', 'browser', 'TEXT');
+  await ensurePgColumn('analytics_users', 'is_active', 'INTEGER DEFAULT 1');
+  await ensurePgColumn('analytics_users', 'last_active_at', 'TEXT');
+  await ensurePgColumn('analytics_users', 'metadata', "TEXT DEFAULT '{}'");
+
+  await ensurePgColumn('analytics_sessions', 'session_end', 'TEXT');
+  await ensurePgColumn('analytics_sessions', 'duration_seconds', 'INTEGER DEFAULT 0');
+  await ensurePgColumn('analytics_sessions', 'page_views', 'INTEGER DEFAULT 1');
+  await ensurePgColumn('analytics_sessions', 'device_type', 'TEXT');
+  await ensurePgColumn('analytics_sessions', 'browser', 'TEXT');
+  await ensurePgColumn('analytics_sessions', 'referrer', 'TEXT');
+
+  await ensurePgColumn('analytics_behavior', 'hover_time_ms', 'INTEGER DEFAULT 0');
+  await ensurePgColumn('analytics_behavior', 'bounce_probability', 'REAL DEFAULT 0.15');
+  await ensurePgColumn('analytics_behavior', 'return_frequency_days', 'REAL DEFAULT 3.5');
+  await ensurePgColumn('analytics_behavior', 'engagement_score', 'REAL DEFAULT 50.0');
+
+  await ensurePgColumn('analytics_daily', 'created_at', 'TEXT');
+}
+
 async function tableExists(name) {
   if (USE_POSTGRES) {
     const r = await dbGet(
@@ -58,7 +91,6 @@ CREATE TABLE IF NOT EXISTS analytics_users (
 );
 CREATE INDEX IF NOT EXISTS idx_analytics_users_created ON analytics_users(created_at);
 CREATE INDEX IF NOT EXISTS idx_analytics_users_timezone ON analytics_users(timezone);
-CREATE INDEX IF NOT EXISTS idx_analytics_users_email ON analytics_users(email);
 
 CREATE TABLE IF NOT EXISTS analytics_sessions (
   id TEXT PRIMARY KEY,
@@ -196,6 +228,11 @@ export async function up() {
     }
 
     await dbExec(USE_POSTGRES ? PG_TABLES : SQLITE_TABLES);
+    await ensurePgSchemaCompatibility();
+    if (USE_POSTGRES) {
+      // Build after compatibility patch so legacy schemas missing email won't fail.
+      await dbExec(`CREATE INDEX IF NOT EXISTS idx_analytics_users_email ON analytics_users(email);`);
+    }
     console.log('[migration 002] ✅ Analytics tables created');
 
     if (USE_POSTGRES) {

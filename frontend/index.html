@@ -93,7 +93,150 @@
       flex-wrap: wrap;
       position: relative;
       width: 100%;
+      margin-bottom: 1rem;
     }
+    .landing-composer {
+      max-width: 680px;
+      margin: 1.5rem auto 0.35rem;
+      width: 100%;
+      position: relative;
+      z-index: 2;
+    }
+    .landing-composer::before {
+      content: "";
+      position: absolute;
+      inset: -10px -6px;
+      border-radius: 34px;
+      background: linear-gradient(90deg, rgba(139, 92, 246, 0.5), rgba(6, 182, 212, 0.4), rgba(34, 211, 238, 0.5), rgba(167, 139, 250, 0.45), rgba(139, 92, 246, 0.5));
+      background-size: 400% 100%;
+      animation: landingComposerGlowLoop 4.5s linear infinite;
+      filter: blur(18px);
+      opacity: 0.62;
+      z-index: 0;
+      pointer-events: none;
+    }
+    @keyframes landingComposerGlowLoop {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 400% 50%; }
+    }
+    @keyframes landingComposerBorderLoop {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 400% 50%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .landing-composer::before,
+      .landing-composer-inner::before {
+        animation: none;
+      }
+    }
+    .landing-composer-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 8px 8px 18px;
+      min-height: 56px;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: linear-gradient(180deg, rgba(22, 22, 28, 0.95) 0%, rgba(12, 12, 16, 0.98) 100%);
+      backdrop-filter: blur(20px) saturate(1.15);
+      -webkit-backdrop-filter: blur(20px) saturate(1.15);
+      box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 0 32px rgba(139, 92, 246, 0.22);
+      transition: box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease, transform 0.35s ease;
+    }
+    .landing-composer-inner::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(90deg, #8b5cf6, #06b6d4, #22d3ee, #a78bfa, #8b5cf6);
+      background-size: 400% 100%;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0.88;
+      pointer-events: none;
+      animation: landingComposerBorderLoop 3.5s linear infinite;
+    }
+    .landing-composer-inner:focus-within {
+      border-color: transparent;
+      transform: translateY(-2px);
+      box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(139, 92, 246, 0.35),
+        0 12px 48px rgba(139, 92, 246, 0.28);
+    }
+    .landing-composer-inner:focus-within::before {
+      opacity: 1;
+      animation-duration: 2.5s;
+    }
+    .landing-composer-inner textarea {
+      flex: 1;
+      border: none !important;
+      background: transparent !important;
+      resize: none;
+      font: inherit;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: var(--text);
+      min-height: 24px;
+      max-height: 120px;
+      padding: 10px 0;
+      margin: 0;
+      outline: none !important;
+      box-shadow: none !important;
+      align-self: center;
+    }
+    .landing-composer-inner textarea::placeholder {
+      color: rgba(147, 160, 192, 0.72);
+    }
+    .landing-composer-actions {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      align-self: center;
+    }
+    .landing-composer-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(145deg, #9b6dff 0%, #06b6d4 100%);
+      color: #fff;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.45);
+      transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+    }
+    .landing-composer-btn:hover {
+      transform: scale(1.06) translateY(-1px);
+      box-shadow: 0 8px 28px rgba(139, 92, 246, 0.55);
+    }
+    .landing-composer-hint {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin: 10px 0 0;
+    }
+    html[data-theme="light"] .landing-composer::before {
+      opacity: 0.38;
+      filter: blur(14px);
+    }
+    html[data-theme="light"] .landing-composer-inner {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(251, 251, 252, 0.98) 100%);
+      box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(0, 0, 0, 0.06),
+        0 0 24px rgba(139, 92, 246, 0.14);
+    }
+    .auth-section--hero { padding-top: 0.5rem; }
     .btn-hero {
       display: inline-flex;
       align-items: center;
@@ -590,7 +733,7 @@
       align-items: center;
       gap: 0.45rem;
       padding: 0.72rem 1.02rem;
-      border-radius: 12px;
+      border-radius: 14px;
       border: 1px solid var(--border);
       background: rgba(11,16,36,0.72);
       color: var(--text);
@@ -605,13 +748,41 @@
       box-shadow: 0 8px 18px rgba(139,92,246,0.22);
     }
     .member-action.primary {
-      background: linear-gradient(135deg, var(--primary), rgba(6,182,212,0.9));
-      border: none;
-      color: #fff;
-      box-shadow: 0 8px 20px rgba(139,92,246,0.3);
+      color: #f8fdff;
+      border: 1px solid rgba(148, 231, 255, 0.46);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+        linear-gradient(135deg, rgba(124, 58, 237, 0.68), rgba(14, 165, 233, 0.66), rgba(45, 212, 191, 0.56));
+      backdrop-filter: blur(16px) saturate(138%);
+      -webkit-backdrop-filter: blur(16px) saturate(138%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -10px 18px rgba(8, 18, 42, 0.22),
+        0 12px 28px rgba(14, 165, 233, 0.22);
     }
     .member-action.primary:hover {
-      box-shadow: 0 10px 26px rgba(139,92,246,0.4);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.56),
+        inset 0 -12px 20px rgba(8, 18, 42, 0.24),
+        0 16px 34px rgba(14, 165, 233, 0.28);
+    }
+    .command-sub {
+      color: var(--muted);
+      margin: 0 0 1.15rem;
+      max-width: 760px;
+      line-height: 1.55;
+    }
+    .today-strip {
+      padding: 12px 18px;
+      margin: 0 0 1.5rem;
+      border-radius: 18px;
+      border: 1px solid rgba(34, 211, 238, 0.28);
+      background:
+        radial-gradient(80% 100% at 0% 50%, rgba(34, 211, 238, 0.1), transparent 70%),
+        linear-gradient(160deg, rgba(15, 22, 46, 0.92), rgba(11, 16, 36, 0.88));
+      box-shadow: 0 10px 28px rgba(5, 8, 20, 0.32);
+      font-size: 0.9rem;
+      color: var(--muted);
     }
     body.logged-in-home #dashboardView { order: 0; }
     body.logged-in-home #landingView { order: 1; }
@@ -886,14 +1057,27 @@
       position: relative;
     }
     .stat-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
+      position: relative;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      border-radius: 22px;
+      background:
+        radial-gradient(100% 100% at 0% 0%, rgba(34, 211, 238, 0.1), transparent 55%),
+        radial-gradient(80% 80% at 100% 100%, rgba(139, 92, 246, 0.12), transparent 60%),
+        linear-gradient(160deg, rgba(15, 22, 46, 0.96), rgba(11, 16, 36, 0.92));
+      box-shadow: 0 16px 32px rgba(5, 8, 20, 0.35);
       padding: 1.5rem;
       display: flex;
       flex-direction: column;
       gap: 6px;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      pointer-events: none;
     }
     .stat-label {
       font-size: 0.85rem;
@@ -945,6 +1129,9 @@
       box-shadow: var(--shadow);
       padding: 1rem 1.1rem 1.25rem;
     }
+    .heatmap-section-preview {
+      margin-top: 0.6rem;
+    }
     .heatmap-head {
       display: flex;
       align-items: flex-start;
@@ -981,6 +1168,9 @@
       grid-template-columns: repeat(20, minmax(0, 1fr));
       gap: 5px;
     }
+    .heatmap-section-preview .heatmap-grid {
+      grid-template-columns: repeat(28, minmax(0, 1fr));
+    }
     .heatmap-cell {
       width: 100%;
       aspect-ratio: 1 / 1;
@@ -1005,12 +1195,17 @@
       gap: 6px;
     }
     .heatmap-dot {
-      width: 11px;
-      height: 11px;
+      width: 12px;
+      height: 12px;
       border-radius: 3px;
-      border: 1px solid rgba(148,163,184,0.3);
-      background: rgba(148,163,184,0.1);
+      flex-shrink: 0;
+      border: 1px solid rgba(148,163,184,0.35);
+      background: rgba(148,163,184,0.18);
     }
+    /* Legend dots need stronger colors than the large cells */
+    .heatmap-dot.heatmap-l1 { background: rgba(14,165,233,0.72); border-color: rgba(14,165,233,0.9); }
+    .heatmap-dot.heatmap-l2 { background: rgba(45,212,191,0.78); border-color: rgba(45,212,191,0.95); }
+    .heatmap-dot.heatmap-l3 { background: rgba(34,197,94,0.82); border-color: rgba(34,197,94,1); }
 
     /* ---------- History Table ---------- */
     .history-section { margin-top: 2rem; }
@@ -1069,59 +1264,146 @@
       color: var(--err);
     }
 
-    /* ---------- Science Widget ---------- */
-    .science-widget {
+    /* ---------- Science Nudge (warm rotating tips) ---------- */
+    .science-widget.science-nudge {
+      position: relative;
       margin-top: 1.4rem;
-      border: 1px solid rgba(148,163,184,0.28);
-      border-radius: 18px;
-      padding: 14px;
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid rgba(251, 191, 136, 0.28);
+      border-radius: 24px;
       background:
-        radial-gradient(100% 140% at 0% 0%, rgba(34,211,238,0.12), transparent 60%),
-        linear-gradient(160deg, rgba(10,15,34,0.94), rgba(8,12,28,0.94));
-      box-shadow: 0 12px 26px rgba(2, 6, 23, 0.35);
+        radial-gradient(120% 100% at 0% 0%, rgba(251, 191, 136, 0.14), transparent 55%),
+        radial-gradient(90% 90% at 100% 100%, rgba(196, 181, 253, 0.16), transparent 60%),
+        linear-gradient(155deg, rgba(28, 20, 38, 0.96), rgba(18, 14, 28, 0.94));
+      box-shadow:
+        0 18px 40px rgba(8, 6, 16, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
-    .science-widget-head {
+    .science-nudge-glow {
+      position: absolute;
+      inset: -40% -20% auto;
+      height: 120px;
+      background: radial-gradient(ellipse at 30% 50%, rgba(251, 191, 136, 0.22), transparent 70%);
+      pointer-events: none;
+      animation: scienceNudgeGlow 6s ease-in-out infinite alternate;
+    }
+    @keyframes scienceNudgeGlow {
+      0% { opacity: 0.55; transform: translateX(0); }
+      100% { opacity: 1; transform: translateX(12px); }
+    }
+    .science-nudge-inner {
+      position: relative;
+      z-index: 1;
+      padding: 18px 20px 16px;
+    }
+    .science-nudge-meta {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .science-nudge-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fde68a;
+      border: 1px solid rgba(251, 191, 136, 0.35);
+      background: rgba(251, 191, 136, 0.1);
+    }
+    .science-nudge-badge-icon {
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+    .science-nudge-dots {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 10px 0 2px;
+    }
+    .science-nudge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      border: none;
+      padding: 0;
+      background: rgba(148, 163, 184, 0.35);
+      cursor: pointer;
+      transition: transform 0.25s ease, background 0.25s ease, width 0.25s ease;
+    }
+    .science-nudge-dot.is-active {
+      width: 18px;
+      background: linear-gradient(90deg, #fbbf24, #c4b5fd);
+    }
+    .science-nudge-dot:hover {
+      transform: scale(1.15);
+    }
+    .science-nudge-quote-wrap {
+      min-height: 5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 16px;
+    }
+    .science-nudge-quote {
+      margin: 0 auto;
+      max-width: 38rem;
+      text-align: center;
+      font-size: 1.1rem;
+      line-height: 1.7;
+      font-weight: 600;
+      color: rgba(255, 253, 248, 0.97);
+      letter-spacing: 0.015em;
+      text-shadow: 0 0 28px rgba(251, 191, 136, 0.14);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+    .science-nudge-quote.is-fading {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    .science-nudge-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 10px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
     }
-    .science-widget-head h2 {
-      margin: 0;
-      font-size: 1.05rem;
-      font-weight: 800;
-    }
-    .science-widget-head p {
-      margin: 2px 0 0;
-      font-size: 0.84rem;
-      color: var(--muted);
+    .science-nudge-step {
+      font-size: 0.78rem;
+      color: rgba(203, 213, 225, 0.82);
+      font-weight: 600;
     }
     .science-widget-link {
       text-decoration: none;
-      border: 1px solid rgba(148,163,184,0.36);
-      color: #c7d2fe;
-      border-radius: 9px;
+      border-radius: 12px;
       font-size: 0.84rem;
-      padding: 7px 10px;
+      padding: 8px 12px;
       font-weight: 700;
-      background: rgba(15,23,42,0.72);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
     }
-    .science-widget-link:hover {
-      border-color: rgba(34,211,238,0.6);
-      color: #a5f3fc;
+    .science-nudge .science-widget-link {
+      border-color: rgba(251, 191, 136, 0.32);
+      color: #fde68a;
+      background: rgba(30, 22, 40, 0.65);
     }
-    #scienceWidgetGrid .qa-science-step-btn {
-      min-height: 70px;
-      padding: 8px 7px;
+    .science-nudge .science-widget-link:hover {
+      border-color: rgba(251, 191, 136, 0.55);
+      color: #fff7ed;
+      box-shadow: 0 6px 20px rgba(251, 191, 136, 0.18);
     }
-    #scienceWidgetGrid .qa-science-step-btn .txt {
-      font-size: 0.74rem;
-      line-height: 1.25;
-    }
-    #scienceWidgetGrid .qa-science-step-btn .state {
-      font-size: 0.68rem;
+    @media (prefers-reduced-motion: reduce) {
+      .science-nudge-glow { animation: none; }
+      .science-nudge-quote { transition: none; }
     }
 
     /* ---------- Empty State ---------- */
@@ -1233,20 +1515,30 @@
     html[data-theme="light"] .output-quote-icon {
       box-shadow: 0 8px 16px rgba(109,40,217,0.2);
     }
-    html[data-theme="light"] .science-widget {
-      border-color: rgba(148,163,184,0.34);
+    html[data-theme="light"] .science-widget.science-nudge {
+      border-color: rgba(251, 191, 136, 0.45);
       background:
-        radial-gradient(120% 130% at 0% 0%, rgba(56,189,248,0.11), transparent 58%),
-        linear-gradient(155deg, rgba(255,255,255,0.98), rgba(246,249,255,0.95));
-      box-shadow: 0 12px 24px rgba(15,23,42,0.11);
+        radial-gradient(120% 100% at 0% 0%, rgba(254, 243, 199, 0.55), transparent 55%),
+        radial-gradient(90% 90% at 100% 100%, rgba(237, 233, 254, 0.5), transparent 60%),
+        linear-gradient(155deg, rgba(255, 253, 248, 0.98), rgba(250, 245, 255, 0.96));
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
     }
-    html[data-theme="light"] .science-widget-head p {
-      color: #475569;
+    html[data-theme="light"] .science-nudge-badge {
+      color: #b45309;
+      border-color: rgba(251, 191, 136, 0.5);
+      background: rgba(255, 251, 235, 0.9);
     }
-    html[data-theme="light"] .science-widget-link {
-      border-color: rgba(148,163,184,0.45);
+    html[data-theme="light"] .science-nudge-quote {
       color: #1e293b;
-      background: rgba(255,255,255,0.9);
+      text-shadow: 0 0 20px rgba(251, 191, 136, 0.2);
+    }
+    html[data-theme="light"] .science-nudge-step {
+      color: #64748b;
+    }
+    html[data-theme="light"] .science-nudge .science-widget-link {
+      border-color: rgba(251, 191, 136, 0.45);
+      color: #92400e;
+      background: rgba(255, 255, 255, 0.92);
     }
     html[data-theme="light"] .logo-marquee-wrap {
       border-color: rgba(109,40,217,0.2);
@@ -1300,6 +1592,21 @@
       border-color: rgba(109,40,217,0.38);
       box-shadow: 0 8px 18px rgba(109,40,217,0.14);
     }
+    html[data-theme="light"] .today-strip {
+      border-color: rgba(14, 165, 183, 0.28);
+      background:
+        radial-gradient(80% 100% at 0% 50%, rgba(14, 165, 183, 0.1), transparent 70%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(244, 247, 255, 0.92));
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+    html[data-theme="light"] .stat-card {
+      border-color: rgba(109, 40, 217, 0.18);
+      background:
+        radial-gradient(100% 100% at 0% 0%, rgba(14, 165, 183, 0.1), transparent 55%),
+        radial-gradient(80% 80% at 100% 100%, rgba(109, 40, 217, 0.1), transparent 60%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 255, 0.94));
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+    }
     /* ---------- Responsive ---------- */
     @media (max-width: 640px) {
       .hero {
@@ -1347,9 +1654,10 @@
     <nav class="controls">
       <div class="navlinks">
         <a href="index.html" class="active" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="create.html" data-i18n="nav.create">Exam Prep Workspace</a>
-        <a href="/science" class="nav-science-link" data-i18n="nav.science">Science</a>
+        <a href="create.html" data-i18n="nav.create">Workspace</a>
+        <a href="/science/index.html" class="nav-science-link" data-i18n="nav.science">Science</a>
         <a href="history.html" data-i18n="nav.history">History</a>
+        <a href="subscription.html" data-i18n="nav.subscription">Subscription</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
       </div>
       <div id="navUserBar" class="nav-user-bar"></div>
@@ -1375,6 +1683,62 @@
         <div class="hero-actions">
           <a href="#authSection" class="btn-hero btn-hero-primary">Get Started Free</a>
           <a href="#howItWorks" class="btn-hero btn-hero-secondary">Learn More ↓</a>
+        </div>
+        <div class="landing-composer" id="landingComposer">
+          <div class="landing-composer-inner">
+            <textarea id="landingComposerInput" rows="1" placeholder="Paste study notes or describe what you're preparing for…"></textarea>
+            <div class="landing-composer-actions">
+              <button type="button" class="landing-composer-btn" id="landingComposerGo" aria-label="Start studying">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+              </button>
+            </div>
+          </div>
+          <p class="landing-composer-hint">Free · 80 credits daily</p>
+        </div>
+      </section>
+
+      <!-- Auth Forms (above fold) -->
+      <section class="auth-section auth-section--hero" id="authSection">
+        <div class="auth-card">
+          <div id="authMessage" class="auth-message"></div>
+
+          <div class="oauth-buttons-idx">
+            <button type="button" class="btn-oauth-idx" id="googleLoginBtn">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.20454Z" fill="#4285F4"/>
+                <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
+                <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40681 3.78409 7.83 3.96409 7.29V4.95818H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
+                <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95818L3.96409 7.29C4.67182 5.16273 6.65454 3.57955 9 3.57955Z" fill="#EA4335"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+            <button type="button" class="btn-oauth-idx" id="githubLoginBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              <span>Continue with GitHub</span>
+            </button>
+          </div>
+
+          <div class="oauth-divider-idx"><span>or</span></div>
+
+          <form id="loginForm" class="auth-form">
+            <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Sign in</h3>
+            <label>Email <input type="email" name="loginEmail" autocomplete="email" required /></label>
+            <label>Password <input type="password" name="loginPassword" autocomplete="current-password" required minlength="8" /></label>
+            <button type="submit" class="btn-submit">Login</button>
+          </form>
+
+          <form id="registerForm" class="auth-form idx-hidden">
+            <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Create account</h3>
+            <label>Email <input type="email" name="registerEmail" autocomplete="email" required /></label>
+            <label>Password <input type="password" name="registerPassword" autocomplete="new-password" required minlength="8" /></label>
+            <button type="submit" class="btn-submit">Register</button>
+          </form>
+
+          <div class="auth-toggle" id="authToggle">
+            Don't have an account? <a id="toggleToRegister">Sign up</a>
+          </div>
         </div>
       </section>
 
@@ -1460,61 +1824,21 @@
         </div>
       </section>
 
-      <!-- Auth Forms -->
-      <section class="auth-section" id="authSection">
-        <div class="auth-card">
-          <div id="authMessage" class="auth-message"></div>
-
-          <div class="oauth-buttons-idx">
-            <button type="button" class="btn-oauth-idx" id="googleLoginBtn">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M17.64 9.20454C17.64 8.56636 17.5827 7.95272 17.4764 7.36363H9V10.845H13.8436C13.635 11.97 13.0009 12.9231 12.0477 13.5613V15.8195H14.9564C16.6582 14.2527 17.64 11.9454 17.64 9.20454Z" fill="#4285F4"/>
-                <path d="M9 18C11.43 18 13.467 17.1941 14.9564 15.8195L12.0477 13.5613C11.2418 14.1013 10.2109 14.4204 9 14.4204C6.65454 14.4204 4.67182 12.8372 3.96409 10.71H0.957275V13.0418C2.43818 15.9831 5.48182 18 9 18Z" fill="#34A853"/>
-                <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40681 3.78409 7.83 3.96409 7.29V4.95818H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
-                <path d="M9 3.57955C10.3214 3.57955 11.5077 4.03364 12.4405 4.92545L15.0218 2.34409C13.4632 0.891818 11.4259 0 9 0C5.48182 0 2.43818 2.01682 0.957275 4.95818L3.96409 7.29C4.67182 5.16273 6.65454 3.57955 9 3.57955Z" fill="#EA4335"/>
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-            <button type="button" class="btn-oauth-idx" id="githubLoginBtn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-              </svg>
-              <span>Continue with GitHub</span>
-            </button>
+      <section class="section">
+        <div class="heatmap-section heatmap-section-preview" id="landingHeatmapSection">
+          <div class="heatmap-head">
+            <div>
+              <h2>Learning Streak Heatmap</h2>
+              <p>GitHub-style consistency map. Keep your streak alive with short, repeated practice sessions.</p>
+            </div>
+            <span class="streak-chip">Homepage Preview</span>
           </div>
-
-          <div class="oauth-divider-idx"><span>or</span></div>
-
-          <!-- Login Form -->
-          <form id="loginForm" class="auth-form">
-          <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Sign in</h3>
-          <label>
-            Email
-            <input type="email" name="loginEmail" autocomplete="email" required />
-          </label>
-          <label>
-            Password
-            <input type="password" name="loginPassword" autocomplete="current-password" required minlength="8" />
-          </label>
-          <button type="submit" class="btn-submit">Login</button>
-        </form>
-
-          <!-- Register Form (hidden by default) -->
-          <form id="registerForm" class="auth-form idx-hidden">
-          <h3 style="margin:0 0 4px; font-size:1.15rem; font-weight:700;">Create account</h3>
-          <label>
-            Email
-            <input type="email" name="registerEmail" autocomplete="email" required />
-          </label>
-          <label>
-            Password
-            <input type="password" name="registerPassword" autocomplete="new-password" required minlength="8" />
-          </label>
-          <button type="submit" class="btn-submit">Register</button>
-        </form>
-
-          <div class="auth-toggle" id="authToggle">
-            Don't have an account? <a id="toggleToRegister">Sign up</a>
+          <div id="landingHeatmapGrid" class="heatmap-grid"></div>
+          <div class="heatmap-legend">
+            <span><i class="heatmap-dot"></i> No activity</span>
+            <span><i class="heatmap-dot heatmap-l1"></i> Materials viewed</span>
+            <span><i class="heatmap-dot heatmap-l2"></i> Quiz completed</span>
+            <span><i class="heatmap-dot heatmap-l3"></i> Quiz &gt; 80%</span>
           </div>
         </div>
       </section>
@@ -1566,25 +1890,24 @@
     <div id="dashboardView" class="idx-hidden">
       <section class="dashboard-top-region">
       <div class="dash">
-        <section class="member-hero">
-          <span class="member-hero-kicker">Focus Mode</span>
-          <h2>Start output-first learning right now.</h2>
-          <p>Your core actions are pinned here so you can create a quiz, review recent work, and jump into analytics without any scrolling.</p>
+        <section class="member-hero command-header">
+          <span class="member-hero-kicker">Today</span>
+          <h2 class="welcome-name" id="welcomeName">Welcome back!</h2>
+          <p class="welcome-email" id="welcomeEmail"></p>
+          <p class="command-sub">Upload material, quiz actively, and pick up where you left off.</p>
           <div class="member-hero-actions">
-            <a href="create.html" class="member-action primary">Open Exam Workspace</a>
-            <a href="history.html" class="member-action">Review History</a>
-            <a href="analytics-dashboard.html" class="member-action" data-admin-only data-i18n="nav.analyticsAdmin">Admin Analytics</a>
+            <a href="create.html" class="member-action primary">Start new quiz</a>
+            <a href="create.html?review=1" class="member-action" id="dashContinueWrong">Continue wrong answers</a>
+            <a href="history.html" class="member-action">History</a>
           </div>
         </section>
 
-        <!-- Welcome Banner -->
-        <div class="welcome-banner">
-          <h1 class="welcome-name" id="welcomeName">Welcome back!</h1>
-          <p class="welcome-email" id="welcomeEmail"></p>
+        <div class="today-strip" id="todayStrip">
+          <span id="todayStripText">Loading progress…</span>
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-4" id="statsGrid">
+        <div class="grid grid-3" id="statsGrid">
           <div class="stat-card">
             <span class="stat-label">Total Quizzes</span>
             <span class="stat-value" id="statQuizzes">–</span>
@@ -1597,24 +1920,31 @@
             <span class="stat-label">Questions Answered</span>
             <span class="stat-value" id="statQuestions">–</span>
           </div>
-          <a href="create.html" class="cta-card">
-            <span class="cta-card-icon">✨</span>
-            <span class="cta-card-text">Open Exam Workspace</span>
-          </a>
         </div>
 
-        <section class="science-widget" id="scienceWidget">
-          <div class="science-widget-head">
-            <div>
-              <h2>Science of Learning</h2>
-              <p>Open any step to see the mechanism, evidence, and top citations.</p>
+        <section class="science-widget science-nudge" id="scienceWidget" aria-label="Study tips">
+          <div class="science-nudge-glow" aria-hidden="true"></div>
+          <div class="science-nudge-inner">
+            <div class="science-nudge-meta">
+              <span class="science-nudge-badge">
+                <span class="science-nudge-badge-icon" aria-hidden="true">☀️</span>
+                Gentle reminder
+              </span>
             </div>
-            <a class="science-widget-link" href="/science">Explore all -&gt;</a>
+            <div class="science-nudge-quote-wrap">
+              <p class="science-nudge-quote" id="scienceTipText" aria-live="polite">
+                You're here — that's already a win. One honest quiz beats another passive read-through.
+              </p>
+            </div>
+            <div class="science-nudge-dots" id="scienceTipDots" aria-hidden="true"></div>
+            <div class="science-nudge-foot">
+              <span class="science-nudge-step" id="scienceTipStep">Step 03 · Active retrieval</span>
+              <a class="science-widget-link" id="scienceTipLink" href="/science/index.html#step03">Explore Science →</a>
+            </div>
           </div>
-          <div id="scienceWidgetGrid"></div>
         </section>
 
-        <section class="heatmap-section" id="heatmapSection">
+        <section class="heatmap-section heatmap-collapsible" id="heatmapSection">
           <div class="heatmap-head">
             <div>
               <h2>Study Streak Heatmap</h2>
@@ -1783,20 +2113,151 @@
       });
     }
 
-    function renderScienceWidget() {
-      var grid = document.getElementById("scienceWidgetGrid");
-      if (!grid) return;
-      if (!window.quizallScience || !window.quizallScienceData) {
-        grid.innerHTML = "";
+    var scienceTipTimer = null;
+    var scienceTipIndex = 0;
+    var scienceTipsCache = null;
+
+    function buildScienceTips() {
+      if (scienceTipsCache) return scienceTipsCache;
+
+      var warmTips = [
+        {
+          text: "You're here — that's already a win. One honest quiz beats another passive read-through.",
+          step: "03",
+          label: "Active retrieval",
+          href: "#step03"
+        },
+        {
+          text: "It's okay if it feels hard. Effort is where memory actually locks in — be kind to yourself, keep going.",
+          step: "04",
+          label: "Desirable difficulty",
+          href: "#step04"
+        },
+        {
+          text: "Stuck? Explain the idea out loud to an imaginary friend. Silly? Yes. Effective? Also yes.",
+          step: "03",
+          label: "Retrieval practice",
+          href: "#step03"
+        },
+        {
+          text: "Five focused minutes today beats a perfect study plan you'll start tomorrow.",
+          step: "06",
+          label: "Spaced repetition",
+          href: "#step06"
+        },
+        {
+          text: "Getting one wrong isn't failure — it's your brain pointing at exactly what to review next.",
+          step: "03",
+          label: "Testing effect",
+          href: "#step03"
+        },
+        {
+          text: "Before diving into details, sketch the big picture. Structure first makes everything else lighter.",
+          step: "01",
+          label: "Schema activation",
+          href: "#step01"
+        }
+      ];
+
+      if (window.quizallScienceData && window.quizallScienceData.steps) {
+        window.quizallScienceData.steps.forEach(function (step) {
+          if (!step.tagline) return;
+          warmTips.push({
+            text: step.tagline.charAt(0).toUpperCase() + step.tagline.slice(1) + ".",
+            step: step.number,
+            label: (step.title || "").split("/")[0].trim(),
+            href: "#" + step.id
+          });
+        });
+      }
+
+      scienceTipsCache = warmTips;
+      return warmTips;
+    }
+
+    function renderScienceTipDots(tips, activeIndex) {
+      var dots = document.getElementById("scienceTipDots");
+      if (!dots) return;
+      dots.innerHTML = tips.map(function (_, i) {
+        return '<button type="button" class="science-nudge-dot' + (i === activeIndex ? " is-active" : "") + '" data-tip-index="' + i + '" aria-label="Tip ' + (i + 1) + '"></button>';
+      }).join("");
+      dots.querySelectorAll(".science-nudge-dot").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var idx = Number(btn.getAttribute("data-tip-index"));
+          if (!Number.isFinite(idx)) return;
+          showScienceTip(idx, true);
+          restartScienceTipRotation();
+        });
+      });
+    }
+
+    function showScienceTip(index, animate) {
+      var tips = buildScienceTips();
+      if (!tips.length) return;
+      scienceTipIndex = ((index % tips.length) + tips.length) % tips.length;
+      var tip = tips[scienceTipIndex];
+      var textEl = document.getElementById("scienceTipText");
+      var stepEl = document.getElementById("scienceTipStep");
+      var linkEl = document.getElementById("scienceTipLink");
+      if (!textEl) return;
+
+      function applyTip() {
+        textEl.textContent = tip.text;
+        if (stepEl) stepEl.textContent = "Step " + tip.step + " · " + tip.label;
+        if (linkEl) linkEl.href = "/science/index.html" + (tip.href || "");
+        renderScienceTipDots(tips, scienceTipIndex);
+      }
+
+      if (!animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        textEl.classList.remove("is-fading");
+        applyTip();
         return;
       }
 
-      window.quizallScience.renderStepGrid(grid, {
-        activeLabel: "View details",
-        onStepClick: function (step) {
-          window.quizallScience.openStepModal(step.id);
-        }
-      });
+      textEl.classList.add("is-fading");
+      window.setTimeout(function () {
+        applyTip();
+        textEl.classList.remove("is-fading");
+      }, 280);
+    }
+
+    function stopScienceTipRotation() {
+      if (scienceTipTimer) {
+        window.clearInterval(scienceTipTimer);
+        scienceTipTimer = null;
+      }
+    }
+
+    function restartScienceTipRotation() {
+      stopScienceTipRotation();
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      scienceTipTimer = window.setInterval(function () {
+        showScienceTip(scienceTipIndex + 1, true);
+      }, 7000);
+    }
+
+    function renderScienceWidget() {
+      var widget = document.getElementById("scienceWidget");
+      if (!widget) return;
+      showScienceTip(0, false);
+      restartScienceTipRotation();
+      widget.addEventListener("mouseenter", stopScienceTipRotation);
+      widget.addEventListener("mouseleave", restartScienceTipRotation);
+    }
+
+    function renderLandingHeatmapPreview() {
+      var grid = document.getElementById("landingHeatmapGrid");
+      if (!grid) return;
+      var total = 28 * 5;
+      var cells = [];
+      for (var i = 0; i < total; i++) {
+        var weeklyPulse = (i % 7 === 0 || i % 7 === 1) ? 2 : 1;
+        var milestoneBoost = (i % 19 === 0 || i % 23 === 0) ? 3 : weeklyPulse;
+        var decay = (i < 24 || i > 126) ? 0 : milestoneBoost;
+        var cls = decay === 3 ? "heatmap-l3" : (decay === 2 ? "heatmap-l2" : (decay === 1 ? "heatmap-l1" : ""));
+        cells.push('<span class="heatmap-cell ' + cls + '" aria-hidden="true"></span>');
+      }
+      grid.innerHTML = cells.join("");
     }
 
     // ─── View Toggle ───────────────────────────
@@ -1804,21 +2265,49 @@
       return !!localStorage.getItem(TOKEN_KEY);
     }
 
-    function showView() {
+    function showView(options) {
+      options = options || {};
       var authSection = document.getElementById("authSection");
       if (isLoggedIn()) {
+        if (options.redirectToWorkspace) {
+          window.location.replace("create.html");
+          return;
+        }
         document.body.classList.add("logged-in-home");
         $dashboard.classList.remove("idx-hidden");
         $landing.classList.add("idx-hidden");
         if (authSection) authSection.classList.add("idx-hidden");
         renderScienceWidget();
         loadDashboard();
-      } else {
-        document.body.classList.remove("logged-in-home");
-        $dashboard.classList.add("idx-hidden");
-        $landing.classList.remove("idx-hidden");
-        if (authSection) authSection.classList.remove("idx-hidden");
+        return;
       }
+      document.body.classList.remove("logged-in-home");
+      $dashboard.classList.add("idx-hidden");
+      $landing.classList.remove("idx-hidden");
+      if (authSection) authSection.classList.remove("idx-hidden");
+    }
+
+    function loginRequiredMsg() {
+      return (window.i18n && window.i18n.t("home.login_required")) || "Please sign in to use this feature.";
+    }
+
+    function bindProtectedNavLinks() {
+      document.querySelectorAll('a[href="create.html"], a[href="history.html"]').forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          if (!isLoggedIn()) {
+            e.preventDefault();
+            var authEl = document.getElementById("authSection");
+            if (authEl) authEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            showAuthMsg(loginRequiredMsg(), "error");
+            isRegMode = false;
+            $loginForm.classList.remove("idx-hidden");
+            $regForm.classList.add("idx-hidden");
+            $toggle.innerHTML = 'Don\'t have an account? <a id="toggleToRegister">Sign up</a>';
+            var toggleLink = document.getElementById("toggleToRegister");
+            if (toggleLink) toggleLink.addEventListener("click", $toRegister.onclick);
+          }
+        });
+      });
     }
 
     // ─── OAuth Callback（支持 fragment # 与 query，与后端 OAuth 2.0 实践一致）──
@@ -1827,12 +2316,18 @@
       var search = window.location.search;
       var fromHash = hash ? new URLSearchParams(hash) : null;
       var fromSearch = search ? new URLSearchParams(search) : null;
-      var token = (fromHash && fromHash.get("oauth_token")) || (fromSearch && fromSearch.get("oauth_token"));
-      var ok = (fromHash && fromHash.get("oauth_success")) || (fromSearch && fromSearch.get("oauth_success"));
+      var token = fromHash && fromHash.get("oauth_token");
+      var ok = fromHash && fromHash.get("oauth_success");
       var err = (fromSearch && fromSearch.get("oauth_error")) || (fromHash && fromHash.get("oauth_error"));
 
+      if (fromSearch && fromSearch.get("oauth_token")) {
+        showAuthMsg("Invalid OAuth callback: token must not appear in URL query.", "error");
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
       if (err) {
-        showAuthMsg(decodeURIComponent(err), "error");
+        showAuthMsg(err, "error");
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
       }
@@ -1840,12 +2335,13 @@
         localStorage.setItem(TOKEN_KEY, token);
         window.dispatchEvent(new CustomEvent("authStateChanged"));
         window.history.replaceState({}, document.title, window.location.pathname);
-        showView();
+        showView({ redirectToWorkspace: true });
       }
     }
 
     var hash = window.location.hash.slice(1);
-    if (window.location.search.includes("oauth_token") || window.location.search.includes("oauth_error") || (hash && (hash.includes("oauth_token") || hash.includes("oauth_error")))) {
+    if ((hash && (hash.includes("oauth_token") || hash.includes("oauth_error"))) ||
+        window.location.search.includes("oauth_error")) {
       handleOAuthCallback();
     }
 
@@ -1910,7 +2406,7 @@
         if (!res.ok || !data.token) throw new Error(data.error || "Login failed");
         localStorage.setItem(TOKEN_KEY, data.token);
         window.dispatchEvent(new CustomEvent("authStateChanged"));
-        showView();
+        showView({ redirectToWorkspace: true });
       } catch (err) {
         showAuthMsg(err.message, "error");
       } finally {
@@ -1941,7 +2437,7 @@
         if (data.token) {
           localStorage.setItem(TOKEN_KEY, data.token);
           window.dispatchEvent(new CustomEvent("authStateChanged"));
-          showView();
+          showView({ redirectToWorkspace: true });
         } else {
           showAuthMsg("Account created! Please sign in.", "success");
           isRegMode = false;
@@ -2014,12 +2510,14 @@
         var bundle = await Promise.all([
           fetchAuthed("/api/quiz/history?limit=8&page=1"),
           fetchAuthed("/api/quiz/study-streak?days=140"),
-          fetchAuthed("/api/quiz/projects?limit=100")
+          fetchAuthed("/api/quiz/projects?limit=100"),
+          fetchAuthed("/api/quiz/wrong-answers?limit=1").catch(function () { return { dueToday: 0 }; })
         ]);
 
         var historyData = bundle[0];
         var streakData = bundle[1];
         var projectsData = bundle[2];
+        var wrongData = bundle[3];
 
         var rows = Array.isArray(historyData.results) ? historyData.results : [];
         var totalQuizzes = historyData.pagination && Number.isFinite(historyData.pagination.total) ? historyData.pagination.total : rows.length;
@@ -2039,6 +2537,18 @@
         document.getElementById("statQuizzes").textContent = String(totalQuizzes);
         document.getElementById("statAvg").textContent = scored ? Math.round(scoreSum / scored) + "%" : "–";
         document.getElementById("statQuestions").textContent = String(totalQuestions);
+
+        var todayStrip = document.getElementById("todayStripText");
+        if (todayStrip) {
+          todayStrip.textContent = totalQuestions + " questions answered · streak " + (streakData.currentStreak || 0) + "d";
+        }
+        var wrongCta = document.getElementById("dashContinueWrong");
+        if (wrongCta) {
+          var due = wrongData.dueToday || 0;
+          wrongCta.textContent = due > 0 ? "Continue wrong answers (" + due + " due · 0 Credits)" : "Continue wrong answers";
+          wrongCta.href = due > 0 ? "create.html?review=1" : "create.html";
+          wrongCta.style.display = due > 0 || (wrongData.items && wrongData.items.length) ? "" : "none";
+        }
 
         var projectCount = Array.isArray(projectsData.projects) ? projectsData.projects.length : 0;
         document.getElementById("welcomeEmail").textContent =
@@ -2114,8 +2624,44 @@
       if (e.key === TOKEN_KEY) showView();
     });
 
+    document.getElementById("landingComposerGo")?.addEventListener("click", function () {
+      var token = localStorage.getItem(TOKEN_KEY);
+      var draft = document.getElementById("landingComposerInput")?.value?.trim();
+      if (draft) sessionStorage.setItem("quizall.landingDraft", draft);
+      if (token) {
+        window.location.href = "create.html" + (draft ? "?draft=1" : "");
+        return;
+      }
+      var authEl = document.getElementById("authSection");
+      if (authEl) authEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
     // ─── Init ──────────────────────────────────
     renderTrustMarquee();
+    renderLandingHeatmapPreview();
+    bindProtectedNavLinks();
+    var landingGo = document.getElementById("landingComposerGo");
+    var landingInput = document.getElementById("landingComposerInput");
+    if (landingGo) {
+      landingGo.addEventListener("click", function () {
+        var token = localStorage.getItem(TOKEN_KEY);
+        var draft = landingInput && landingInput.value ? landingInput.value.trim() : "";
+        if (token) {
+          var url = "create.html" + (draft ? "?draft=" + encodeURIComponent(draft.slice(0, 500)) : "");
+          window.location.href = url;
+          return;
+        }
+        if (landingInput && draft) {
+          try { sessionStorage.setItem("quizall.landingDraft", draft); } catch (e) {}
+        }
+        var authEl = document.getElementById("authSection");
+        if (authEl) authEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+    if (new URLSearchParams(window.location.search).get("login") === "1") {
+      var authSection = document.getElementById("authSection");
+      if (authSection) authSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     showView();
   })();
   </script>

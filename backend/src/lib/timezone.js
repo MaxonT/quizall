@@ -30,7 +30,7 @@ function getTimeZoneOffsetMs(timeZone, date) {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false
+    hourCycle: "h23"
   }).formatToParts(date);
   const values = {};
   for (const part of parts) {
@@ -57,7 +57,7 @@ export function getNextLocalMidnightIso(timeZone, now = new Date()) {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false
+    hourCycle: "h23"
   }).formatToParts(now);
   const values = {};
   for (const part of parts) {
@@ -68,9 +68,9 @@ export function getNextLocalMidnightIso(timeZone, now = new Date()) {
   const m = Number(values.month);
   const d = Number(values.day);
 
-  let t = Date.UTC(y, m - 1, d + 1, 0, 0, 0);
-  t = t - getTimeZoneOffsetMs(tz, new Date(t));
-  t = t - getTimeZoneOffsetMs(tz, new Date(t));
+  const target = Date.UTC(y, m - 1, d + 1, 0, 0, 0);
+  let t = target - getTimeZoneOffsetMs(tz, new Date(target));
+  t = target - getTimeZoneOffsetMs(tz, new Date(t));
   return new Date(t).toISOString();
 }
 

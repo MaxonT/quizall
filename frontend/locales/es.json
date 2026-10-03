@@ -5,11 +5,11 @@
     "terms": "Términos",
     "cookies": "Cookies",
     "account": "Cuenta",
-    "questionWizard": "Asistente de preguntas",
+    "questionWizard": "Sesiones de estudio",
     "system": "Sistema",
-    "tryIt": "Probar asistente",
-    "create": "Crear proyecto",
-    "workspace": "Espacio de preparación",
+    "tryIt": "Empezar a estudiar",
+    "create": "Workspace",
+    "workspace": "Workspace",
     "createProject": "Crear proyecto",
     "history": "Historial",
     "science": "Ciencia",
@@ -26,9 +26,9 @@
     "dark": "Oscuro"
   },
   "hero": {
-    "title": "QuizAll — Estudio de Optimización de Prompts",
-    "subtitle": "Flujo de trabajo centrado en visualización. Ve cada ganancia, cada costo, cada versión.",
-    "eyebrow": "QuizAll · Modos de Flujo de Trabajo"
+    "title": "QuizAll — Convierte cualquier cosa en un cuestionario",
+    "subtitle": "Sube tus materiales de estudio y obtén cuestionarios con IA y explicaciones.",
+    "eyebrow": "QuizAll · Preparación de exámenes"
   },
   "mode": {
     "header": "¿Cómo te gustaría empezar?",
@@ -343,5 +343,8 @@
   "examples": {
     "title": "Ve QuizAll en flujos de trabajo reales",
     "subtitle": "Convierte solicitudes comerciales desordenadas en especificaciones de prompts ejecutables, pruebas e informes."
+  },
+  "home": {
+    "login_required": "Inicia sesión para usar esta función."
   }
 }

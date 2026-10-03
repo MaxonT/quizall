@@ -6,6 +6,14 @@ import { db } from "./db.js";
 
 export const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
 
+/** SQLite uses 0/1 integers; PostgreSQL uses boolean. */
+export const DB_TRUE = USE_POSTGRES ? true : 1;
+export const DB_FALSE = USE_POSTGRES ? false : 0;
+
+export function dbBool(value) {
+  return USE_POSTGRES ? !!value : value ? 1 : 0;
+}
+
 export async function dbGet(sql, params = []) {
   if (USE_POSTGRES) return await db.get(sql, ...params);
   return db.prepare(sql).get(...params);

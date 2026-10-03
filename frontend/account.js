@@ -15,7 +15,7 @@
       : "http://localhost:8080");
   // Failsafe: Render 前端域名下不应同源请求 /api
   if (typeof window !== "undefined" && window.location?.hostname?.includes(".onrender.com") && API_BASE === window.location.origin) {
-    API_BASE = "https://quizall-backend.onrender.com";
+    API_BASE = "https://quizall-backend-0qr4.onrender.com";
   }
 
   // DOM Elements
@@ -192,13 +192,18 @@
     }
 
     if (promptUsageToday && wizardUsageToday) {
-      const promptUsed = usage?.promptOptimization ?? 0;
-      const promptDaily = limits?.promptOptimization?.daily ?? '--';
-      const wizardUsed = usage?.questionWizard ?? 0;
-      const wizardDaily = limits?.questionWizard?.daily ?? '--';
-
-      promptUsageToday.textContent = `${promptUsed} / ${promptDaily}`;
-      wizardUsageToday.textContent = `${wizardUsed} / ${wizardDaily}`;
+      const c = billingStatus?.credits;
+      const creditsEl = document.getElementById("creditsUsageToday");
+      if (creditsEl && c) {
+        creditsEl.textContent = `${c.balance ?? 0} / ${c.dailyAllowance ?? 80}`;
+      } else {
+        const promptUsed = usage?.promptOptimization ?? 0;
+        const promptDaily = limits?.promptOptimization?.daily ?? '--';
+        const wizardUsed = usage?.questionWizard ?? 0;
+        const wizardDaily = limits?.questionWizard?.daily ?? '--';
+        promptUsageToday.textContent = `${promptUsed} / ${promptDaily}`;
+        wizardUsageToday.textContent = `${wizardUsed} / ${wizardDaily}`;
+      }
     }
 
     if (dailyResetNote) {

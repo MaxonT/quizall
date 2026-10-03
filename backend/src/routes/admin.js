@@ -1,7 +1,12 @@
 import express from 'express';
 import { db } from '../lib/db.js';
+import { requireSyncToken } from '../middleware/syncTokenAuth.js';
+import { createSafeErrorResponse } from '../lib/secureError.js';
 
 const router = express.Router();
+const isProd = process.env.NODE_ENV === 'production';
+
+router.use(requireSyncToken);
 
 /**
  * 数据同步端点 - 接收来自本地的数据导入
@@ -12,19 +17,6 @@ const router = express.Router();
  */
 router.post('/sync-data', (req, res) => {
   try {
-    // 可选的授权检查
-    const syncToken = process.env.SYNC_TOKEN;
-    if (syncToken) {
-      const authHeader = req.headers.authorization || '';
-      const token = authHeader.replace('Bearer ', '');
-      if (token !== syncToken) {
-        return res.status(401).json({ 
-          ok: false, 
-          error: 'Unauthorized: Invalid sync token' 
-        });
-      }
-    }
-
     const { analytics, pipeline } = req.body;
     
     console.log('[admin/sync] 收到同步请求，数据体:', { 
@@ -294,10 +286,7 @@ router.post('/sync-data', (req, res) => {
 
   } catch (error) {
     console.error('[admin/sync] 错误:', error);
-    res.status(500).json({
-      ok: false,
-      error: error.message
-    });
+    res.status(500).json(createSafeErrorResponse(error, '数据同步失败'));
   }
 });
 
@@ -309,19 +298,6 @@ router.post('/sync-data', (req, res) => {
  */
 router.post('/clear-analytics', (req, res) => {
   try {
-    // 可选的授权检查
-    const syncToken = process.env.SYNC_TOKEN;
-    if (syncToken) {
-      const authHeader = req.headers.authorization || '';
-      const token = authHeader.replace('Bearer ', '');
-      if (token !== syncToken) {
-        return res.status(401).json({ 
-          ok: false, 
-          error: 'Unauthorized: Invalid sync token' 
-        });
-      }
-    }
-    
     console.log('[admin/clear] ⚠️ 开始清空analytics数据...');
     
     // 记录清空前的数据量
@@ -362,17 +338,14 @@ router.post('/clear-analytics', (req, res) => {
     
   } catch (error) {
     console.error('[admin/clear] 错误:', error);
-    res.status(500).json({
-      ok: false,
-      error: error.message
-    });
+    res.status(500).json(createSafeErrorResponse(error, '清空数据失败'));
   }
 });
 
 /**
- * GET /api/admin/debug-daily
- * Debug endpoint to查看 daily 表的所有数据
+ * GET /api/admin/debug-daily — development only
  */
+if (!isProd) {
 router.get("/debug-daily", (req, res) => {
   try {
     const count = db.prepare('SELECT COUNT(*) as c FROM analytics_daily').get();
@@ -388,8 +361,9 @@ router.get("/debug-daily", (req, res) => {
       allDates: all.map(d => d.date)
     });
   } catch (error) {
-    res.status(500).json({ ok: false, error: error.message });
+    res.status(500).json(createSafeErrorResponse(error, 'Debug query failed'));
   }
 });
+}
 
 export const adminRouter = router;

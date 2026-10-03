@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuizAll — Projects</title>
+  <link rel="icon" href="assets/quizall-icon.svg" type="image/svg+xml" />
+  <script src="lib/themeManager.js?v=2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="create.css?v=10" />
+  <script src="config.js"></script>
+  <script src="lib/authGuard.js"></script>
+</head>
+<body class="chat-app projects-page">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+      <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+      <symbol id="i-notebook" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M16 2v20"/></symbol>
+      <symbol id="i-more-horizontal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+      <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L8.5 11.5 7 16l4.5-1.5z"/><path d="m15 5 4 4"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+      <symbol id="i-panel-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar">
+      <a href="index.html" class="sidebar-brand sidebar-home-link" title="Back to home">
+        <img src="assets/quizall-icon.svg" alt="QuizAll" />
+        <span>QuizAll</span>
+        <span class="brand-home-hint">Home</span>
+      </a>
+      <button type="button" class="btn-new-chat" id="newChatBtn">
+        <svg class="icon"><use href="#i-plus"></use></svg>
+        New study session
+      </button>
+
+      <nav class="side-nav">
+        <button type="button" class="nav-item" id="navHome">
+          <svg class="icon"><use href="#i-home"></use></svg>
+          <span>Home</span>
+        </button>
+        <button type="button" class="nav-item" id="navUpload">
+          <svg class="icon"><use href="#i-file"></use></svg>
+          <span>Upload material</span>
+        </button>
+        <button type="button" class="nav-item is-active" id="navProjects">
+          <svg class="icon"><use href="#i-folder"></use></svg>
+          <span>Projects</span>
+          <span class="nav-count" id="navProjectsCount"></span>
+        </button>
+        <button type="button" class="nav-item" id="navHistory">
+          <svg class="icon"><use href="#i-clock"></use></svg>
+          <span>History</span>
+          <span class="nav-count" id="navHistoryCount"></span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button type="button" class="avatar-btn" id="avatarBtn">
+          <span class="avatar-circle" id="avatarInitials">U</span>
+          <span class="avatar-meta">
+            <span class="avatar-email" id="avatarEmail">user</span>
+            <span class="avatar-sub">Free plan</span>
+          </span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="projects-main" id="projectsMain">
+      <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle sidebar" aria-expanded="true">
+        <svg class="icon icon-menu"><use href="#i-menu"></use></svg>
+        <svg class="icon icon-panel"><use href="#i-panel-left"></use></svg>
+      </button>
+
+      <div class="projects-scroll">
+        <div class="projects-inner">
+          <header class="projects-head">
+            <div class="projects-head-copy">
+              <h1>Projects</h1>
+              <p>Group study sessions by course or topic — like folders for your learning.</p>
+            </div>
+            <button type="button" class="projects-new-btn" id="newFolderBtn">
+              <svg class="icon"><use href="#i-plus"></use></svg>
+              New project
+            </button>
+          </header>
+
+          <section class="projects-section" aria-labelledby="foldersTitle">
+            <h2 class="projects-section-title" id="foldersTitle">Your projects</h2>
+            <div class="projects-folder-grid" id="folderGrid"></div>
+          </section>
+
+          <section class="projects-section hidden" id="folderSessionsSection" aria-labelledby="sessionsTitle">
+            <h2 class="projects-section-title" id="sessionsTitle">
+              Sessions in <span id="activeFolderName"></span>
+            </h2>
+            <div class="projects-session-list" id="folderSessionsList"></div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="qa-dialog-overlay hidden" id="folderDialog" aria-hidden="true">
+    <div class="qa-dialog" role="dialog" aria-labelledby="folderDialogTitle">
+      <button type="button" class="qa-dialog-close" id="folderDialogClose" aria-label="Close">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+      <h2 class="qa-dialog-title" id="folderDialogTitle">New project</h2>
+      <p class="qa-dialog-sub">Group study sessions by course or topic.</p>
+      <input type="text" class="qa-dialog-input" id="folderDialogInput" placeholder="e.g. CS2201" maxlength="80" autocomplete="off" />
+      <div class="qa-dialog-actions">
+        <button type="button" class="qa-dialog-btn" id="folderDialogCancel">Cancel</button>
+        <button type="button" class="qa-dialog-btn primary" id="folderDialogConfirm">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup-menu hidden" id="avatarMenu">
+    <button type="button" id="menuSettings"><svg class="icon"><use href="#i-settings"></use></svg> Settings</button>
+    <button type="button" id="menuUsage"><svg class="icon"><use href="#i-activity"></use></svg> Usage</button>
+    <button type="button" id="menuBilling"><svg class="icon"><use href="#i-card"></use></svg> Billing</button>
+    <button type="button" id="menuPrivacy"><svg class="icon"><use href="#i-shield"></use></svg> Privacy</button>
+    <div class="divider"></div>
+    <button type="button" class="danger" id="menuLogout"><svg class="icon"><use href="#i-logout"></use></svg> Log out</button>
+  </div>
+
+  <script src="projects.js?v=3"></script>
+</body>
+</html>
