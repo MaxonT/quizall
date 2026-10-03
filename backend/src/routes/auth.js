@@ -13,13 +13,8 @@ import {
 export const authRouter = Router();
 
 const TOKEN_SECRET = process.env.JWT_SECRET;
-if (!TOKEN_SECRET) {
-  if (process.env.NODE_ENV === "development") {
-    console.warn("[quizall] WARNING: JWT_SECRET not set. Set JWT_SECRET before deploying.");
-    throw new Error("[quizall] FATAL: JWT_SECRET must be set (even in development).");
-  } else {
-    throw new Error("[quizall] FATAL: JWT_SECRET must be set in production.");
-  }
+if (!TOKEN_SECRET || TOKEN_SECRET.length < 32) {
+  throw new Error("JWT_SECRET must contain at least 32 characters. Generate one with: openssl rand -hex 32");
 }
 const JWT_VERIFY_OPTIONS = { algorithms: ["HS256"] };
 const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";

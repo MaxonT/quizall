@@ -708,24 +708,8 @@ END $$`);
       );
     `);
     await db.exec("CREATE INDEX IF NOT EXISTS idx_oauth_pkce_expires ON oauth_pkce_states(expires_at);");
-    await db.run(
-      `INSERT INTO coupons (code, plan, max_redemptions, duration_days, active)
-       VALUES (?, 'monthly', 10, 30, true)
-       ON CONFLICT (code) DO NOTHING`,
-      ["QUIZALL-DEE1636310A6"]
-    );
-    await db.run(
-      `INSERT INTO coupons (code, plan, max_redemptions, duration_days, active)
-       VALUES (?, 'yearly', 100, 365, true)
-       ON CONFLICT (code) DO NOTHING`,
-      ["QUIZALL-YEAR-F3C8A201"]
-    );
-    await db.run(
-      `INSERT INTO coupons (code, plan, max_redemptions, duration_days, active)
-       VALUES (?, 'monthly', 20, 30, true)
-       ON CONFLICT (code) DO NOTHING`,
-      ["QUIZALL-TESTER-PRO"]
-    );
+    await db.run("UPDATE coupons SET active = false WHERE code IN (?, ?, ?)",
+      "QUIZALL-DEE1636310A6", "QUIZALL-YEAR-F3C8A201", "QUIZALL-TESTER-PRO");
     // Ensure pending_quiz_rounds exists on pre-existing databases
     await db.exec(`
       CREATE TABLE IF NOT EXISTS pending_quiz_rounds (

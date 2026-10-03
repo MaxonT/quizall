@@ -1,9 +1,9 @@
+import "./lib/env.js";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-import dotenv from "dotenv";
 import { authRouter } from "./routes/auth.js";
 import { billingRouter, stripeWebhookRouter } from "./routes/billing.js";
 import { analyticsRouter } from "./routes/analytics.js";
@@ -17,9 +17,6 @@ import { dailyRefreshJob } from "./lib/dailyRefreshJob.js";
 import dailyCompensationJob from "./lib/dailyCompensationJob.js";
 import { FEATURES } from "./lib/subscriptionConfig.js";
 
-if (process.env.NODE_ENV !== "production") {
-  dotenv.config();
-}
 
 const app = express();
 const isProd = process.env.NODE_ENV === "production";

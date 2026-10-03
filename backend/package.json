@@ -9,7 +9,8 @@
     "start": "node scripts/run_migrations.js && node src/server.js",
     "health": "node scripts/healthcheck.js",
     "migrate": "node scripts/run_migrations.js",
-    "test": "node scripts/selftest.js"
+    "test": "node scripts/selftest.js",
+    "check:config": "node scripts/check-config.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -26,5 +27,8 @@
     "pg": "^8.11.3",
     "stripe": "^20.1.0",
     "zod": "^3.23.8"
+  },
+  "engines": {
+    "node": ">=22 <23"
   }
 }
