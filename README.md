@@ -20,13 +20,31 @@ If you just want to use QuizAll, open the live site — no local install, no Ant
 
 The sections below are for running or developing the project yourself.
 
-### Run or extend the source
+### Quick start (local)
 
-**Use `main` for the runnable public snapshot.** Ongoing work also lives on `codex-dev`.
-See [the complete self-hosting guide](docs/SELF_HOSTING.md) for Node 22, your own
-JWT/Anthropic configuration, local startup, optional services and pipeline entry points.
-The default local setup uses SQLite and email/password login, with billing disabled.
-Without an AI key, development uses mock responses; real AI calls use your own account.
+Use the runnable **main** snapshot. Node.js 22 is needed for the native setup;
+Docker with Compose can run the app without installing backend dependencies yourself.
+
+```bash
+node scripts/setup-local.mjs
+docker compose up --build
+```
+
+Open http://localhost:4173. The setup command creates `.env` and a new random
+login signing key. Add your own `ANTHROPIC_API_KEY` in `.env` for real AI output.
+Without it, QuizAll provides development mock responses for checking the flow.
+Docker creates your own SQLite database and keeps it in a named volume between restarts.
+Stop with Ctrl+C or `docker compose down`; restart with the same command.
+
+If you have Docker but no Node.js installed, generate the configuration with:
+
+```bash
+docker run --rm -v "$PWD:/workspace" -w /workspace node:22-alpine node scripts/setup-local.mjs
+```
+
+For native Node startup, credentials, API reuse, custom hosting and troubleshooting,
+see **[the self-hosting guide](docs/SELF_HOSTING.md)**. Social login and payments are optional.
+Run `npm run setup:local` as a shortcut; root dependency installation is not needed for setup.
 
 ### What you can do
 
@@ -152,7 +170,7 @@ e2e/                     Playwright specs
 
 ### License
 
-MIT; see [LICENSE](LICENSE). API usage and hosted services require your own credentials and account.
+Not specified in-repo. Treat as private unless a license file is added.
 
 ---
 
