@@ -1,0 +1,10 @@
+*
+!frontend/
+!frontend/**
+!docker/
+!docker/**
+frontend/node_modules
+frontend/.env*
+frontend/*.log
+frontend/*.db*
+frontend/preview-*.png

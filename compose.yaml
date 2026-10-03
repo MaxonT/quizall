@@ -1,0 +1,33 @@
+# Local self-hosting only. Does not provision any Render resources.
+services:
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      PORT: "8080"
+      DATABASE_URL: ""
+      SQLITE_PATH: /app/data/app.db
+      CORS_ORIGIN: http://localhost:${WEB_PORT:-4173},http://127.0.0.1:${WEB_PORT:-4173}
+      FRONTEND_URL: http://localhost:${WEB_PORT:-4173}
+      SUBSCRIPTIONS_ENABLED: "false"
+      TRIALS_ENABLED: "false"
+    volumes:
+      - app-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "scripts/healthcheck.js"]
+      interval: 10s
+      timeout: 6s
+      start_period: 30s
+      retries: 6
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    ports:
+      - "127.0.0.1:${WEB_PORT:-4173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+volumes:
+  app-data:
