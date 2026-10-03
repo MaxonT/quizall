@@ -22,31 +22,29 @@ The sections below are for running or developing the project yourself.
 
 ### Quick start (local)
 
-#### 1. Backend
+Use the runnable **main** snapshot. Node.js 22 is needed for the native setup;
+Docker with Compose can run the app without installing backend dependencies yourself.
 
 ```bash
-cd backend
-cp ../.env.example ../.env   # set JWT_SECRET + ANTHROPIC_API_KEY at minimum
-npm install
-npm run dev                  # http://localhost:8080 (runs migrations on start)
+node scripts/setup-local.mjs
+docker compose up --build
 ```
 
-#### 2. Frontend
+Open http://localhost:4173. The setup command creates `.env` and a new random
+login signing key. Add your own `ANTHROPIC_API_KEY` in `.env` for real AI output.
+Without it, QuizAll provides development mock responses for checking the flow.
+Docker creates your own SQLite database and keeps it in a named volume between restarts.
+Stop with Ctrl+C or `docker compose down`; restart with the same command.
+
+If you have Docker but no Node.js installed, generate the configuration with:
 
 ```bash
-cd frontend
-python3 -m http.server 4173
+docker run --rm -v "$PWD:/workspace" -w /workspace node:22-alpine node scripts/setup-local.mjs
 ```
 
-Open `http://localhost:4173/index.html`. On localhost, `frontend/config.js` points the API at `http://localhost:8080` automatically.
-
-#### 3. E2E (mocked API — backend not required)
-
-```bash
-npm install
-npx playwright install chromium
-npm run test:e2e
-```
+For native Node startup, credentials, API reuse, custom hosting and troubleshooting,
+see **[the self-hosting guide](docs/SELF_HOSTING.md)**. Social login and payments are optional.
+Run `npm run setup:local` as a shortcut; root dependency installation is not needed for setup.
 
 ### What you can do
 
