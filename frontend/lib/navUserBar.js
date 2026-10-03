@@ -11,7 +11,7 @@
       ? window.location.origin
       : "http://localhost:8080");
   if (typeof window !== "undefined" && window.location?.hostname?.includes(".onrender.com") && API_BASE === window.location.origin) {
-    API_BASE = "https://quizall-backend.onrender.com";
+    API_BASE = "https://quizall-backend-0qr4.onrender.com";
   }
 
   function getToken() {
@@ -111,7 +111,7 @@
     const workspaceLink = findWorkspaceNavLink();
     if (!workspaceLink) return;
     const key = hasProjects ? "nav.workspace" : "nav.createProject";
-    const fallback = hasProjects ? "Exam Prep Workspace" : "Create Project";
+    const fallback = hasProjects ? "Workspace" : "Create Project";
     workspaceLink.setAttribute("data-i18n", key);
     workspaceLink.textContent = t(key, fallback);
   }
@@ -308,6 +308,11 @@
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (!finePointer.matches || reducedMotion.matches) return;
+
+    const path = window.location.pathname || "";
+    const onIndex = /index\.html$/.test(path) || path.endsWith("/") || path === "";
+    const landingOnly = onIndex && !document.body.classList.contains("logged-in-home");
+    if (!landingOnly) return;
 
     window.__quizallCursorFxInitialized = true;
     const body = document.body;

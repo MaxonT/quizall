@@ -20,33 +20,13 @@ If you just want to use QuizAll, open the live site — no local install, no Ant
 
 The sections below are for running or developing the project yourself.
 
-### Quick start (local)
+### Run or extend the source
 
-#### 1. Backend
-
-```bash
-cd backend
-cp ../.env.example ../.env   # set JWT_SECRET + ANTHROPIC_API_KEY at minimum
-npm install
-npm run dev                  # http://localhost:8080 (runs migrations on start)
-```
-
-#### 2. Frontend
-
-```bash
-cd frontend
-python3 -m http.server 4173
-```
-
-Open `http://localhost:4173/index.html`. On localhost, `frontend/config.js` points the API at `http://localhost:8080` automatically.
-
-#### 3. E2E (mocked API — backend not required)
-
-```bash
-npm install
-npx playwright install chromium
-npm run test:e2e
-```
+**Use `main` for the runnable public snapshot.** Ongoing work also lives on `codex-dev`.
+See [the complete self-hosting guide](docs/SELF_HOSTING.md) for Node 22, your own
+JWT/Anthropic configuration, local startup, optional services and pipeline entry points.
+The default local setup uses SQLite and email/password login, with billing disabled.
+Without an AI key, development uses mock responses; real AI calls use your own account.
 
 ### What you can do
 

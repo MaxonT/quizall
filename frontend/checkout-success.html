@@ -514,9 +514,8 @@
           document.getElementById('planName').textContent = 
             data.subscription.plan ? data.subscription.plan.charAt(0).toUpperCase() + data.subscription.plan.slice(1) : 'Pro';
           
-          const promptDaily = data.limits?.promptOptimization?.daily;
-          const wizardDaily = data.limits?.questionWizard?.daily;
-          if (promptDaily && wizardDaily) {
+          const c = data.credits;
+          if (c) {
             const tz = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
             let resetText = `Resets daily at 00:00 (${tz})`;
             if (data.nextResetAt) {
@@ -532,7 +531,28 @@
               resetText = `Resets at ${when} (${tz})`;
             }
             document.getElementById('dailyLimits').textContent =
-              `${promptDaily} prompt optimizations/day · ${wizardDaily} question-wizard sessions/day · ${resetText}`;
+              `${c.balance ?? 0} credits remaining · ${c.dailyAllowance ?? 80}/day · ${resetText}`;
+          } else {
+            const promptDaily = data.limits?.promptOptimization?.daily;
+            const wizardDaily = data.limits?.questionWizard?.daily;
+            if (promptDaily && wizardDaily) {
+              const tz = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+              let resetText = `Resets daily at 00:00 (${tz})`;
+              if (data.nextResetAt) {
+                const dt = new Date(data.nextResetAt);
+                const when = dt.toLocaleString(undefined, {
+                  timeZone: tz,
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                });
+                resetText = `Resets at ${when} (${tz})`;
+              }
+              document.getElementById('dailyLimits').textContent =
+                `${promptDaily} prompt optimizations/day · ${wizardDaily} question-wizard sessions/day · ${resetText}`;
+            }
           }
           
           if (data.subscription.periodEnd) {

@@ -90,7 +90,7 @@
     citationsIntro: "Peer-reviewed references from the QuizAll Research Foundation v2 source.",
     ctaTitle: "Use The Science In Your Next Session",
     ctaBody: "Return to QuizAll and activate the steps through your own project workflow.",
-    ctaPrimary: "Open Exam Prep Workspace",
+    ctaPrimary: "Open Workspace",
     ctaSecondary: "Back to Dashboard",
     stepLinkPrefix: "Link #",
     keyFindingsTitle: "Key Findings",

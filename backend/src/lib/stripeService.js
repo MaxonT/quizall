@@ -11,7 +11,7 @@
  */
 
 import Stripe from "stripe";
-import { db } from "./db.js";
+import { dbGet, dbRun, dbAll } from "./dbHelpers.js";
 import { tokenLedger } from "./tokenLedger.js";
 import {
   STRIPE_SECRET_KEY,
@@ -54,45 +54,37 @@ export function isStripeEnabled() {
  */
 export async function getOrCreateCustomer(userId, email) {
   if (!stripe) throw new Error("Stripe not configured");
-  
-  // Check if customer already exists
-  const existing = db.prepare(`
-    SELECT stripe_customer_id FROM stripe_customers WHERE user_id = ?
-  `).get(userId);
-  
+
+  const existing = await dbGet(
+    `SELECT stripe_customer_id FROM stripe_customers WHERE user_id = ?`,
+    [userId]
+  );
+
   if (existing) {
     return existing.stripe_customer_id;
   }
-  
-  // Create new Stripe customer
+
   const customer = await stripe.customers.create({
     email,
-    metadata: {
-      userId,
-      source: "quizall",
-    },
+    metadata: { userId, source: "quizall" },
   });
-  
-  // Store mapping
+
   const now = new Date().toISOString();
-  db.prepare(`
-    INSERT INTO stripe_customers (user_id, stripe_customer_id, email, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(userId, customer.id, email, now, now);
-  
+  await dbRun(
+    `INSERT INTO stripe_customers (user_id, stripe_customer_id, email, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?)`,
+    [userId, customer.id, email, now, now]
+  );
+
   console.log(`[stripe] Created customer ${customer.id} for user ${userId}`);
-  
   return customer.id;
 }
 
-/**
- * Get user ID from Stripe customer ID
- */
-export function getUserIdFromCustomer(stripeCustomerId) {
-  const row = db.prepare(`
-    SELECT user_id FROM stripe_customers WHERE stripe_customer_id = ?
-  `).get(stripeCustomerId);
-  
+export async function getUserIdFromCustomer(stripeCustomerId) {
+  const row = await dbGet(
+    `SELECT user_id FROM stripe_customers WHERE stripe_customer_id = ?`,
+    [stripeCustomerId]
+  );
   return row?.user_id || null;
 }
 
@@ -209,11 +201,12 @@ export async function getCheckoutSession(sessionId) {
  */
 export async function createPortalSession(userId, returnUrl = ACCOUNT_URL) {
   if (!stripe) throw new Error("Stripe not configured");
-  
-  const customer = db.prepare(`
-    SELECT stripe_customer_id FROM stripe_customers WHERE user_id = ?
-  `).get(userId);
-  
+
+  const customer = await dbGet(
+    `SELECT stripe_customer_id FROM stripe_customers WHERE user_id = ?`,
+    [userId]
+  );
+
   if (!customer) {
     throw new Error("No Stripe customer found for user");
   }
@@ -237,14 +230,12 @@ export async function createPortalSession(userId, returnUrl = ACCOUNT_URL) {
 /**
  * Get subscription status for a user
  */
-export function getSubscriptionStatus(userId) {
-  const sub = db.prepare(`
-    SELECT * FROM subscriptions 
-    WHERE user_id = ? 
-    ORDER BY created_at DESC 
-    LIMIT 1
-  `).get(userId);
-  
+export async function getSubscriptionStatus(userId) {
+  const sub = await dbGet(
+    `SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`,
+    [userId]
+  );
+
   if (!sub) {
     return {
       status: SUBSCRIPTION_STATUS.NONE,
@@ -253,7 +244,7 @@ export function getSubscriptionStatus(userId) {
       cancelAtPeriodEnd: false,
     };
   }
-  
+
   return {
     status: sub.status,
     plan: sub.plan,
@@ -268,10 +259,7 @@ export function getSubscriptionStatus(userId) {
   };
 }
 
-/**
- * Update subscription in database
- */
-export function updateSubscription({
+export async function updateSubscription({
   userId,
   stripeSubscriptionId,
   stripeCustomerId,
@@ -286,68 +274,60 @@ export function updateSubscription({
   canceledAt,
 }) {
   const now = new Date().toISOString();
-  
-  // Check if subscription exists
-  const existing = db.prepare(`
-    SELECT id FROM subscriptions WHERE stripe_subscription_id = ?
-  `).get(stripeSubscriptionId);
-  
+
+  const existing = await dbGet(
+    `SELECT id FROM subscriptions WHERE stripe_subscription_id = ?`,
+    [stripeSubscriptionId]
+  );
+
   if (existing) {
-    // Update existing
-    db.prepare(`
-      UPDATE subscriptions SET
-        status = ?,
-        plan = ?,
-        price_id = ?,
-        period_start = ?,
-        period_end = ?,
-        trial_start = ?,
-        trial_end = ?,
-        cancel_at_period_end = ?,
-        canceled_at = ?,
-        updated_at = ?
-      WHERE stripe_subscription_id = ?
-    `).run(
-      status,
-      plan,
-      priceId,
-      periodStart,
-      periodEnd,
-      trialStart,
-      trialEnd,
-      cancelAtPeriodEnd ? 1 : 0,
-      canceledAt,
-      now,
-      stripeSubscriptionId
+    await dbRun(
+      `UPDATE subscriptions SET
+        status = ?, plan = ?, price_id = ?,
+        period_start = ?, period_end = ?, trial_start = ?, trial_end = ?,
+        cancel_at_period_end = ?, canceled_at = ?, updated_at = ?
+       WHERE stripe_subscription_id = ?`,
+      [
+        status,
+        plan,
+        priceId,
+        periodStart,
+        periodEnd,
+        trialStart,
+        trialEnd,
+        !!cancelAtPeriodEnd,
+        canceledAt,
+        now,
+        stripeSubscriptionId,
+      ]
     );
   } else {
-    // Create new
-    db.prepare(`
-      INSERT INTO subscriptions (
+    await dbRun(
+      `INSERT INTO subscriptions (
         user_id, stripe_subscription_id, stripe_customer_id,
         status, plan, price_id,
         period_start, period_end, trial_start, trial_end,
-        cancel_at_period_end, canceled_at,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      userId,
-      stripeSubscriptionId,
-      stripeCustomerId,
-      status,
-      plan,
-      priceId,
-      periodStart,
-      periodEnd,
-      trialStart,
-      trialEnd,
-      cancelAtPeriodEnd ? 1 : 0,
-      canceledAt,
-      now,
-      now
+        cancel_at_period_end, canceled_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        stripeSubscriptionId,
+        stripeCustomerId,
+        status,
+        plan,
+        priceId,
+        periodStart,
+        periodEnd,
+        trialStart,
+        trialEnd,
+        !!cancelAtPeriodEnd,
+        canceledAt,
+        now,
+        now,
+      ]
     );
   }
-  
+
   console.log(`[stripe] Updated subscription ${stripeSubscriptionId} for user ${userId} (status: ${status})`);
 }
 
@@ -369,53 +349,35 @@ export function verifyWebhookSignature(payload, signature) {
 /**
  * Check if event has already been processed (idempotency)
  */
-export function isEventProcessed(eventId) {
-  const existing = db.prepare(`
-    SELECT status FROM stripe_events WHERE event_id = ?
-  `).get(eventId);
-  
+export async function isEventProcessed(eventId) {
+  const existing = await dbGet(`SELECT status FROM stripe_events WHERE event_id = ?`, [eventId]);
   return existing?.status === "processed";
 }
 
-/**
- * Record event as processed
- */
-export function recordEvent(eventId, eventType, status = "processed", error = null, payload = null) {
+export async function recordEvent(eventId, eventType, status = "processed", error = null, payload = null) {
   const now = new Date().toISOString();
-  
-  // Check if event exists
-  const existing = db.prepare(`
-    SELECT retry_count FROM stripe_events WHERE event_id = ?
-  `).get(eventId);
-  
+
+  const existing = await dbGet(`SELECT retry_count FROM stripe_events WHERE event_id = ?`, [eventId]);
+
   if (existing) {
-    // Update existing event
-    db.prepare(`
-      UPDATE stripe_events SET
-        status = ?,
-        error = ?,
-        processed_at = ?,
-        retry_count = retry_count + 1
-      WHERE event_id = ?
-    `).run(
-      status,
-      error,
-      status === "processed" ? now : null,
-      eventId
+    await dbRun(
+      `UPDATE stripe_events SET status = ?, error = ?, processed_at = ?, retry_count = COALESCE(retry_count, 0) + 1
+       WHERE event_id = ?`,
+      [status, error, status === "processed" ? now : null, eventId]
     );
   } else {
-    // Insert new event
-    db.prepare(`
-      INSERT INTO stripe_events (event_id, event_type, status, error, payload, created_at, processed_at, retry_count)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-    `).run(
-      eventId,
-      eventType,
-      status,
-      error,
-      payload ? JSON.stringify(payload) : null,
-      now,
-      status === "processed" ? now : null
+    await dbRun(
+      `INSERT INTO stripe_events (event_id, event_type, status, error, payload, created_at, processed_at, retry_count)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
+      [
+        eventId,
+        eventType,
+        status,
+        error,
+        payload ? JSON.stringify(payload) : null,
+        now,
+        status === "processed" ? now : null,
+      ]
     );
   }
 }
@@ -435,28 +397,25 @@ async function handleCheckoutCompleted(event) {
   }
   
   // Ensure customer mapping exists
-  const existingCustomer = db.prepare(`
-    SELECT id FROM stripe_customers WHERE stripe_customer_id = ?
-  `).get(customerId);
-  
+  const existingCustomer = await dbGet(
+    `SELECT id FROM stripe_customers WHERE stripe_customer_id = ?`,
+    [customerId]
+  );
+
   if (!existingCustomer) {
     const now = new Date().toISOString();
-    db.prepare(`
-      INSERT INTO stripe_customers (user_id, stripe_customer_id, email, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(userId, customerId, session.customer_email, now, now);
+    await dbRun(
+      `INSERT INTO stripe_customers (user_id, stripe_customer_id, email, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [userId, customerId, session.customer_email, now, now]
+    );
   }
-  
-  // Update checkout_sessions table status
-  const updated = db.prepare(`
-    UPDATE checkout_sessions 
-    SET status = 'completed', completed_at = datetime('now')
-    WHERE stripe_session_id = ? AND user_id = ?
-  `).run(sessionId, userId);
-  
-  if (updated.changes > 0) {
-    console.log(`[stripe] Checkout session ${sessionId} marked as completed`);
-  }
+
+  const now = new Date().toISOString();
+  await dbRun(
+    `UPDATE checkout_sessions SET status = 'completed', completed_at = ? WHERE stripe_session_id = ? AND user_id = ?`,
+    [now, sessionId, userId]
+  );
   
   console.log(`[stripe] Checkout completed for user ${userId}`);
 }
@@ -469,7 +428,7 @@ async function handleSubscriptionChange(event) {
   const customerId = subscription.customer;
   
   // Get user ID from customer
-  const userId = getUserIdFromCustomer(customerId);
+  const userId = await getUserIdFromCustomer(customerId);
   if (!userId) {
     console.error(`[stripe] No user found for customer ${customerId}`);
     return;
@@ -487,7 +446,7 @@ async function handleSubscriptionChange(event) {
   }
   
   // Update subscription
-  updateSubscription({
+  await updateSubscription({
     userId,
     stripeSubscriptionId: subscription.id,
     stripeCustomerId: customerId,
@@ -514,12 +473,12 @@ async function handleSubscriptionChange(event) {
   
   // If this is a new trial, grant trial tokens
   if (status === SUBSCRIPTION_STATUS.TRIALING && event.type === "customer.subscription.created") {
-    tokenLedger.grantTrialTokens(userId, event.id);
-    
-    // Mark trial as used
-    db.prepare(`
-      UPDATE users SET trial_used = 1, trial_started_at = datetime('now') WHERE id = ?
-    `).run(userId);
+    await tokenLedger.grantTrialTokens(userId, event.id);
+
+    await dbRun(`UPDATE users SET trial_used = true, trial_started_at = ? WHERE id = ?`, [
+      new Date().toISOString(),
+      userId,
+    ]);
   }
   
   console.log(`[stripe] Subscription ${event.type.split('.')[2]} for user ${userId} (status: ${status})`);
@@ -532,14 +491,14 @@ async function handleSubscriptionDeleted(event) {
   const subscription = event.data.object;
   const customerId = subscription.customer;
   
-  const userId = getUserIdFromCustomer(customerId);
+  const userId = await getUserIdFromCustomer(customerId);
   if (!userId) {
     console.error(`[stripe] No user found for customer ${customerId}`);
     return;
   }
   
   // Update subscription status to canceled
-  updateSubscription({
+  await updateSubscription({
     userId,
     stripeSubscriptionId: subscription.id,
     stripeCustomerId: customerId,
@@ -555,7 +514,7 @@ async function handleSubscriptionDeleted(event) {
   });
   
   // Clear any remaining tokens (optional - could let them expire naturally)
-  tokenLedger.clearMonthlyTokens(userId, "Subscription canceled");
+  await tokenLedger.clearMonthlyTokens(userId, "Subscription canceled");
   
   console.log(`[stripe] Subscription deleted for user ${userId}`);
 }
@@ -568,7 +527,7 @@ async function handlePaymentSucceeded(event) {
   const customerId = invoice.customer;
   const subscriptionId = invoice.subscription;
   
-  const userId = getUserIdFromCustomer(customerId);
+  const userId = await getUserIdFromCustomer(customerId);
   if (!userId) {
     console.error(`[stripe] No user found for customer ${customerId}`);
     return;
@@ -587,15 +546,15 @@ async function handlePaymentSucceeded(event) {
   }
   
   // Get subscription to determine plan
-  const sub = getSubscriptionStatus(userId);
+  const sub = await getSubscriptionStatus(userId);
   if (!sub.plan) {
     console.error(`[stripe] No plan found for user ${userId}`);
     return;
   }
   
   // Clear old tokens and grant new ones for the new period
-  tokenLedger.clearMonthlyTokens(userId, "New billing period");
-  tokenLedger.grantSubscriptionTokens(userId, sub.plan, event.id, subscriptionId);
+  await tokenLedger.clearMonthlyTokens(userId, "New billing period");
+  await tokenLedger.grantSubscriptionTokens(userId, sub.plan, event.id, subscriptionId);
   
   console.log(`[stripe] Payment succeeded for user ${userId}, tokens granted for ${sub.plan}`);
 }
@@ -607,22 +566,24 @@ async function handlePaymentFailed(event) {
   const invoice = event.data.object;
   const customerId = invoice.customer;
   
-  const userId = getUserIdFromCustomer(customerId);
+  const userId = await getUserIdFromCustomer(customerId);
   if (!userId) {
     console.error(`[stripe] No user found for customer ${customerId}`);
     return;
   }
   
   // Update subscription status to past_due
-  const sub = db.prepare(`
-    SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1
-  `).get(userId);
-  
+  const sub = await dbGet(
+    `SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`,
+    [userId]
+  );
+
   if (sub) {
-    db.prepare(`
-      UPDATE subscriptions SET status = ?, updated_at = datetime('now')
-      WHERE stripe_subscription_id = ?
-    `).run(SUBSCRIPTION_STATUS.PAST_DUE, sub.stripe_subscription_id);
+    await dbRun(`UPDATE subscriptions SET status = ?, updated_at = ? WHERE stripe_subscription_id = ?`, [
+      SUBSCRIPTION_STATUS.PAST_DUE,
+      new Date().toISOString(),
+      sub.stripe_subscription_id,
+    ]);
   }
   
   console.log(`[stripe] Payment failed for user ${userId}`);
@@ -636,13 +597,12 @@ export async function processWebhookEvent(event) {
   const eventType = event.type;
   
   // Idempotency check
-  if (isEventProcessed(eventId)) {
+  if (await isEventProcessed(eventId)) {
     console.log(`[stripe] Event ${eventId} already processed, skipping`);
     return { skipped: true };
   }
-  
-  // Record event as pending
-  recordEvent(eventId, eventType, "pending", null, event.data.object);
+
+  await recordEvent(eventId, eventType, "pending", null, event.data.object);
   
   try {
     switch (eventType) {
@@ -672,12 +632,11 @@ export async function processWebhookEvent(event) {
     }
     
     // Mark as processed
-    recordEvent(eventId, eventType, "processed", null, event.data.object);
+    await recordEvent(eventId, eventType, "processed", null, event.data.object);
     return { processed: true };
-    
   } catch (err) {
     console.error(`[stripe] Error processing event ${eventId}:`, err);
-    recordEvent(eventId, eventType, "failed", err.message, event.data.object);
+    await recordEvent(eventId, eventType, "failed", err.message, event.data.object);
     throw err;
   }
 }

@@ -1,3 +1,6 @@
+/**
+ * @deprecated Use POST /api/quiz/share instead. This router targets the legacy docs table and is not mounted.
+ */
 import { Router } from "express";
 import { db } from "../lib/db.js";
 import { nanoid } from "nanoid";

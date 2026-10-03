@@ -81,6 +81,20 @@
   --brand-3: #22D3EE;
   --brand-4: #4ADE80;
   --brand-5: #F59E0B;
+
+  /* Radius scale */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Type scale */
+  --text-xs: 0.72rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+
+  --surface-chat: var(--card);
+  --shadow-composer: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 [data-theme="light"] {
@@ -225,6 +239,31 @@ select:-webkit-autofill:focus {
   color: #ffffff;
 }
 
+/* === Global Custom Cursor (all pages, including /science) === */
+body.qa-cursor-enabled {
+  cursor: url("assets/cursors/qa-cursor-normal.svg") 3 3, auto !important;
+}
+
+body.qa-cursor-enabled * {
+  cursor: url("assets/cursors/qa-cursor-normal.svg") 3 3, auto !important;
+}
+
+body.qa-cursor-enabled.qa-cursor-mode-click,
+body.qa-cursor-enabled.qa-cursor-mode-click * {
+  cursor: url("assets/cursors/qa-cursor-click.svg") 7 3, pointer !important;
+}
+
+body.qa-cursor-enabled.qa-cursor-mode-select,
+body.qa-cursor-enabled.qa-cursor-mode-select * {
+  cursor: url("assets/cursors/qa-cursor-select.svg") 9 9, text !important;
+}
+
+@media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+  body.qa-cursor-enabled,
+  body.qa-cursor-enabled * {
+    cursor: auto !important;
+  }
+}
 
 
 

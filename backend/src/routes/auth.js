@@ -1,23 +1,22 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { db } from "../lib/db.js";
 import { nanoid } from "nanoid";
+import { dbGet, dbRun, DB_TRUE } from "../lib/dbHelpers.js";
 import { getNextLocalMidnightIso, normalizeTimeZone } from "../lib/timezone.js";
+import {
+  isDisposableEmail,
+  isRegistrationRateLimited,
+  incrementRegistrationCount,
+} from "../lib/trialAntiAbuse.js";
 
 export const authRouter = Router();
 
-const USE_POSTGRES = !!(process.env.DATABASE_URL || process.env.DB_HOST);
-
-let TOKEN_SECRET = process.env.JWT_SECRET;
-if (!TOKEN_SECRET) {
-  if (process.env.NODE_ENV === "development") {
-    console.warn("[quizall] WARNING: JWT_SECRET not set. Using insecure dev secret.");
-    TOKEN_SECRET = "dev";
-  } else {
-    throw new Error("[quizall] FATAL: JWT_SECRET must be set in production.");
-  }
+const TOKEN_SECRET = process.env.JWT_SECRET;
+if (!TOKEN_SECRET || TOKEN_SECRET.length < 32) {
+  throw new Error("JWT_SECRET must contain at least 32 characters. Generate one with: openssl rand -hex 32");
 }
+const JWT_VERIFY_OPTIONS = { algorithms: ["HS256"] };
 const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 const PASSWORD_MIN_LENGTH = 8;
 const BCRYPT_ROUNDS = 10;
@@ -56,15 +55,8 @@ function sendAuthResponse(res, row) {
   return res.json({ ok: true, token, user });
 }
 
-// Unified db.get that works for both SQLite (sync) and PG (async)
-async function dbGet(sql, params = []) {
-  if (USE_POSTGRES) return await db.get(sql, ...params);
-  return db.prepare(sql).get(...params);
-}
-
-async function dbRun(sql, params = []) {
-  if (USE_POSTGRES) return await db.run(sql, ...params);
-  return db.prepare(sql).run(...params);
+function clientIp(req) {
+  return req.ip || req.socket?.remoteAddress || "unknown";
 }
 
 authRouter.post("/register", async (req, res) => {
@@ -76,6 +68,13 @@ authRouter.post("/register", async (req, res) => {
     const normalizedEmail = normalizeEmail(email);
     if (!EMAIL_REGEX.test(normalizedEmail)) {
       return res.status(400).json({ ok: false, error: "Email is invalid" });
+    }
+    if (isDisposableEmail(normalizedEmail)) {
+      return res.status(400).json({ ok: false, error: "Disposable email addresses are not allowed" });
+    }
+    const ipAddress = clientIp(req);
+    if (await isRegistrationRateLimited(ipAddress)) {
+      return res.status(429).json({ ok: false, error: "Too many registrations from this network. Try again tomorrow." });
     }
     if (!password || typeof password !== "string" || password.length < PASSWORD_MIN_LENGTH) {
       return res.status(400).json({
@@ -95,10 +94,11 @@ authRouter.post("/register", async (req, res) => {
 
     await dbRun(
       `INSERT INTO users (id, email, password_hash, subscription_tier, subscription_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [userId, normalizedEmail, passwordHash, "free", 1, now, now]
+      [userId, normalizedEmail, passwordHash, "free", DB_TRUE, now, now]
     );
 
     const row = await dbGet("SELECT * FROM users WHERE id = ?", [userId]);
+    await incrementRegistrationCount(ipAddress);
     return sendAuthResponse(res, row);
   } catch (err) {
     console.error("[quizall] register error", err);
@@ -156,6 +156,7 @@ authRouter.get("/me", requireAuth, async (req, res) => {
 authRouter.put("/timezone", requireAuth, async (req, res) => {
   const userId = req.user.sub;
   const requested = req.body?.timezone;
+  const source = req.body?.source === "auto" ? "auto" : "manual";
   const tz = normalizeTimeZone(requested);
   if (!requested || typeof requested !== "string" || (tz === "UTC" && requested.trim() !== "UTC")) {
     return res.status(400).json({ ok: false, error: "Invalid timezone" });
@@ -168,10 +169,14 @@ authRouter.put("/timezone", requireAuth, async (req, res) => {
       return res.json({ ok: true, timezone: currentTz, nextResetAt: getNextLocalMidnightIso(currentTz) });
     }
     const now = Date.now();
-    const lastUpdatedAt = row?.timezone_updated_at ? new Date(row.timezone_updated_at).getTime() : null;
-    const CHANGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
-    if (lastUpdatedAt && now - lastUpdatedAt < CHANGE_WINDOW_MS) {
-      return res.status(429).json({ ok: false, error: "Timezone can only be changed every 30 days" });
+    // Auto-detect from the browser may correct UTC/default anytime.
+    // Manual changes stay rate-limited to avoid gaming daily resets.
+    if (source !== "auto") {
+      const lastUpdatedAt = row?.timezone_updated_at ? new Date(row.timezone_updated_at).getTime() : null;
+      const CHANGE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+      if (lastUpdatedAt && now - lastUpdatedAt < CHANGE_WINDOW_MS) {
+        return res.status(429).json({ ok: false, error: "Timezone can only be changed every 30 days" });
+      }
     }
     const nowIso = new Date(now).toISOString();
     await dbRun(
@@ -189,7 +194,7 @@ export function requireAuth(req, res, next) {
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ ok: false, error: "Missing token" });
   try {
-    req.user = jwt.verify(token, TOKEN_SECRET);
+    req.user = jwt.verify(token, TOKEN_SECRET, JWT_VERIFY_OPTIONS);
     next();
   } catch (err) {
     return res.status(401).json({ ok: false, error: "Invalid token" });
@@ -201,7 +206,9 @@ export function optionalAuth(req, _res, next) {
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return next();
   try {
-    req.user = jwt.verify(token, TOKEN_SECRET);
+    req.user = jwt.verify(token, TOKEN_SECRET, JWT_VERIFY_OPTIONS);
   } catch (_) {}
   next();
 }
+
+export { TOKEN_SECRET, JWT_VERIFY_OPTIONS };

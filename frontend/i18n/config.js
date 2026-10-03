@@ -18,6 +18,6 @@ export const i18nConfig = {
   cache: {
     enabled: true,
     expiration: 24 * 60 * 60 * 1000, // 24 hours
-    prefix: 'i18n_cache_v2_'
+    prefix: 'i18n_cache_v3_'
   }
 };

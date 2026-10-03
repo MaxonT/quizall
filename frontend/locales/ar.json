@@ -5,11 +5,11 @@
     "terms": "الشروط",
     "cookies": "ملفات تعريف الارتباط",
     "account": "الحساب",
-    "questionWizard": "المعالج السؤالي",
+    "questionWizard": "جلسات الدراسة",
     "system": "النظام",
-    "tryIt": "جرّب المعالج",
-    "create": "إنشاء مشروع",
-    "workspace": "مساحة التحضير للاختبار",
+    "tryIt": "ابدأ الدراسة",
+    "create": "Workspace",
+    "workspace": "Workspace",
     "createProject": "إنشاء مشروع",
     "history": "السجل",
     "science": "العلوم",
@@ -26,8 +26,9 @@
     "dark": "داكن"
   },
   "hero": {
-    "title": "قم بتحسين Prompts الخاصة بـ LLM مع QuizAll",
-    "subtitle": "منصة احترافية لاختبار وتحسين Prompts مدعومة بالذكاء الاصطناعي",
+    "title": "QuizAll — حوّل أي شيء إلى اختبار",
+    "subtitle": "ارفع موادك الدراسية واحصل على اختبارات مدعومة بالذكاء الاصطناعي مع شروحات.",
+    "eyebrow": "QuizAll · التحضير للاختبار",
     "description": "اختبر وقارن وحسّن Prompts الخاصة بـ LLM مع سير عمل آلي ومقاييس احترافية",
     "cta": "ابدأ مجانًا",
     "learnMore": "اعرف المزيد",
@@ -471,5 +472,8 @@
   "outcome": {
     "copy": "نسخ",
     "copied": "تم النسخ!"
+  },
+  "home": {
+    "login_required": "يرجى تسجيل الدخول لاستخدام هذه الميزة."
   }
 }

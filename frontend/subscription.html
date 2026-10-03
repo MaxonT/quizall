@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <title>QuizAll Pricing & Plans — AI Quiz Generation for Everyone</title>
   <!-- SEO -->
-  <meta name="description" content="Choose the QuizAll plan that fits you. Get unlimited AI quiz generation, Question Wizard access, and Quiz Enhancer with our flexible subscription options." />
+  <meta name="description" content="Choose the QuizAll plan that fits you. Credits for AI quiz generation, study sessions, and exam prep tools." />
   <meta name="keywords" content="QuizAll pricing, AI quiz tool plans, quiz generation subscription, LLM tool pricing" />
   <link rel="canonical" href="https://quizall.app/subscription.html" />
   <meta property="og:type" content="website" />
@@ -35,7 +35,7 @@
       </a>
       <nav class="nav-links">
         <a href="index.html" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="create.html" data-i18n="nav.create">Exam Prep Workspace</a>
+        <a href="create.html" data-i18n="nav.create">Workspace</a>
         <a href="history.html" data-i18n="nav.history">History</a>
         <a href="subscription.html" class="active" data-i18n="nav.subscription">Subscription</a>
         <a href="settings.html" data-i18n="nav.account">Account</a>
@@ -99,9 +99,9 @@
             </div>
           </div>
           <ul class="plan-features">
-            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_free_optimization">Prompt optimization 8 times/day</span></li>
-            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_free_optimization_mode">Standard/Fast modes only</span></li>
-            <li><span class="feature-icon">✓</span> <span data-i18n="subscription.feature_free_wizard">Question Wizard 5 times/day</span></li>
+            <li><span class="feature-icon">✓</span> <span>80 credits per day</span></li>
+            <li><span class="feature-icon">✓</span> <span>Training & Testing modes</span></li>
+            <li><span class="feature-icon">✓</span> <span>All core study features</span></li>
           </ul>
           <button class="btn btn-secondary btn-block subscribe-btn" data-plan="free" data-i18n="subscription.current_plan">
             Current Plan
@@ -181,6 +181,32 @@
           <p data-i18n="subscription.usage_reset_desc">
             Limits reset daily at 00:00 in your timezone.
           </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coupon Redemption -->
+    <section class="coupon-section">
+      <div class="coupon-card">
+        <div class="coupon-icon">🎟️</div>
+        <div class="coupon-body">
+          <h3 class="coupon-title">Have a coupon code?</h3>
+          <p class="coupon-subtitle">Enter your code below to activate a subscription.</p>
+          <div class="coupon-form" id="couponForm">
+            <input
+              type="text"
+              id="couponInput"
+              class="coupon-input"
+              placeholder="e.g. QUIZALL-XXXXX"
+              maxlength="80"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" id="redeemCouponBtn" class="btn btn-primary coupon-btn">
+              Redeem
+            </button>
+          </div>
+          <p id="couponMessage" class="coupon-message hidden"></p>
         </div>
       </div>
     </section>

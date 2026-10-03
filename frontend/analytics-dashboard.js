@@ -18,6 +18,12 @@ const API_BASE = (
 ).replace(/\/$/, '');
 let accessDeniedTriggered = false;
 
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = String(text ?? '');
+  return div.innerHTML;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Configuration
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -235,12 +241,14 @@ function renderRegions(timezones) {
   const sorted = [...timezones].sort((a, b) => b.count - a.count).slice(0, 12);
   
   container.innerHTML = sorted.map(tz => {
-    const name = tz.timezone.split('/').pop()?.replace(/_/g, ' ') || tz.timezone;
+    const name = escapeHtml(tz.timezone.split('/').pop()?.replace(/_/g, ' ') || tz.timezone);
+    const count = escapeHtml(formatNumber(tz.count));
+    const events = escapeHtml(tz.uniqueEvents);
     return `
       <div class="region-item">
         <p class="region-name">${name}</p>
-        <p class="region-count">${formatNumber(tz.count)}</p>
-        <p class="region-events">${tz.uniqueEvents} events</p>
+        <p class="region-count">${count}</p>
+        <p class="region-events">${events} events</p>
       </div>
     `;
   }).join('');

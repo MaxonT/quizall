@@ -558,8 +558,8 @@
     globalStatusIndicator.innerHTML = `
       <div class="global-status-content">
         <span class="global-status-icon">⚠️</span>
-        <span class="global-status-message">Question Wizard is running</span>
-        <a href="wizard.html" class="global-status-cta">Go to Wizard →</a>
+        <span class="global-status-message">Study session in progress</span>
+        <a href="create.html" class="global-status-cta">Open workspace →</a>
         <button class="global-status-dismiss" aria-label="Dismiss">&times;</button>
           </div>
     `;
