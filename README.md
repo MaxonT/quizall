@@ -152,7 +152,7 @@ e2e/                     Playwright specs
 
 ### License
 
-Not specified in-repo. Treat as private unless a license file is added.
+MIT; see [LICENSE](LICENSE). API usage and hosted services require your own credentials and account.
 
 ---
 
