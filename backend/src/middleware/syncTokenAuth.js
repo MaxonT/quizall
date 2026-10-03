@@ -1,23 +1,13 @@
-/**
- * Protects /api/admin/* — requires SYNC_TOKEN (mandatory in production).
- */
+import { timingSafeEqual } from "node:crypto";
 
 export function requireSyncToken(req, res, next) {
-  const syncToken = process.env.SYNC_TOKEN;
-  const isProd = process.env.NODE_ENV === "production";
-
-  if (isProd && !syncToken) {
-    return res.status(503).json({ ok: false, error: "Admin sync not configured" });
-  }
-
-  if (!syncToken) {
-    if (!isProd) return next();
-    return res.status(503).json({ ok: false, error: "Admin sync not configured" });
-  }
-
-  const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader.replace("Bearer ", "");
-  if (token !== syncToken) {
+  const secret = process.env.SYNC_TOKEN;
+  if (!secret?.trim()) return res.status(503).json({ ok: false, error: "Admin sync not configured" });
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const actual = Buffer.from(token);
+  const expected = Buffer.from(secret);
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
   return next();

@@ -2,7 +2,7 @@
  * Migration 005: Coupons Table
  * 
  * Adds a coupons table and a coupon_redemptions table for tracking usage.
- * Seeds one initial coupon for friends & family.
+ * Retires publicly documented sample coupons; operators manage private codes separately.
  * 
  * Run with: node migrations/005_coupons.js
  */
@@ -58,18 +58,8 @@ CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_coupon ON coupon_redemptions(c
 console.log("[migration-005] ✓ coupon_redemptions table created");
 
 // =============================================
-// 3. Seed the initial friends & family coupon
-// =============================================
-const existing = db.prepare("SELECT id FROM coupons WHERE code = ?").get("QUIZALL-DEE1636310A6");
-if (!existing) {
-  db.prepare(`
-    INSERT INTO coupons (code, plan, max_redemptions, duration_days, active)
-    VALUES (?, 'monthly', 10, 30, 1)
-  `).run("QUIZALL-DEE1636310A6");
-  console.log("[migration-005] ✓ Seeded friends & family coupon: QUIZALL-DEE1636310A6");
-} else {
-  console.log("[migration-005] ✓ Coupon already exists, skipping seed");
-}
+// 3. Retire public sample coupons; operators create their own separately.
+db.prepare("UPDATE coupons SET active = 0 WHERE code IN ('QUIZALL-DEE1636310A6', 'QUIZALL-YEAR-F3C8A201', 'QUIZALL-TESTER-PRO')").run();
 
 db.close();
 console.log("[migration-005] ✅ Coupons migration complete!");

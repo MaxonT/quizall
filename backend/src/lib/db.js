@@ -456,38 +456,8 @@ CREATE INDEX IF NOT EXISTS idx_oauth_pkce_expires ON oauth_pkce_states(expires_a
     console.error("[quizall] Failed to ensure demo user:", err);
   }
 
-  // Seed the friends & family coupon
-  try {
-    sqliteDb.prepare(`
-      INSERT OR IGNORE INTO coupons (code, plan, max_redemptions, duration_days, active)
-      VALUES ('QUIZALL-DEE1636310A6', 'monthly', 10, 30, 1)
-    `).run();
-    console.log("[quizall] Friends & family coupon ensured");
-  } catch (err) {
-    console.error("[quizall] Failed to seed coupon:", err);
-  }
-
-  // Seed the annual coupon
-  try {
-    sqliteDb.prepare(`
-      INSERT OR IGNORE INTO coupons (code, plan, max_redemptions, duration_days, active)
-      VALUES ('QUIZALL-YEAR-F3C8A201', 'yearly', 100, 365, 1)
-    `).run();
-    console.log("[quizall] Annual coupon ensured");
-  } catch (err) {
-    console.error("[quizall] Failed to seed annual coupon:", err);
-  }
-
-  // Seed the tester Pro coupon
-  try {
-    sqliteDb.prepare(`
-      INSERT OR IGNORE INTO coupons (code, plan, max_redemptions, duration_days, active)
-      VALUES ('QUIZALL-TESTER-PRO', 'monthly', 20, 30, 1)
-    `).run();
-    console.log("[quizall] Tester Pro coupon ensured");
-  } catch (err) {
-    console.error("[quizall] Failed to seed tester coupon:", err);
-  }
+  // Public sample codes must not grant paid access on an operator's instance.
+  sqliteDb.prepare("UPDATE coupons SET active = 0 WHERE code IN ('QUIZALL-DEE1636310A6', 'QUIZALL-YEAR-F3C8A201', 'QUIZALL-TESTER-PRO')").run();
 
   // SQLite ensureUser function
   dbModule.ensureUser = function(userId, email = null) {

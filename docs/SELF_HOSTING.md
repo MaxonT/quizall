@@ -99,3 +99,7 @@ PostgreSQL support is included, but the setup verification for this change uses 
 - SQLite install fails: use Node 22; do not reuse `node_modules` from a different Node major.
 - Health succeeds but no real AI output: a health check does not validate a provider key;
   development may intentionally return `meta.mock=true` without one.
+
+## Admin sync and coupons
+
+Admin write endpoints are disabled unless you configure your own `SYNC_TOKEN`; callers must send it as a Bearer token. Do not expose it in frontend code. Public sample subscription coupons are no longer automatically issued, and previous sample codes are disabled on startup. Existing redeemed subscriptions are retained. Create any new private promotion codes administratively in your own database.
