@@ -100,6 +100,13 @@ The orchestrator and source-grounding prompts are in
 [`quizTranscript.js`](../backend/src/routes/quizTranscript.js) handles saved session
 transcripts. [`frontend/create/api.js`](../frontend/create/api.js) shows request bodies.
 Routes expect JWT authentication and, where applicable, a project in your own database.
+After registering/logging in, call `GET /api/billing/status` with the same bearer
+token before uploading material or using credit-based actions. This initializes
+or refreshes the free daily allowance; the frontend already does this. A fresh
+account that skips this step can receive HTTP 402 even when Stripe is disabled.
+The default free allowance is 80 credits per local day. Credit costs and allowances
+can be configured in your own instance via `backend/src/lib/subscriptionConfig.js`.
+Disabling Stripe does not disable the credit policy.
 This is a working app to fork/adapt; the pipeline is not a standalone npm SDK.
 
 ## Deploy your own instance
